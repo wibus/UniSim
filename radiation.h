@@ -19,7 +19,7 @@ public:
 
     bool initialize(const std::vector<Body*>& bodies);
 
-    void draw(const std::vector<Body*>& bodies, double dt, Camera& camera);
+    void draw(const std::vector<Body*>& bodies, double dt, const Camera& camera);
 
 private:
     GLuint _vbo;

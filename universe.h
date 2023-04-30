@@ -3,19 +3,24 @@
 
 #include <vector>
 #include <chrono>
+#include <memory>
 
 // To prevent glfw3.h from including gl.h
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
 
-#include "body.h"
-#include "camera.h"
 #include "gravity.h"
 #include "radiation.h"
+#include "camera.h"
+#include "input.h"
 
+
+class GLFWwindow;
 
 namespace unisim
 {
+
+class Project;
+
 
 class Universe
 {
@@ -27,10 +32,11 @@ public:
 
     int launch(int argc, char ** argv);
 
-    CameraMan& cameraMan();
-
-    double timeFactor() const;
-    void setTimeFactor(double tf);
+    void handleWindowResize(GLFWwindow* window, int width, int height);
+    void handleKeyboard(const KeyboardEvent& event);
+    void handleMouseMove(const MouseMoveEvent& event);
+    void handleMouseButton(const MouseButtonEvent& event);
+    void handleMouseScroll(const MouseScrollEvent& event);
 
     void setup();
     void update();
@@ -41,35 +47,28 @@ public:
     char** _argv;
     GLFWwindow* window;
 
+    // Inputs
+    Inputs _inputs;
+
     // Systems
     Gravity _gravity;
     Radiation _radiation;
-
-    // Matter
-    std::vector<Body*> _bodies;
 
     // Time
     double _dt;
     double _timeFactor;
     std::chrono::time_point<std::chrono::high_resolution_clock> _lastTime;
 
-    // Camera
-    Camera _camera;
-    CameraMan _cameraMan;
+    // Viewport
+    Viewport _viewport;
+
+    // Projet
+    std::unique_ptr<Project> _project;
 };
 
 
 
 // IMPLEMENTATION //
-inline CameraMan& Universe::cameraMan()
-{
-    return _cameraMan;
-}
-
-inline double Universe::timeFactor() const
-{
-    return _timeFactor;
-}
 
 }
 

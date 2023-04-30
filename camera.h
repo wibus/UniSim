@@ -5,18 +5,30 @@
 
 #include "GLM/glm.hpp"
 
+#include "input.h"
+
 
 namespace unisim
 {
 
 class Body;
+class Scene;
+
+
+struct Viewport
+{
+    int width;
+    int height;
+};
+
 
 class Camera
 {
 public:
-    Camera();
+    Camera(Viewport viewport);
 
-    void setResolution(int width, int height);
+    const Viewport& viewport() const;
+    void setViewport(Viewport viewport);
 
     double exposure() const;
     void setExposure(double exp);
@@ -38,8 +50,7 @@ public:
     glm::mat4 screen() const;
 
 private:
-    int _width;
-    int _height;
+    Viewport _viewport;
 
     glm::dvec3 _position;
     glm::dvec3 _lookAt;
@@ -55,60 +66,31 @@ class CameraMan
 public:
     enum class Mode {Static, Orbit, Ground};
 
-    CameraMan(Camera& camera, const std::vector<Body*>& bodies);
+    CameraMan(Viewport viewport);
 
-    void update(double dt);
+    const Camera& camera() const;
 
-    void setResolution(int width, int height);
+    void setViewport(Viewport viewport);
 
-    void setMode(Mode mode);
-    void setBodyIndex(int bodyId);
-    void setDistance(double dist);
+    virtual void update(const Inputs& inputs, double dt) = 0;
 
-    void zoomIn();
-    void zoomOut();
+    virtual void handleKeyboard(const Inputs& inputs, const KeyboardEvent& event);
+    virtual void handleMouseMove(const Inputs& inputs, const MouseMoveEvent& event);
+    virtual void handleMouseButton(const Inputs& inputs, const MouseButtonEvent& event);
+    virtual void handleMouseScroll(const Inputs& inputs, const MouseScrollEvent& event);
 
-    void exposeUp();
-    void exposeDown();
-    void enableAutoExposure(bool enabled);
-
-    void rotatePrimary(int dx, int dy);
-    void rotateSecondary(int dx, int dy);
-    void moveForward();
-    void moveBackward();
-    void strafeLeft();
-    void strafeRight();
-    void strafeUp();
-    void strafeDown();
-
-private:
-    void orbit(int newBodyId, int oldBodyId);
-
-    Camera& _camera;
-    const std::vector<Body*>& _bodies;
-
-    Mode _mode;
-    int _bodyId;
-
-    glm::dvec3 _position;
-    glm::dvec3 _direction;
-
-    // Orbit/Ground
-    double _distance;
-    glm::dvec4 _longitude;
-    glm::dvec4 _latitude;
-
-    // Ground
-    glm::dvec4 _pan;
-    glm::dvec4 _tilt;
-    glm::dvec4 _roam;
-
-    bool _autoExpose;
+protected:
+    Camera _camera;
 };
 
 
 
 // IMPLEMENTATION //
+inline const Viewport& Camera::viewport() const
+{
+    return _viewport;
+}
+
 inline double Camera::exposure() const
 {
     return _exposure;
@@ -132,6 +114,11 @@ inline glm::dvec3 Camera::lookAt() const
 inline glm::dvec3 Camera::up() const
 {
     return _up;
+}
+
+inline const Camera& CameraMan::camera() const
+{
+    return _camera;
 }
 
 }

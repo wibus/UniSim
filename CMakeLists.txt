@@ -34,11 +34,14 @@ include_directories(${OTS_INCLUDE_DIRS})
 message( STATUS "UniSim Includes ${GLEW_INCLUDE_DIRS}" )
 message( STATUS "UniSim Libraries ${GLEW_LIBRARIES}" )
 
-add_executable(UniSim
-    main.cpp
+
+# Engine files
+set(EngineFile
     units.h
     universe.h
     universe.cpp
+    input.h
+    input.cpp
     gravity.h
     gravity.cpp
     radiation.h
@@ -49,8 +52,34 @@ add_executable(UniSim
     camera.cpp
     body.h
     body.cpp
+    scene.h
+    scene.cpp
+    project.h
+    project.cpp
+)
+
+# Shaders
+set(ShaderFiles
     shaders/fullscreen.vert
-    shaders/pathtrace.frag)
+    shaders/pathtrace.frag
+)
+
+## Projects ##
+
+# Solar System
+set(SolarSystemFiles
+    solar/solarsystemproject.h
+    solar/solarsystemproject.cpp
+    solar/solarsystemscene.h
+    solar/solarsystemscene.cpp
+    solar/solarsystemcamera.h
+    solar/solarsystemcamera.cpp)
+
+add_executable(UniSim
+    main.cpp
+    ${EngineFile}
+    ${ShaderFiles}
+    ${SolarSystemFiles})
 
 # Set executable dependency libraries
 target_link_libraries(UniSim

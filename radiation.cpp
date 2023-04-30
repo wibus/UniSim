@@ -272,7 +272,7 @@ glm::vec3 toLinear(const glm::vec3& sRGB)
     return glm::mix(higher, lower, cutoff);
 }
 
-void Radiation::draw(const std::vector<Body*>& bodies, double dt, Camera& camera)
+void Radiation::draw(const std::vector<Body*>& bodies, double dt, const Camera& camera)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
