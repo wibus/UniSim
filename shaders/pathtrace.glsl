@@ -37,6 +37,17 @@ struct Intersection
     uint instanceId;
 };
 
+struct HitInfo
+{
+    uint instanceId;
+    vec3 position;
+    vec3 normal;
+    vec3 albedo;
+    vec3 emission;
+    float metalness;
+    float roughness;
+};
+
 layout (std140, binding = 0) uniform CommonParams
 {
     mat4 invViewMat;
@@ -100,6 +111,14 @@ vec3 rotate(vec4 q, vec3 v)
     return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }
 
+vec2 findUV(vec4 quat, vec3 N)
+{
+    vec3 gN = rotate(quat, mat3(invViewMat) * N);
+    float theta = atan(gN.y, gN.x);
+    float phi = asin(gN.z);
+    return vec2(fract(theta / (2 * PI) + 0.5), phi / PI + 0.5);
+}
+
 Ray genRay(uvec2 pixelPos, uint rayId)
 {
     vec4 pixelClip = vec4(
@@ -152,31 +171,51 @@ Intersection intersects(in Ray ray, in uint instanceId)
     return intersection;
 }
 
-vec2 findUV(vec4 quat, vec3 N)
-{
-    vec3 gN = rotate(quat, mat3(invViewMat) * N);
-    float theta = atan(gN.y, gN.x);
-    float phi = asin(gN.z);
-    return vec2(fract(theta / (2 * PI) + 0.5), phi / PI + 0.5);
-}
-
-vec3 shade(inout Ray ray, in Intersection intersection)
+HitInfo probe(in Ray ray, in Intersection intersection)
 {
     Instance instance = instances[intersection.instanceId];
 
-    vec3 point = ray.origin + intersection.t * ray.direction;
-    vec3 N = normalize(point - instance.position.xyz);
+    HitInfo hitInfo;
 
+    hitInfo.instanceId = intersection.instanceId;
+
+    hitInfo.position = ray.origin + intersection.t * ray.direction;
+    hitInfo.normal = normalize(hitInfo.position - instance.position.xyz);
+
+    vec2 uv = findUV(instance.quaternion, hitInfo.normal);
+    vec2 check = fract(vec2(uv.x * 24, uv.y * 12));
+    hitInfo.albedo = instance.albedo.rgb;// * check.x*check.y;
+
+    if(instance.materialId > 0)
+    {
+        layout(rgba8) image2D albedoImg = materials[instance.materialId-1].albedo;
+        ivec2 imgSize = imageSize(albedoImg);
+        vec3 texel = imageLoad(albedoImg, ivec2(imgSize * vec2(uv.x, 1 - uv.y))).rgb;
+
+        hitInfo.albedo = toLinear(texel);
+    }
+
+    hitInfo.emission = instance.emission.rgb;
+
+    hitInfo.metalness = 0;
+    hitInfo.roughness = 1;
+
+    return hitInfo;
+}
+
+vec3 shade(inout Ray ray, in HitInfo hitInfo)
+{
+    vec3 N = hitInfo.normal;
     vec3 L_out = vec3(0, 0, 0);
 
     for(uint e = emitterStart; e < emitterEnd; ++e)
     {
-        if(e == intersection.instanceId)
+        if(e == hitInfo.instanceId)
             continue;
 
         Instance emitter = instances[e];
 
-        vec3 dist = (emitter.position.xyz - point);
+        vec3 dist = (emitter.position.xyz - hitInfo.position);
         float distanceSqr = dot(dist, dist);
         float distance = sqrt(distanceSqr);
 
@@ -193,23 +232,10 @@ vec3 shade(inout Ray ray, in Intersection intersection)
         L_out += LdotN * emitter.emission.rgb * solidAngle;
     }
 
-    vec2 uv = findUV(instance.quaternion, N);
-    vec2 check = fract(vec2(uv.x * 24, uv.y * 12));
-    vec3 materialAlbedo = instance.albedo.rgb;// * check.x*check.y;
-
-    if(instance.materialId > 0)
-    {
-        layout(rgba8) image2D albedoImg = materials[instance.materialId-1].albedo;
-        ivec2 imgSize = imageSize(albedoImg);
-        vec3 texel = imageLoad(albedoImg, ivec2(imgSize * vec2(uv.x, 1 - uv.y))).rgb;
-
-        materialAlbedo = toLinear(texel);
-    }
-
-    vec3 albedo = materialAlbedo * ray.albedo;
+    vec3 albedo = hitInfo.albedo * ray.albedo;
     ray.albedo = albedo;
 
-    return L_out * albedo + instance.emission.rgb;
+    return L_out * albedo + hitInfo.emission;
 }
 
 vec3 shadeBackground(in Ray ray)
@@ -221,7 +247,7 @@ vec3 shadeBackground(in Ray ray)
     return toLinear(lum);
 }
 
-Ray reflect(Ray ray, Intersection intersection)
+Ray reflect(Ray ray, HitInfo hitInfo)
 {
     return ray;
 }
@@ -254,8 +280,9 @@ void main()
 
             if (bestIntersection.t != 1 / 0.0)
             {
-                colorAccum += shade(ray, bestIntersection);
-                ray = reflect(ray, bestIntersection);
+                HitInfo hitInfo = probe(ray, bestIntersection);
+                colorAccum += shade(ray, hitInfo);
+                ray = reflect(ray, hitInfo);
             }
             else
             {

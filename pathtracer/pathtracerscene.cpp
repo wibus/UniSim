@@ -45,6 +45,9 @@ PathTracerScene::PathTracerScene()
     ballLeft->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
     ballRight->material()->setDefaultAlbedo({1.0, 1.0, 1.0});
 
+    ballLeft->material()->loadAlbedo("textures/FreeBlueNoiseTextures/Data/64_64/LDR_RGBA_0.png");
+    ballLeft->material()->loadAlbedo("textures/FreeBlueNoiseTextures/Data/64_64/HDR_RGBA_0.png");
+
     _objects.push_back(light);
     _objects.push_back(floor);
     _objects.push_back(ceiling);

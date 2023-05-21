@@ -38,6 +38,7 @@ public:
 
 private:
     Texture* loadJpeg(const std::string& fileName);
+    Texture* loadPng(const std::string& fileName);
 
     std::string _name;
     Texture* _albedo;
