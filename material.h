@@ -1,6 +1,8 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
+#include <GLM/glm.hpp>
+
 #include <string>
 
 
@@ -28,11 +30,20 @@ public:
     bool loadAlbedo(const std::string& fileName);
     Texture* albedo() const;
 
+    glm::dvec3 defaultAlbedo() const { return _defaultAlbedo; }
+    void setDefaultAlbedo(const glm::dvec3& albedo);
+
+    glm::dvec3 defaultEmission() const { return _defaultEmission; }
+    void setDefaultEmission(const glm::dvec3& emission);
+
 private:
     Texture* loadJpeg(const std::string& fileName);
 
     std::string _name;
     Texture* _albedo;
+
+    glm::dvec3 _defaultAlbedo;
+    glm::dvec3 _defaultEmission;
 };
 
 

@@ -3,21 +3,15 @@
 
 #include <GLM/glm.hpp>
 
-#include <string>
-#include <memory>
 
 namespace unisim
 {
 
-class Material;
-
 class Body
 {
 public:
-    Body(const std::string& name, double radius, double density, Body* parent = nullptr);
+    Body(double radius, double density, bool isStatic = false);
     virtual ~Body();
-
-    std::string name() const { return _name; }
 
     void setupOrbit(
             double a_semiMajorAxis,
@@ -25,22 +19,14 @@ public:
             double O_ascendingNode,
             double PI,
             double L_meanLongitude,
-            double i_inclination);
+            double i_inclination,
+            Body* parent);
 
     void setupRotation(
             double rotationPeriod,
             double phase,
             double rightAscension,
             double declination);
-
-    glm::dvec3 albedo() const { return _albedo; }
-    void setAlbedo(const glm::dvec3& albedo);
-
-    glm::dvec3 emission() const { return _emission; }
-    void setEmission(const glm::dvec3& emission);
-
-    void setMaterial(const std::shared_ptr<Material>& material);
-    std::shared_ptr<Material> material() const { return _material; }
 
     glm::dvec4 quaternion() const { return _quaternion; }
     void setQuaternion(const glm::dvec4& quaternion);
@@ -58,13 +44,9 @@ public:
 
     double mass() const { return _mass; }
 
-private:
-    Body* _parent;
-    std::string _name;
-    glm::dvec3 _albedo;
-    glm::dvec3 _emission;
-    std::shared_ptr<Material> _material;
+    bool isStatic() const { return _isStatic; }
 
+private:
     // transform
     glm::dvec4 _quaternion; // radians
     glm::dvec3 _position; // m
@@ -78,6 +60,8 @@ private:
 
     // composition
     double _mass; // Kg
+
+    bool _isStatic;
 };
 
 }

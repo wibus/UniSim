@@ -2,8 +2,9 @@
 #define GRAVITY_H
 
 #include <vector>
+#include <memory>
 
-#include "body.h"
+#include "object.h"
 
 
 namespace unisim
@@ -14,9 +15,9 @@ class Gravity
 public:
     Gravity();
 
-    bool initialize(const std::vector<Body *> &bodies) const;
+    bool initialize(const std::vector<std::shared_ptr<Object>>& objects) const;
 
-    void update(std::vector<Body*>& bodies, double dt);
+    void update(std::vector<std::shared_ptr<Object>>& objects, double dt);
 
 public:
 };

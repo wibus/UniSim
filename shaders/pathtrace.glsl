@@ -3,7 +3,7 @@
 
 #define PI 3.14159265359
 
-struct Body
+struct Instance
 {
     vec4 albedo;
     vec4 emission;
@@ -28,19 +28,20 @@ struct Ray
 {
     vec3 origin;
     vec3 direction;
+    vec3 albedo;
 };
 
 struct Intersection
 {
     float t;
-    uint bodyId;
+    uint instanceId;
 };
 
 layout (std140, binding = 0) uniform CommonParams
 {
     mat4 invViewMat;
     mat4 rayMatrix;
-    uint bodyCount;
+    uint instanceCount;
     float radiusScale;
     float exposure;
     uint emitterStart;
@@ -55,9 +56,9 @@ layout (std140, binding = 0) uniform CommonParams
     layout(rgba8) image2D backgroundImg;
 };
 
-layout (std140, binding = 1) uniform Bodies
+layout (std140, binding = 1) uniform Instances
 {
-    Body bodies[100];
+    Instance instances[100];
 };
 
 layout (std140, binding = 2) uniform Materials
@@ -65,10 +66,12 @@ layout (std140, binding = 2) uniform Materials
     Material materials[100];
 };
 
-out vec4 frag_colour;
+uniform layout(binding = 3) writeonly image2D result;
 
-const uint SAMPLE_WIDTH = 4;
+const uint SAMPLE_WIDTH = 2;
 const uint SAMPLE_COUNT = SAMPLE_WIDTH * SAMPLE_WIDTH;
+
+const uint PATH_DEPTH = 1;
 
 float sRGB(float x)
 {
@@ -97,33 +100,34 @@ vec3 rotate(vec4 q, vec3 v)
     return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }
 
-Ray genRay(uint rayId)
+Ray genRay(uvec2 pixelPos, uint rayId)
 {
-    vec4 pixelPos = vec4(
-        gl_FragCoord.x + (float(rayId % SAMPLE_WIDTH) + 0.5) / float(SAMPLE_WIDTH) - 0.5,
-        gl_FragCoord.y + (float(rayId / SAMPLE_WIDTH) + 0.5) / float(SAMPLE_WIDTH) - 0.5,
+    vec4 pixelClip = vec4(
+        pixelPos.x + (float(rayId % SAMPLE_WIDTH) + 0.5) / float(SAMPLE_WIDTH) - 0.5,
+        pixelPos.y + (float(rayId / SAMPLE_WIDTH) + 0.5) / float(SAMPLE_WIDTH) - 0.5,
         0, 1);
 
-    vec4 rayDir = rayMatrix * pixelPos;
+    vec4 rayDir = rayMatrix * pixelClip;
 
     Ray ray;
     ray.direction = normalize(rayDir.xyz / rayDir.w);
     ray.origin = vec3(0, 0, 0);
+    ray.albedo = vec3(1, 1, 1);
 
     return ray;
 }
 
-Intersection intersects(in Ray ray, in uint bodyId)
+Intersection intersects(in Ray ray, in uint instanceId)
 {
     Intersection intersection;
     intersection.t = -1.0;
-    intersection.bodyId = bodyId;
+    intersection.instanceId = instanceId;
 
-    Body body = bodies[bodyId];
+    Instance instance = instances[instanceId];
 
     vec3 O = ray.origin;
     vec3 D = ray.direction;
-    vec3 C = body.position.xyz;
+    vec3 C = instance.position.xyz;
 
     vec3 L = C - O;
     float t_ca = dot(L, D);
@@ -133,10 +137,10 @@ Intersection intersects(in Ray ray, in uint bodyId)
 
     float dSqr = (dot(L, L) - t_ca*t_ca);
 
-    if(dSqr > body.radius * body.radius * (radiusScale * radiusScale))
+    if(dSqr > instance.radius * instance.radius * (radiusScale * radiusScale))
         return intersection;
 
-    float t_hc = sqrt(body.radius * body.radius * (radiusScale * radiusScale) - dSqr);
+    float t_hc = sqrt(instance.radius * instance.radius * (radiusScale * radiusScale) - dSqr);
     float t_0 = t_ca - t_hc;
     float t_1 = t_ca + t_hc;
 
@@ -156,21 +160,21 @@ vec2 findUV(vec4 quat, vec3 N)
     return vec2(fract(theta / (2 * PI) + 0.5), phi / PI + 0.5);
 }
 
-vec3 shadeBody(in Ray ray, in Intersection intersection)
+vec3 shade(inout Ray ray, in Intersection intersection)
 {
-    Body body = bodies[intersection.bodyId];
+    Instance instance = instances[intersection.instanceId];
 
     vec3 point = ray.origin + intersection.t * ray.direction;
-    vec3 N = normalize(point - body.position.xyz);
+    vec3 N = normalize(point - instance.position.xyz);
 
     vec3 L_out = vec3(0, 0, 0);
 
     for(uint e = emitterStart; e < emitterEnd; ++e)
     {
-        if(e == intersection.bodyId)
+        if(e == intersection.instanceId)
             continue;
 
-        Body emitter = bodies[e];
+        Instance emitter = instances[e];
 
         vec3 dist = (emitter.position.xyz - point);
         float distanceSqr = dot(dist, dist);
@@ -189,20 +193,23 @@ vec3 shadeBody(in Ray ray, in Intersection intersection)
         L_out += LdotN * emitter.emission.rgb * solidAngle;
     }
 
-    vec2 uv = findUV(body.quaternion, N);
+    vec2 uv = findUV(instance.quaternion, N);
     vec2 check = fract(vec2(uv.x * 24, uv.y * 12));
+    vec3 materialAlbedo = instance.albedo.rgb;// * check.x*check.y;
 
-    vec3 albedo = body.albedo.rgb * check.x*check.y;
-    if(body.materialId > 0)
+    if(instance.materialId > 0)
     {
-        layout(rgba8) image2D albedoImg = materials[body.materialId-1].albedo;
+        layout(rgba8) image2D albedoImg = materials[instance.materialId-1].albedo;
         ivec2 imgSize = imageSize(albedoImg);
         vec3 texel = imageLoad(albedoImg, ivec2(imgSize * vec2(uv.x, 1 - uv.y))).rgb;
 
-        albedo = toLinear(texel);
+        materialAlbedo = toLinear(texel);
     }
 
-    return (L_out + body.emission.rgb) * albedo * exposure;
+    vec3 albedo = materialAlbedo * ray.albedo;
+    ray.albedo = albedo;
+
+    return L_out * albedo + instance.emission.rgb;
 }
 
 vec3 shadeBackground(in Ray ray)
@@ -214,16 +221,12 @@ vec3 shadeBackground(in Ray ray)
     return toLinear(lum);
 }
 
-vec3 ACESFilm(vec3 x)
+Ray reflect(Ray ray, Intersection intersection)
 {
-    float a = 2.51f;
-    float b = 0.03f;
-    float c = 2.43f;
-    float d = 0.59f;
-    float e = 0.14f;
-    return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0, 1);
+    return ray;
 }
 
+layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 
 void main()
 {
@@ -231,31 +234,39 @@ void main()
 
     for(uint sampleId = 0; sampleId < SAMPLE_COUNT; ++sampleId)
     {
-        Ray ray = genRay(sampleId);
+        Ray ray = genRay(gl_GlobalInvocationID.xy, sampleId);
 
-        Intersection bestIntersection;
-        bestIntersection.t = 1 / 0.0;
-
-        for(uint b = 0; b < bodyCount; ++b)
+        for(uint depthId = 0; depthId < PATH_DEPTH; ++depthId)
         {
-            Intersection intersection = intersects(ray, b);
+            Intersection bestIntersection;
+            bestIntersection.t = 1 / 0.0;
 
-            if(intersection.t > 0 && intersection.t < bestIntersection.t)
+            for(uint b = 0; b < instanceCount; ++b)
             {
-                bestIntersection = intersection;
+                Intersection intersection = intersects(ray, b);
+
+                if(intersection.t > 0 && intersection.t < bestIntersection.t)
+                {
+                    bestIntersection = intersection;
+                }
+
             }
 
+            if (bestIntersection.t != 1 / 0.0)
+            {
+                colorAccum += shade(ray, bestIntersection);
+                ray = reflect(ray, bestIntersection);
+            }
+            else
+            {
+                colorAccum += shadeBackground(ray);
+                break;
+            }
         }
-
-        if (bestIntersection.t != 1 / 0.0)
-            colorAccum += shadeBody(ray, bestIntersection);
-        else
-            colorAccum += shadeBackground(ray);
     }
 
-    vec3 finalLinear = colorAccum / float(SAMPLE_COUNT);
-    vec3 finalAces = ACESFilm(finalLinear);
-    vec3 finalSRGB = sRGB(finalAces);
+    vec3 finalLinear = exposure * colorAccum / float(SAMPLE_COUNT);
+    vec4 finalSRGB = vec4(sRGB(finalLinear), 0);
 
-    frag_colour = vec4(finalSRGB, 1.0);
+    imageStore(result, ivec2(gl_GlobalInvocationID), finalSRGB);
 }

@@ -12,6 +12,7 @@
 #include "project.h"
 
 #include "solar/solarsystemproject.h"
+#include "pathtracer/pathtracerproject.h"
 
 
 namespace unisim
@@ -60,7 +61,8 @@ void glfWHandleScroll(GLFWwindow*, double xoffset, double yoffset)
 Universe::Universe() :
     _timeFactor(0.0)
 {
-    _project.reset(new SolarSystemProject());
+    //_project.reset(new SolarSystemProject());
+    _project.reset(new PathTracerProject());
 }
 
 int Universe::launch(int argc, char** argv)
@@ -94,7 +96,7 @@ int Universe::launch(int argc, char** argv)
     glewExperimental = GL_TRUE;
     glewInit();
 
-    glfwSwapInterval(0);
+    glfwSwapInterval(1);
 
     glViewport(0, 0, _viewport.width, _viewport.height);
 
@@ -106,8 +108,8 @@ int Universe::launch(int argc, char** argv)
 
     setup();
 
-    _gravity.initialize(_project->scene().bodies());
-    _radiation.initialize(_project->scene().bodies());
+    _gravity.initialize(_project->scene().objects());
+    _radiation.initialize(_project->scene().objects(), _viewport);
 
     _dt = 0;
     _lastTime = std::chrono::high_resolution_clock::now();
@@ -138,6 +140,7 @@ void Universe::handleWindowResize(GLFWwindow* window, int width, int height)
 
     _viewport = {width, height};
     _project->cameraMan().setViewport(_viewport);
+    _radiation.setViewport(_viewport);
 }
 
 void Universe::handleKeyboard(const KeyboardEvent& event)
@@ -192,13 +195,13 @@ void Universe::update()
 
     _dt *= 60 * 60 * 24 * _timeFactor;
 
-    _gravity.update(_project->scene().bodies(), _dt);
+    _gravity.update(_project->scene().objects(), _dt);
     _project->cameraMan().update(_inputs, _dt);
 }
 
 void Universe::draw()
 {
-    _radiation.draw(_project->scene().bodies(), _dt, _project->cameraMan().camera());
+    _radiation.draw(_project->scene().objects(), _dt, _project->cameraMan().camera());
 }
 
 }

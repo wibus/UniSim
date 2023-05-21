@@ -1,5 +1,5 @@
-#ifndef SOLAR_SYSTEM_CAMERA_MAN_H
-#define SOLAR_SYSTEM_CAMERA_MAN_H
+#ifndef PATH_TRACER_CAMERA_H
+#define PATH_TRACER_CAMERA_H
 
 #include "../camera.h"
 
@@ -7,10 +7,10 @@
 namespace unisim
 {
 
-class SolarSystemCameraMan : public CameraMan
+class PathTracerCameraMan : public CameraMan
 {
 public:
-    SolarSystemCameraMan(Scene &scene, Viewport viewport);
+    PathTracerCameraMan(Scene &scene, Viewport viewport);
 
     void update(const Inputs& inputs, double dt) override;
 
@@ -18,11 +18,6 @@ public:
     void handleMouseMove(const Inputs& inputs, const MouseMoveEvent& event) override;
     void handleMouseButton(const Inputs& inputs, const MouseButtonEvent& event) override;
     void handleMouseScroll(const Inputs& inputs, const MouseScrollEvent& event) override;
-
-
-    void setMode(Mode mode);
-    void setBodyIndex(int bodyId);
-    void setDistance(double dist);
 
     void zoomIn();
     void zoomOut();
@@ -40,7 +35,7 @@ public:
     void strafeUp();
     void strafeDown();
 
-    static const double ZOON_INC;
+    static const double ZOOM_INC;
     static const double EXPOSURE_INC;
     static const double ROTATE_INC;
     static const double APPROACH_INC;
@@ -48,24 +43,15 @@ public:
 protected:
     void orbit(int newBodyId, int oldBodyId);
 
-
     const Scene& _scene;
-
-    Mode _mode;
-    int _objectId;
 
     glm::dvec3 _position;
     glm::dvec3 _direction;
+    glm::dvec3 _up;
+    double _speed;
 
-    // Orbit/Ground
-    double _distance;
-    glm::dvec4 _longitude;
-    glm::dvec4 _latitude;
-
-    // Ground
     glm::dvec4 _pan;
     glm::dvec4 _tilt;
-    glm::dvec4 _roam;
 
     bool _autoExpose;
 
@@ -77,4 +63,4 @@ protected:
 
 }
 
-#endif // SOLAR_SYSTEM_CAMERA_MAN_H
+#endif // PATH_TRACER_CAMERA_H

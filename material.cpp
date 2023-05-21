@@ -20,6 +20,17 @@ Material::~Material()
     delete _albedo;
 }
 
+
+void Material::setDefaultAlbedo(const glm::dvec3& albedo)
+{
+    _defaultAlbedo = albedo;
+}
+
+void Material::setDefaultEmission(const glm::dvec3& emission)
+{
+    _defaultEmission = emission;
+}
+
 struct ErrorManager
 {
     jpeg_error_mgr defaultErrorManager;

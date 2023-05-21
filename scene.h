@@ -3,13 +3,13 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 
 namespace unisim
 {
 
-class Material;
-class Body;
+class Object;
 
 
 class Scene
@@ -18,41 +18,25 @@ public:
     Scene();
     virtual ~Scene();
 
-    std::vector<Material>& materials();
-    const std::vector<Material>& materials() const;
-
-    std::vector<Body*>& bodies();
-    const std::vector<Body*>& bodies() const;
+    std::vector<std::shared_ptr<Object>>& objects();
+    const std::vector<std::shared_ptr<Object>>& objects() const;
 
 protected:
 
-    // Materials
-    std::vector<Material> _materials;
-
     // Matter
-    std::vector<Body*> _bodies;
+    std::vector<std::shared_ptr<Object>> _objects;
 };
 
 
 // IMPLEMENTATION //
-inline std::vector<Material>& Scene::materials()
+inline std::vector<std::shared_ptr<Object>>& Scene::objects()
 {
-    return _materials;
+    return _objects;
 }
 
-inline const std::vector<Material>& Scene::materials() const
+inline const std::vector<std::shared_ptr<Object>>& Scene::objects() const
 {
-    return _materials;
-}
-
-inline std::vector<Body*>& Scene::bodies()
-{
-    return _bodies;
-}
-
-inline const std::vector<Body*>& Scene::bodies() const
-{
-    return _bodies;
+    return _objects;
 }
 
 }

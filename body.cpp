@@ -9,8 +9,6 @@
 namespace unisim
 {
 
-double charTodouble(char c) { return glm::clamp((c - 65) / float(122 - 65), 0.0f, 1.0f); }
-
 double solveEccentricAnomaly(double En, double e, double M, int depth)
 {
     double En1 = En - (En - e*glm::sin(En) - M) / (1 - e*glm::cos(En));
@@ -26,16 +24,12 @@ double solveEccentricAnomaly(double e, double M)
     return solveEccentricAnomaly(M, e, M, 4);
 }
 
-Body::Body(const std::string& name, double radius, double density, Body* parent) :
-    _parent(parent),
-    _name(name),
-    _albedo(charTodouble(name[0]), charTodouble(name[1]), charTodouble(name[2])),
-    _emission(0, 0, 0),
-    _material(nullptr),
+Body::Body(double radius, double density, bool isStatic) :
     _quaternion(0, 0, 1, 0),
     _position(0, 0, 0),
     _radius(radius),
-    _mass(4 / 3.0f * glm::pi<double>() * radius * radius * radius * (density * 1e3))
+    _mass(4 / 3.0f * glm::pi<double>() * radius * radius * radius * (density * 1e3)),
+    _isStatic(isStatic)
 {
 
 }
@@ -52,7 +46,8 @@ void Body::setupOrbit(
         double O_ascendingNode,
         double PI,
         double L_meanLongitude,
-        double i_inclination)
+        double i_inclination,
+        Body* parent)
 {
     // AU to m
     a_semiMajorAxis = AU(a_semiMajorAxis);
@@ -74,7 +69,7 @@ void Body::setupOrbit(
     double b = a_semiMajorAxis * glm::sqrt(1 - e_eccentricity*e_eccentricity);
     double f = a_semiMajorAxis * e_eccentricity;
     double aCube = a_semiMajorAxis*a_semiMajorAxis*a_semiMajorAxis;
-    double P = 2 * glm::pi<double>() * glm::sqrt(aCube / (G * (_mass + _parent->mass())));
+    double P = 2 * glm::pi<double>() * glm::sqrt(aCube / (G * (_mass + parent->mass())));
 
     // Anomaly
     double M = L_meanLongitude - PI;
@@ -100,10 +95,10 @@ void Body::setupOrbit(
     _position = x_1 * u + y_1 * v;
     _linearMomentum = ((x_1 * u + y_1 * v) - (x_0 * u + y_0 * v)) / (T_1 - T_0);
 
-    if(_parent)
+    if(parent)
     {
-        _position +=       _parent->position();
-        _linearMomentum += _parent->linearMomentum();
+        _position +=       parent->position();
+        _linearMomentum += parent->linearMomentum();
     }
 }
 
@@ -122,20 +117,6 @@ void Body::setupRotation(
     _quaternion = quatMul(EARTH_BASE_QUAT, quatMul(rightAscensionQuat, quatMul(declinationQuat, phaseQuat)));
 }
 
-void Body::setAlbedo(const glm::dvec3& albedo)
-{
-    _albedo = albedo;
-}
-
-void Body::setEmission(const glm::dvec3& emission)
-{
-    _emission = emission;
-}
-
-void Body::setMaterial(const std::shared_ptr<Material>& material)
-{
-    _material = material;
-}
 
 void Body::setQuaternion(const glm::dvec4& quaternion)
 {

@@ -50,8 +50,12 @@ set(EngineFile
     material.cpp
     camera.h
     camera.cpp
+    object.h
+    object.cpp
     body.h
     body.cpp
+    mesh.h
+    mesh.cpp
     scene.h
     scene.cpp
     project.h
@@ -61,7 +65,8 @@ set(EngineFile
 # Shaders
 set(ShaderFiles
     shaders/fullscreen.vert
-    shaders/pathtrace.frag
+    shaders/pathtrace.glsl
+    shaders/colorgrade.frag
 )
 
 ## Projects ##
@@ -75,11 +80,21 @@ set(SolarSystemFiles
     solar/solarsystemcamera.h
     solar/solarsystemcamera.cpp)
 
+# Path Tracer
+set(PathTracerSystemFiles
+    pathtracer/pathtracerproject.h
+    pathtracer/pathtracerproject.cpp
+    pathtracer/pathtracerscene.h
+    pathtracer/pathtracerscene.cpp
+    pathtracer/pathtracercamera.h
+    pathtracer/pathtracercamera.cpp)
+
 add_executable(UniSim
     main.cpp
     ${EngineFile}
     ${ShaderFiles}
-    ${SolarSystemFiles})
+    ${SolarSystemFiles}
+    ${PathTracerSystemFiles})
 
 # Set executable dependency libraries
 target_link_libraries(UniSim
