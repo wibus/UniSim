@@ -26,22 +26,22 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
 PathTracerScene::PathTracerScene()
 {
     auto light = makeObject("Light", 1, {0, 5, 8});
-    auto floor = makeObject("Floor", 1000, {0, 0, -1002});
-    auto ceiling = makeObject("Ceiling", 1000, {0, 0, 1011});
-    auto wallLeft = makeObject("Wall Left", 1000, {-1011, 0, 0});
-    auto wallRight = makeObject("Wall Right", 1000, {1011, 0, 0});
-    auto wallFront = makeObject("Wall Front", 1000, {0, 1021, 0});
-    auto ballLeft = makeObject("Ball Left", 0.5, {-3, 12, 0});
-    auto ballRight = makeObject("Ball Right", 0.5, {3, 12, 0});
+    auto floor = makeObject("Floor", 1000, {0, 0, -1000});
+    auto ceiling = makeObject("Ceiling", 1000, {0, 0, 1010});
+    auto wallLeft = makeObject("Wall Left", 1000, {-1007, 0, 0});
+    auto wallRight = makeObject("Wall Right", 1000, {1007, 0, 0});
+    auto wallFront = makeObject("Wall Front", 1000, {0, 1020, 0});
+    auto ballLeft = makeObject("Ball Left", 1, {-2.5, 12, 1});
+    auto ballRight = makeObject("Ball Right", 1, {2.5, 12, 1});
 
     light->material()->setDefaultEmission({20, 20, 20});
 
     light->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
-    floor->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
-    ceiling->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
+    floor->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
+    ceiling->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
     wallLeft->material()->setDefaultAlbedo({0.8, 0.2, 0.2});
     wallRight->material()->setDefaultAlbedo({0.2, 0.8, 0.2});
-    wallFront->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
+    wallFront->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
     ballLeft->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
     ballRight->material()->setDefaultAlbedo({1.0, 1.0, 1.0});
 

@@ -63,7 +63,7 @@ bool Material::loadAlbedo(const std::string& fileName)
         _albedo = nullptr;
     }
 
-    if(fileName.find(".jpeg") != std::string::npos)
+    if(fileName.find(".jpg") != std::string::npos)
         _albedo = loadJpeg(fileName);
     else if(fileName.find(".png") != std::string::npos)
         _albedo = loadPng(fileName);

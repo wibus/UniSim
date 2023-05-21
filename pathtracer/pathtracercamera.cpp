@@ -34,6 +34,8 @@ PathTracerCameraMan::PathTracerCameraMan(Scene& scene, Viewport viewport) :
 {
     _camera.setViewport(viewport);
     _camera.setExposure(1);
+
+    _position = glm::dvec3(0, -5, 5);
 }
 
 void PathTracerCameraMan::update(const Inputs& inputs, double dt)

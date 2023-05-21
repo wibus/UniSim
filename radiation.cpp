@@ -4,6 +4,9 @@
 #include <string>
 #include <fstream>
 #include <streambuf>
+#include <sstream>
+#include <functional>
+#include <string_view>
 
 #include "GLM/gtc/constants.hpp"
 
@@ -13,6 +16,7 @@
 #include "camera.h"
 #include "units.h"
 #include "material.h"
+#include "random.h"
 
 
 namespace unisim
@@ -33,12 +37,26 @@ struct GpuInstance
     float pad1;
 };
 
+struct GPUBindlessTexture
+{
+    GPUBindlessTexture() :
+        texture(0),
+        padding(0)
+    {}
+
+    GPUBindlessTexture(GLuint64 tex) :
+        texture(tex),
+        padding(0)
+    {}
+
+    GLuint64 texture;
+    GLuint64 padding;
+};
+
 struct GpuMaterial
 {
-    GLuint64 albedo;
-    GLuint64 pad0;
-    GLuint64 specular;
-    GLuint64 pad1;
+    GPUBindlessTexture albedo;
+    GPUBindlessTexture specular;
 };
 
 struct CommonParams
@@ -50,21 +68,32 @@ struct CommonParams
     GLfloat exposure;
     GLuint emitterStart;
     GLuint emitterEnd;
+    GLuint frameIndex;
 
-    GLuint pad0;
     GLuint pad1;
     GLuint pad2;
 
     // Background
     glm::vec4 backgroundQuat;
-    GLuint64 backgroundImg;
+    GPUBindlessTexture backgroundImg;
+
+    GPUBindlessTexture blueNoise[Radiation::BLUE_NOISE_TEX_COUNT];
+
+    glm::vec2 halton[Radiation::HALTON_SAMPLE_COUNT];
 };
 
 const int MAX_OBJECT_COUNT = 100;
 
-Radiation::Radiation()
+Radiation::Radiation() :
+    _frameIndex(0),
+    _lastFrameHash(0)
 {
-
+    for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
+    {
+        double* sample = halton(i, 2);
+        _halton[i] = glm::vec2(sample[0], sample[1]);
+        delete sample;
+    }
 }
 
 std::string loadSource(const std::string& fileName)
@@ -235,7 +264,7 @@ GpuMaterial createGpuMaterial(const std::shared_ptr<Material>& material)
         glMakeImageHandleResidentARB(alebdoHdl, GL_READ_ONLY);
     }
 
-    return {alebdoHdl, 0, 0, 0};
+    return {GPUBindlessTexture(alebdoHdl), GPUBindlessTexture(0)};
 }
 
 bool Radiation::initialize(const std::vector<std::shared_ptr<Object>>& objects, const Viewport& viewport)
@@ -252,6 +281,27 @@ bool Radiation::initialize(const std::vector<std::shared_ptr<Object>>& objects, 
         std::cerr << "Cannot load sky texture. Did you install the texture pack?" << std::endl;
         _backgroundTexId = 0;
         _backgroundHdl = 0;
+    }
+
+    for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
+    {
+        std::stringstream ss;
+        ss << "LDR_RGBA_" << i << ".png";
+        std::string blueNoiseName = ss.str();
+
+        Material blueNoiseMat(blueNoiseName);
+        if(blueNoiseMat.loadAlbedo("textures/bluenoise64/" + blueNoiseName))
+        {
+            _blueNoiseTexIds[i] = generateImageTexture(*blueNoiseMat.albedo());
+            _blueNoiseTexHdls[i] = glGetImageHandleARB(_blueNoiseTexIds[i], 0, GL_FALSE, 0, GL_RGBA8);
+            glMakeImageHandleResidentARB(_blueNoiseTexHdls[i], GL_READ_ONLY);
+        }
+        else
+        {
+            std::cerr << "Cannot load blue noise texture. Did you install the texture pack?" << std::endl;
+            _blueNoiseTexIds[i] = 0;
+            _blueNoiseTexHdls[i] = 0;
+        }
     }
 
     std::vector<GpuMaterial> gpuMaterials;
@@ -302,7 +352,7 @@ bool Radiation::initialize(const std::vector<std::shared_ptr<Object>>& objects, 
     bool ok = generateComputeProgram(_computePathTraceId, "shaders/pathtrace.glsl");
     ok = generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag") && ok;
 
-    _pathTraceFormat = GL_R11F_G11F_B10F;
+    _pathTraceFormat = GL_RGBA16F;
     _pathTraceUAVId = generateUAV();
     updateUAV(_pathTraceUAVId, viewport.width, viewport.height, _pathTraceFormat);
 
@@ -345,11 +395,13 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
     params.exposure = camera.exposure();
     params.emitterStart = 0;
     params.emitterEnd = 1;
+    params.frameIndex = 0; // Must be constant for hasing
     params.backgroundQuat = quatConjugate(EARTH_BASE_QUAT);
-    params.backgroundImg = _backgroundHdl;
-
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, _commonUbo);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(CommonParams), &params, GL_STREAM_DRAW);
+    params.backgroundImg.texture = _backgroundHdl;
+    for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
+        params.blueNoise[i].texture = _blueNoiseTexHdls[i];
+    for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
+        params.halton[i] = _halton[i];
 
     std::vector<GpuInstance> gpuInstances;
     gpuInstances.reserve(MAX_OBJECT_COUNT);
@@ -365,6 +417,23 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
         gpuInstance.mass = object->body()->mass();
         gpuInstance.materialId = _objectToMat[i];
     }
+
+    std::size_t frameHash = std::hash<std::string_view>()(std::string_view((char*)&params, sizeof (CommonParams)));
+    //frameHash ^= std::hash<std::string_view>()(std::string_view((char*)gpuInstances.data(), sizeof (GpuInstance) * gpuInstances.size()));
+
+    if(frameHash != _lastFrameHash)
+        _frameIndex = 0;
+    else
+        ++_frameIndex;
+
+    if(_frameIndex >= MAX_FRAME_COUNT)
+        return;
+
+    _lastFrameHash = frameHash;
+    params.frameIndex = _frameIndex;
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, _commonUbo);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(CommonParams), &params, GL_STREAM_DRAW);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, _instancesUbo);
     glBufferData(GL_UNIFORM_BUFFER, MAX_OBJECT_COUNT * sizeof(GpuInstance), gpuInstances.data(), GL_STREAM_DRAW);

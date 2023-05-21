@@ -60,6 +60,8 @@ set(EngineFile
     scene.cpp
     project.h
     project.cpp
+    random.h
+    random.cpp
 )
 
 # Shaders
