@@ -7,6 +7,7 @@
 #include <cstring>
 #include <jpeglib.h>
 #include <png.h>
+#include <tinyexr.h>
 
 
 namespace unisim
@@ -67,6 +68,8 @@ bool Material::loadAlbedo(const std::string& fileName)
         _albedo = loadJpeg(fileName);
     else if(fileName.find(".png") != std::string::npos)
         _albedo = loadPng(fileName);
+    else if(fileName.find(".exr") != std::string::npos)
+        _albedo = loadExr(fileName);
     else
         std::cerr << "Unknow file type: " << fileName << std::endl;
 
@@ -109,6 +112,7 @@ Texture* Material::loadJpeg(const std::string& fileName)
     texture = new Texture();
     texture->width = cinfo.image_width;
     texture->height = cinfo.image_height;
+    texture->format = Texture::UNORM8;
     texture->numComponents = 4;//cinfo.num_components;
     texture->data = new uint8_t[texture->width * texture->height * texture->numComponents];
 
@@ -177,6 +181,7 @@ Texture* Material::loadPng(const std::string& fileName)
     Texture* texture = new Texture();
     texture->width      = png_get_image_width(png, info);
     texture->height     = png_get_image_height(png, info);
+    texture->format = Texture::UNORM8;
     texture->numComponents = 4;
     texture->data = new uint8_t[texture->width * texture->height * texture->numComponents];
 
@@ -236,6 +241,45 @@ Texture* Material::loadPng(const std::string& fileName)
     free(row_pointers);
 
     return texture;
+}
+
+Texture* Material::loadExr(const std::string& fileName)
+{
+    const char* input = fileName.c_str();
+
+    const char* err = nullptr;
+    float* out; // width * height * RGBA
+    int width;
+    int height;
+
+    int ret = LoadEXR(&out, &width, &height, input, &err);
+
+    if (ret != TINYEXR_SUCCESS)
+    {
+        if (err)
+        {
+            std::cerr << "TinyEXR error :" << err << std::endl;
+            FreeEXRErrorMessage(err); // release memory of error message.
+        }
+        return nullptr;
+    }
+    else
+    {
+        Texture* texture = new Texture();
+        texture->width = width;
+        texture->height = height;
+        texture->format = Texture::Float32;
+        texture->numComponents = 4;
+
+        int byteCount = sizeof(float) * texture->width * texture->height * texture->numComponents;
+
+        texture->data = new uint8_t[byteCount];
+        memcpy(texture->data, out, byteCount);
+
+        free(out); // release memory of image data
+
+        return texture;
+    }
 }
 
 }

@@ -108,15 +108,16 @@ int Universe::launch(int argc, char** argv)
 
     setup();
 
-    _gravity.initialize(_project->scene().objects());
-    _radiation.initialize(_project->scene().objects(), _viewport);
+    bool ok = true;
+    ok = ok && _gravity.initialize(_project->scene().objects());
+    ok = ok && _radiation.initialize(_project->scene().objects(), _viewport);
 
     _dt = 0;
     _lastTime = std::chrono::high_resolution_clock::now();
 
     _project->addView(_viewport);
 
-    while (!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(window) && ok)
     {
         update();
         draw();

@@ -2,6 +2,7 @@
 #extension GL_ARB_bindless_texture : require
 
 #define PI 3.14159265359
+#define GOLDEN_RATIO 1.618033988749894
 
 struct Instance
 {
@@ -20,8 +21,8 @@ struct Instance
 
 struct Material
 {
-    layout(rgba8) image2D albedo;
-    layout(rgba8) image2D specular;
+    layout(rgba8) readonly image2D albedo;
+    layout(rgba8) readonly image2D specular;
 };
 
 struct Ray
@@ -51,8 +52,8 @@ struct HitInfo
 
 layout (std140, binding = 0) uniform CommonParams
 {
-    mat4 invViewMat;
     mat4 rayMatrix;
+    vec4 eyePosition;
     uint instanceCount;
     float radiusScale;
     float exposure;
@@ -65,9 +66,9 @@ layout (std140, binding = 0) uniform CommonParams
 
     // Background
     vec4 backgroundQuat;
-    layout(rgba8) image2D backgroundImg;
+    layout(rgba32f) readonly image2D backgroundImg;
 
-    layout(rgba8) image2D blueNoise[64];
+    layout(rgba8) readonly image2D blueNoise[64];
 
     vec2 halton[64];
 };
@@ -82,7 +83,7 @@ layout (std140, binding = 2) uniform Materials
     Material materials[100];
 };
 
-uniform layout(binding = 3, rgba16f) image2D result;
+uniform layout(binding = 3, rgba32f) image2D result;
 
 const uint PATH_DEPTH = 4;
 
@@ -115,22 +116,35 @@ vec3 rotate(vec4 q, vec3 v)
 
 vec2 findUV(vec4 quat, vec3 N)
 {
-    vec3 gN = rotate(quat, mat3(invViewMat) * N);
+    vec3 gN = rotate(quat, N);
     float theta = atan(gN.y, gN.x);
     float phi = asin(gN.z);
     return vec2(fract(theta / (2 * PI) + 0.5), phi / PI + 0.5);
 }
 
+void makeOrthBase(in vec3 N, out vec3 T, out vec3 B)
+{
+    T = normalize(cross(N, abs(N.z) < 0.9 ? vec3(0, 0, 1) : vec3(1, 0, 0)));
+    B = normalize(cross(N, T));
+}
+
 vec2 sampleBlueNoise(uint frame, uint depth, bool isShadow)
 {
-    uint haltonIndex = min(63, frame / 64);
+    uint cycle = frame / 64;
+
+    uint haltonIndex = min(63, cycle);
     vec2 haltonSample = halton[haltonIndex];
     ivec2 haltonOffset = ivec2(haltonSample * 64);
     ivec2 blueNoiseXY = (ivec2(gl_GlobalInvocationID.xy) + haltonOffset) % 64;
 
     uint bluneNoiseIndex = (frame + depth) % 64;
-    vec4 noise = imageLoad(blueNoise[bluneNoiseIndex], blueNoiseXY);
-    return !isShadow ? noise.rg : noise.ba;
+    vec4 blueNoiseChannels = imageLoad(blueNoise[bluneNoiseIndex], blueNoiseXY);
+    vec2 blueNoise = (!isShadow ? blueNoiseChannels.rg : blueNoiseChannels.ba);
+
+    vec2 goldenScramble = GOLDEN_RATIO * vec2(1, 2) * cycle;
+    vec2 noise = fract(blueNoise + goldenScramble);
+
+    return noise;
 }
 
 Ray genRay(uvec2 pixelPos)
@@ -146,7 +160,7 @@ Ray genRay(uvec2 pixelPos)
 
     Ray ray;
     ray.direction = normalize(rayDir.xyz / rayDir.w);
-    ray.origin = vec3(0, 0, 0);
+    ray.origin = eyePosition.xyz;
     ray.albedo = vec3(1, 1, 1);
     ray.depth = 0;
 
@@ -249,34 +263,46 @@ vec3 shade(in Ray ray, in HitInfo hitInfo)
 
         Instance emitter = instances[e];
 
-        Ray shadowRay;
-        shadowRay.origin = hitInfo.position + hitInfo.normal * 1e-10;
+        float lRSqr = emitter.radius * emitter.radius;
 
+        vec3 hitToLight = (emitter.position.xyz - hitInfo.position);
+        float distanceSqr = dot(hitToLight, hitToLight);
+
+        float sinThetaMaxSqr = lRSqr / distanceSqr;
+        float cosThetaMax = sqrt(max(0, 1 - sinThetaMaxSqr));
+
+        float solidAngle = float(2 * (1 - cosThetaMax));
+
+        // Importance sample cone
         vec2 noise = sampleBlueNoise(frameIndex, ray.depth, true);
-        float theta = (noise.x - 0.5) * PI;
-        float cosTheta = cos(theta);
+
+        float cosTheta = (1 - noise.x) + noise.x * cosThetaMax;
+        float sinTheta = sqrt(max(0, 1 - cosTheta*cosTheta));
         float phi = noise.y * 2 * PI;
-        vec3 samplePos = vec3(cosTheta * cos(phi), cosTheta * sin(phi), sin(cosTheta)) * emitter.radius;
-        shadowRay.direction = normalize(emitter.position.xyz + samplePos - hitInfo.position);
 
-        if(raycast(shadowRay).instanceId != e)
-            continue;
+        float dc = sqrt(distanceSqr);
+        float ds = dc * cosTheta - sqrt(max(0, lRSqr - dc * dc * sinTheta * sinTheta));
+        float cosAlpha = (dc * dc + lRSqr - ds * ds) / (2 * dc * emitter.radius);
+        float sinAlpha = sqrt(max(0, 1 - cosAlpha * cosAlpha));
 
-        vec3 dist = (emitter.position.xyz - hitInfo.position);
-        float distanceSqr = dot(dist, dist);
-        float distance = sqrt(distanceSqr);
+        vec3 lT, lB, lN = -normalize(hitToLight);
+        makeOrthBase(lN, lT, lB);
 
-        vec3 I = dist / distance;
-        float LdotN = dot(I, N);
+        vec3 lightN = emitter.radius * vec3(sinAlpha * cos(phi), sinAlpha * sin(phi), cosAlpha);
+        vec3 lightP = lightN.x * lT + lightN.y * lB + lightN.z * lN;
 
-        if(LdotN <= 0)
-            continue;
+        Ray shadowRay;
+        shadowRay.origin = hitInfo.position;
+        shadowRay.direction = normalize(hitToLight + lightP);
 
-        float radiusRatio = emitter.radius / distance;
-        float solidAngle = float(2 * (1 - sqrt(1 - double(radiusRatio*radiusRatio))));
+        float LdotN = max(0, dot(shadowRay.direction, N));
 
-        // Simplified PI in solid angle and lambert brdf
-        L_out += LdotN * emitter.emission.rgb * solidAngle;
+        Intersection shadowIntersection = raycast(shadowRay);
+        if(shadowIntersection.instanceId == e || shadowIntersection.t == 1 / 0.0)
+        {
+            // Simplified PI in solid angle and lambert brdf
+            L_out += LdotN * emitter.emission.rgb * solidAngle;
+        }
     }
 
     vec3 albedo = hitInfo.albedo * ray.albedo;
@@ -314,11 +340,10 @@ Ray reflect(Ray rayIn, HitInfo hitInfo)
     vec2 xy = vec2(cos(angle), sin(angle)) * radius;
     float z = sqrt(max(0, 1 - radius * radius));
 
-    vec3 normal = hitInfo.normal;
-    vec3 tangent = normalize(cross(normal, abs(normal.z) < 0.9 ? vec3(0, 0, 1) : vec3(1, 0, 0)));
-    vec3 binormal = normalize(cross(normal, tangent));
+    vec3 T, B, N = hitInfo.normal;
+    makeOrthBase(N, T, B);
 
-    rayOut.direction = normalize(xy.x * tangent + xy.y * binormal + z * normal);
+    rayOut.direction = normalize(xy.x * T + xy.y * B + z * N);
 
     return rayOut;
 }

@@ -25,16 +25,16 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
 
 PathTracerScene::PathTracerScene()
 {
-    auto light = makeObject("Light", 1, {0, 5, 8});
+    auto light = makeObject("Light", 0.5, {0, 7.5, 9});
     auto floor = makeObject("Floor", 1000, {0, 0, -1000});
-    auto ceiling = makeObject("Ceiling", 1000, {0, 0, 1010});
-    auto wallLeft = makeObject("Wall Left", 1000, {-1007, 0, 0});
-    auto wallRight = makeObject("Wall Right", 1000, {1007, 0, 0});
-    auto wallFront = makeObject("Wall Front", 1000, {0, 1020, 0});
-    auto ballLeft = makeObject("Ball Left", 1, {-2.5, 12, 1});
-    auto ballRight = makeObject("Ball Right", 1, {2.5, 12, 1});
+    auto ceiling = makeObject("Ceiling", 1000, {0, 0, 1015});
+    auto wallLeft = makeObject("Wall Left", 1000, {-1015, 0, 0});
+    auto wallRight = makeObject("Wall Right", 1000, {1015, 0, 0});
+    auto wallFront = makeObject("Wall Front", 1000, {0, 1030, 0});
+    auto ballLeft = makeObject("Ball Left", 2, {-3, 12, 2});
+    auto ballRight = makeObject("Ball Right", 2, {3, 12, 2});
 
-    light->material()->setDefaultEmission({20, 20, 20});
+    light->material()->setDefaultEmission({100, 100, 100});
 
     light->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
     floor->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
@@ -45,8 +45,7 @@ PathTracerScene::PathTracerScene()
     ballLeft->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
     ballRight->material()->setDefaultAlbedo({1.0, 1.0, 1.0});
 
-    ballLeft->material()->loadAlbedo("textures/FreeBlueNoiseTextures/Data/64_64/LDR_RGBA_0.png");
-    ballLeft->material()->loadAlbedo("textures/FreeBlueNoiseTextures/Data/64_64/HDR_RGBA_0.png");
+    ballLeft->material()->loadAlbedo("textures/mars_albedo.jpg");
 
     _objects.push_back(light);
     _objects.push_back(floor);

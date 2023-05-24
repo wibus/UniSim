@@ -61,8 +61,8 @@ struct GpuMaterial
 
 struct CommonParams
 {
-    glm::mat4 invViewMat;
     glm::mat4 rayMatrix;
+    glm::vec4 eyePosition;
     GLuint instanceCount;
     GLfloat radiusScale;
     GLfloat exposure;
@@ -222,19 +222,57 @@ GLuint generateImageTexture(const Texture& texture)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
+    GLint internalFormat = 0;
+    GLenum type = 0;
+    switch(texture.format)
+    {
+    case Texture::UNORM8 :
+        internalFormat = texture.numComponents == 3 ? GL_RGB8 : GL_RGBA8;
+        type = GL_UNSIGNED_BYTE;
+        break;
+    case Texture::Float32:
+        internalFormat = GL_RGBA32F;
+        type = GL_FLOAT;
+        break;
+    }
+
+    GLenum format = texture.numComponents == 3 ? GL_RGB : GL_RGBA;
+
     glTexImage2D(
         GL_TEXTURE_2D,
         0, // mip level
-        texture.numComponents == 3 ? GL_RGB8 : GL_RGBA8,
+        internalFormat,
         texture.width,
         texture.height,
         0, // border
-        texture.numComponents == 3 ? GL_RGB : GL_RGBA,
-        GL_UNSIGNED_BYTE,
+        format,
+        type,
         texture.data);
 
     glBindTexture(GL_TEXTURE_2D, 0);
     return textureID;
+}
+
+GLuint64 makeImageBindless(Texture* texture, GLuint texId)
+{
+    GLenum format = GL_RGBA8;
+    if(texture != nullptr)
+    {
+        switch(texture->format)
+        {
+        case Texture::UNORM8:
+            format = texture->numComponents == 3 ? GL_RGB8 : GL_RGBA8;
+            break;
+        case Texture::Float32:
+            format = texture->numComponents == 3 ? GL_RGB32F : GL_RGBA32F;
+            break;
+        }
+    }
+
+    GLuint64 hdl = glGetImageHandleARB(texId, 0, GL_FALSE, 0, format);
+    glMakeImageHandleResidentARB(hdl, GL_READ_ONLY);
+
+    return hdl;
 }
 
 GLuint generateUAV()
@@ -260,8 +298,7 @@ GpuMaterial createGpuMaterial(const std::shared_ptr<Material>& material)
     if(material->albedo() != nullptr)
     {
         GLuint albedoId = generateImageTexture(*material->albedo());
-        alebdoHdl = glGetImageHandleARB(albedoId, 0, GL_FALSE, 0, GL_RGBA8);
-        glMakeImageHandleResidentARB(alebdoHdl, GL_READ_ONLY);
+        alebdoHdl = makeImageBindless(material->albedo(), albedoId);
     }
 
     return {GPUBindlessTexture(alebdoHdl), GPUBindlessTexture(0)};
@@ -269,12 +306,17 @@ GpuMaterial createGpuMaterial(const std::shared_ptr<Material>& material)
 
 bool Radiation::initialize(const std::vector<std::shared_ptr<Object>>& objects, const Viewport& viewport)
 {
+    bool ok = generateComputeProgram(_computePathTraceId, "shaders/pathtrace.glsl");
+    ok = generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag") && ok;
+
+    if(!ok)
+        return false;
+
     Material backgroundMat("Background");
-    if(backgroundMat.loadAlbedo("textures/background.jpg"))
+    if(backgroundMat.loadAlbedo("textures/kloppenheim_06_puresky_4k.exr"))
     {
         _backgroundTexId = generateImageTexture(*backgroundMat.albedo());
-        _backgroundHdl = glGetImageHandleARB(_backgroundTexId, 0, GL_FALSE, 0, GL_RGBA8);
-        glMakeImageHandleResidentARB(_backgroundHdl, GL_READ_ONLY);
+        _backgroundHdl = makeImageBindless(backgroundMat.albedo(), _backgroundTexId);
     }
     else
     {
@@ -293,8 +335,7 @@ bool Radiation::initialize(const std::vector<std::shared_ptr<Object>>& objects, 
         if(blueNoiseMat.loadAlbedo("textures/bluenoise64/" + blueNoiseName))
         {
             _blueNoiseTexIds[i] = generateImageTexture(*blueNoiseMat.albedo());
-            _blueNoiseTexHdls[i] = glGetImageHandleARB(_blueNoiseTexIds[i], 0, GL_FALSE, 0, GL_RGBA8);
-            glMakeImageHandleResidentARB(_blueNoiseTexHdls[i], GL_READ_ONLY);
+            _blueNoiseTexHdls[i] = makeImageBindless(blueNoiseMat.albedo(), _blueNoiseTexIds[i]);
         }
         else
         {
@@ -349,10 +390,7 @@ bool Radiation::initialize(const std::vector<std::shared_ptr<Object>>& objects, 
     glBindBuffer(GL_UNIFORM_BUFFER, _materialsUbo);
     glBufferData(GL_UNIFORM_BUFFER, gpuMaterials.size() * sizeof(GpuMaterial), gpuMaterials.data(), GL_STREAM_DRAW);
 
-    bool ok = generateComputeProgram(_computePathTraceId, "shaders/pathtrace.glsl");
-    ok = generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag") && ok;
-
-    _pathTraceFormat = GL_RGBA16F;
+    _pathTraceFormat = GL_RGBA32F;
     _pathTraceUAVId = generateUAV();
     updateUAV(_pathTraceUAVId, viewport.width, viewport.height, _pathTraceFormat);
 
@@ -382,21 +420,21 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
 {
     glUseProgram(_computePathTraceId);
 
-    glm::dmat4 view = camera.view();
+    glm::mat4 view(glm::mat3(camera.view()));
     glm::mat4 proj = camera.proj();
     glm::mat4 screen = camera.screen();
-    glm::mat4 viewToScreen = screen * proj;
+    glm::mat4 viewToScreen = screen * proj * view;
 
     CommonParams params;
-    params.invViewMat = glm::inverse(view);
     params.rayMatrix = glm::inverse(viewToScreen);
+    params.eyePosition = glm::vec4(camera.position(), 1);
     params.instanceCount = objects.size();
     params.radiusScale = 1;
     params.exposure = camera.exposure();
     params.emitterStart = 0;
     params.emitterEnd = 1;
     params.frameIndex = 0; // Must be constant for hasing
-    params.backgroundQuat = quatConjugate(EARTH_BASE_QUAT);
+    params.backgroundQuat = glm::vec4(0, 0, 0, 1);// quatConjugate(EARTH_BASE_QUAT);
     params.backgroundImg.texture = _backgroundHdl;
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
         params.blueNoise[i].texture = _blueNoiseTexHdls[i];
@@ -411,7 +449,7 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
         GpuInstance& gpuInstance = gpuInstances.emplace_back();
         gpuInstance.albedo = glm::vec4(object->material()->defaultAlbedo(), 1.0);
         gpuInstance.emission = glm::vec4(object->material()->defaultEmission(), 1.0);
-        gpuInstance.position = view * glm::dvec4(object->body()->position(), 1);
+        gpuInstance.position = glm::dvec4(object->body()->position(), 1);
         gpuInstance.quaternion = glm::vec4(quatConjugate(object->body()->quaternion()));
         gpuInstance.radius = object->mesh()->radius();
         gpuInstance.mass = object->body()->mass();
@@ -419,7 +457,7 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
     }
 
     std::size_t frameHash = std::hash<std::string_view>()(std::string_view((char*)&params, sizeof (CommonParams)));
-    //frameHash ^= std::hash<std::string_view>()(std::string_view((char*)gpuInstances.data(), sizeof (GpuInstance) * gpuInstances.size()));
+    frameHash ^= std::hash<std::string_view>()(std::string_view((char*)gpuInstances.data(), sizeof (GpuInstance) * gpuInstances.size()));
 
     if(frameHash != _lastFrameHash)
         _frameIndex = 0;

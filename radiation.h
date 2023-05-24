@@ -27,7 +27,7 @@ public:
 
     static const unsigned int BLUE_NOISE_TEX_COUNT = 64;
     static const unsigned int HALTON_SAMPLE_COUNT = 64;
-    static const unsigned int MAX_FRAME_COUNT = 256;
+    static const unsigned int MAX_FRAME_COUNT = 4096;
 
 private:
     GLuint _vbo;

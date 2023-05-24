@@ -11,12 +11,15 @@ namespace unisim
 
 struct Texture
 {
-    Texture() : width(0), height(0), data(nullptr) {}
+    enum Format {UNORM8, Float32};
+
+    Texture() : width(0), height(0), format(UNORM8), numComponents(4), data(nullptr) {}
     ~Texture() { delete [] data; }
     operator bool() const { return data != nullptr; }
 
     int width;
     int height;
+    Format format;
     int numComponents;
     unsigned char* data;
 };
@@ -39,6 +42,7 @@ public:
 private:
     Texture* loadJpeg(const std::string& fileName);
     Texture* loadPng(const std::string& fileName);
+    Texture* loadExr(const std::string& fileName);
 
     std::string _name;
     Texture* _albedo;
