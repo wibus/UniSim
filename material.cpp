@@ -15,7 +15,12 @@ namespace unisim
 
 Material::Material(const std::string& name) :
     _name(name),
-    _albedo(nullptr)
+    _albedo(nullptr),
+    _defaultAlbedo(1, 1, 1),
+    _defaultEmission(0, 0, 0),
+    _defaultRoughness(1),
+    _defaultMetalness(0),
+    _defaultReflectance(0.04)
 {
 
 }
@@ -34,6 +39,21 @@ void Material::setDefaultAlbedo(const glm::dvec3& albedo)
 void Material::setDefaultEmission(const glm::dvec3& emission)
 {
     _defaultEmission = emission;
+}
+
+void Material::setDefaultRoughness(float roughness)
+{
+    _defaultRoughness = roughness;
+}
+
+void Material::setDefaultMetalness(float metalness)
+{
+    _defaultMetalness = metalness;
+}
+
+void Material::setDefaultReflectance(float reflectance)
+{
+    _defaultReflectance = reflectance;
 }
 
 struct ErrorManager

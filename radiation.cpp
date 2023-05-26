@@ -26,6 +26,7 @@ struct GpuInstance
 {
     glm::vec4 albedo;
     glm::vec4 emission;
+    glm::vec4 specular;
     glm::vec4 position;
     glm::vec4 quaternion;
 
@@ -449,6 +450,12 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
         GpuInstance& gpuInstance = gpuInstances.emplace_back();
         gpuInstance.albedo = glm::vec4(object->material()->defaultAlbedo(), 1.0);
         gpuInstance.emission = glm::vec4(object->material()->defaultEmission(), 1.0);
+        gpuInstance.specular = glm::vec4(
+                    // Roughness to GGX's 'a' parameter
+                    object->material()->defaultRoughness() * object->material()->defaultRoughness(),
+                    object->material()->defaultMetalness(),
+                    object->material()->defaultReflectance(),
+                    0);
         gpuInstance.position = glm::dvec4(object->body()->position(), 1);
         gpuInstance.quaternion = glm::vec4(quatConjugate(object->body()->quaternion()));
         gpuInstance.radius = object->mesh()->radius();

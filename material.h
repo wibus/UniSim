@@ -39,6 +39,15 @@ public:
     glm::dvec3 defaultEmission() const { return _defaultEmission; }
     void setDefaultEmission(const glm::dvec3& emission);
 
+    float defaultRoughness() const { return _defaultRoughness; }
+    void setDefaultRoughness(float roughness);
+
+    float defaultMetalness() const { return _defaultMetalness; }
+    void setDefaultMetalness(float metalness);
+
+    float defaultReflectance() const { return _defaultReflectance; }
+    void setDefaultReflectance(float reflectance);
+
 private:
     Texture* loadJpeg(const std::string& fileName);
     Texture* loadPng(const std::string& fileName);
@@ -49,6 +58,9 @@ private:
 
     glm::dvec3 _defaultAlbedo;
     glm::dvec3 _defaultEmission;
+    float _defaultRoughness;
+    float _defaultMetalness;
+    float _defaultReflectance;
 };
 
 
