@@ -50,7 +50,8 @@ struct HitInfo
     vec3 diffuseAlbedo;
     vec3 specularF0;
     vec3 emission;
-    float roughness;
+    float specularA;
+    float specularA2;
     float metalness;
     float reflectance;
     float areaPdf;
@@ -216,17 +217,28 @@ float ggxNDF(float a2, float NdotH)
     return a2 / (PI * sqr(NdotH*NdotH * (a2-1) + 1));
 }
 
-float ggxSmith(float a2, float NoV, float NoL)
+float ggxSmithG1(float a2, float NoV)
+{
+    return  2 * NoV / (NoV + sqrt((NoV - NoV * a2) * NoV + a2));
+}
+
+float ggxSmithG2(float a2, float NoV, float NoL)
 {
     float G_V = NoV + sqrt( (NoV - NoV * a2) * NoV + a2 );
     float G_L = NoL + sqrt( (NoL - NoL * a2) * NoL + a2 );
-    return 1.0 / ( G_V * G_L );
+    return  4 * NoV * NoL / ( G_V * G_L );
 }
 
-float ggxBsdf(float a, float NoV, float NoL, float NdotH)
+float ggxSmithG2Simplified(float a2, float NoV, float NoL)
 {
-    float a2 = a*a;
-    return ggxNDF(a2, NdotH) * ggxSmith(a2, NoV, NoL);
+    float G_V = NoV + sqrt( (NoV - NoV * a2) * NoV + a2 );
+    float G_L = NoL + sqrt( (NoL - NoL * a2) * NoL + a2 );
+    return 1 / ( G_V * G_L );
+}
+
+float ggxVisibleNormalsDistributionFunction(float a2, float NoV, float NdotH, float HdotV)
+{
+    return ggxSmithG1(a2, NoV) * max(0, HdotV) * ggxNDF(a2, NdotH) / NoV;
 }
 
 vec3 sampleGGXVNDF(vec3 V_, float alpha_x, float alpha_y, float U1, float U2)
@@ -334,7 +346,8 @@ HitInfo probe(in Ray ray, in Intersection intersection)
     hitInfo.position = ray.origin + intersection.t * ray.direction;
     hitInfo.normal = normalize(hitInfo.position - instance.position.xyz);
 
-    hitInfo.roughness = instance.specular.r;
+    hitInfo.specularA = instance.specular.r;
+    hitInfo.specularA2 = hitInfo.specularA * hitInfo.specularA;
     hitInfo.metalness = instance.specular.g;
     hitInfo.reflectance = instance.specular.b;
 
@@ -412,13 +425,15 @@ vec3 shade(in Ray ray, in HitInfo hitInfo)
         float HdotV = -dot(H, ray.direction);
 
         vec3 f = fresnel(HdotV, hitInfo.specularF0);
+        float ndf = ggxNDF(hitInfo.specularA2, NdotH);
 
         float diffuseWeight = misHeuristic(1, 1/solidAngle, 1, cosineHemispherePdf(NdotL));
         vec3 diffuse = hitInfo.diffuseAlbedo * (1 - f) * diffuseWeight;
 
-        vec3 specularAlbedo = f * ggxBsdf(hitInfo.roughness, NdotV, NdotL, NdotH);
-        float specularWeight = 1;
-        vec3 specular = (NdotL != 0 && NdotV != 0) ? specularAlbedo * specularWeight : vec3(0, 0, 0);
+        vec3 specularAlbedo = f * ndf * ggxSmithG2Simplified(hitInfo.specularA2, NdotV, NdotL);
+        float specularPdf = ggxVisibleNormalsDistributionFunction(hitInfo.specularA2, NdotV, NdotH, HdotV) / (4 * HdotV);
+        float specularWeight = hitInfo.specularA != 0 ? misHeuristic(1, 1/solidAngle, 1, specularPdf) : 0;
+        vec3 specular = (NdotL > 0 && NdotV > 0) ? specularAlbedo * specularWeight : vec3(0, 0, 0);
 
         Ray shadowRay;
         shadowRay.origin = hitInfo.position;
@@ -450,7 +465,7 @@ vec3 shadeBackground(in Ray ray)
     return toLinear(lum) * ray.throughput;
 }
 
-Ray reflect(Ray rayIn, HitInfo hitInfo)
+Ray scatter(Ray rayIn, HitInfo hitInfo)
 {
     Ray rayOut = rayIn;
     rayOut.origin = hitInfo.position + hitInfo.normal * 1e-9;
@@ -463,28 +478,31 @@ Ray reflect(Ray rayIn, HitInfo hitInfo)
 
     // Specular
     vec3 V = -vec3(dot(rayIn.direction, T), dot(rayIn.direction, B), dot(rayIn.direction, N));
-    vec3 H = sampleGGXVNDF(V, hitInfo.roughness, hitInfo.roughness, noise.x, noise.y);
+    vec3 H = sampleGGXVNDF(V, hitInfo.specularA, hitInfo.specularA, noise.x, noise.y);
     vec3 L = 2.0 * dot(H, V) * H - V;
     vec3 reflectionDirection = normalize(L.x * T + L.y * B + L.z * N);
-    vec3 specularAlbedo = fresnel(max(0, dot(H, V)), hitInfo.specularF0);
-    float f = L.z > 0 ? toLuminance(specularAlbedo) : 0;
+
+    vec3 f = fresnel(max(0, dot(H, V)), hitInfo.specularF0);
+    vec3 specularAlbedo = f
+                * ggxSmithG2(hitInfo.specularA2, V.z, L.z)
+                / ggxSmithG1(hitInfo.specularA2, V.z);
+    float specularLuminance = L.z > 0 ? toLuminance(specularAlbedo) : 0;
+    float diffuseLuminance = toLuminance(hitInfo.diffuseAlbedo);
+
+    float r = specularLuminance != 0 ? specularLuminance / (specularLuminance + diffuseLuminance) : 0;
 
     vec2 specularNoise = sampleBlueNoise(frameIndex + 32, rayOut.depth, false);
 
-    if(specularNoise.x < f)
+    if(specularNoise.x < r)
     {
-        float NdotL = max(0, L.z);
-        float NdotV = max(0, V.z);
-        float NdotH = max(0, H.z);
-        float HdotV = max(0, dot(H, V));
-
-        vec3 ggxAlbedo = specularAlbedo;
+        float HdotV = dot(V, H);
+        float pdf = ggxVisibleNormalsDistributionFunction(hitInfo.specularA2, V.z, H.z, HdotV) / (4 * HdotV);
 
         rayOut.direction = reflectionDirection;
-        rayOut.bsdfPdf = 0;
-        rayOut.throughput = rayIn.throughput * ggxAlbedo / f;
+        rayOut.bsdfPdf = hitInfo.specularA == 0 ? DELTA : pdf;
+        rayOut.throughput = rayIn.throughput * specularAlbedo / r;
     }
-    else if(specularNoise.x >= f && f != 1)
+    else if(specularNoise.x >= r && r != 1)
     {
         // Diffuse
         float angle = noise.r * 2 * PI;
@@ -493,7 +511,7 @@ Ray reflect(Ray rayIn, HitInfo hitInfo)
         float z = sqrt(max(0, 1 - radius * radius));
         rayOut.direction = normalize(xy.x * T + xy.y * B + z * N);
         rayOut.bsdfPdf = cosineHemispherePdf(z);
-        rayOut.throughput = rayIn.throughput * hitInfo.diffuseAlbedo / (1 - f);
+        rayOut.throughput = rayIn.throughput * hitInfo.diffuseAlbedo * (1 - f) / (1 - r);
     }
     else
     {
@@ -520,7 +538,7 @@ void main()
         {
             HitInfo hitInfo = probe(ray, bestIntersection);
             colorAccum += shade(ray, hitInfo);
-            ray = reflect(ray, hitInfo);
+            ray = scatter(ray, hitInfo);
         }
         else
         {
