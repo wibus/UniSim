@@ -34,8 +34,9 @@ private:
     GLuint _vao;
 
     GLuint _commonUbo;
-    GLuint _instancesUbo;
-    GLuint _materialsUbo;
+    GLuint _instancesSSBO;
+    GLuint _materialsSSBO;
+    GLuint _emittersSSBO;
 
     std::vector<GLuint> _objectToMat;
 

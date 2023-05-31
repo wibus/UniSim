@@ -45,17 +45,17 @@ PathTracerScene::PathTracerScene()
     wallFront->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
     ballLeft->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
     ballRight->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
-    ballFront->material()->setDefaultAlbedo({0.54, 0.43, 0.03});
+    ballFront->material()->setDefaultAlbedo({1.0, 0.85, 0.03});
 
     ballLeft->material()->loadAlbedo("textures/mars_albedo.jpg");
 
     ballLeft->material()->setDefaultRoughness(2);
 
     ballRight->material()->setDefaultMetalness(0);
-    ballRight->material()->setDefaultRoughness(0.1);
+    ballRight->material()->setDefaultRoughness(0.0);
     ballRight->material()->setDefaultReflectance(0.04);
 
-    ballFront->material()->setDefaultRoughness(0.3);
+    ballFront->material()->setDefaultRoughness(0.2);
     ballFront->material()->setDefaultMetalness(1);
 
     _objects.push_back(light);

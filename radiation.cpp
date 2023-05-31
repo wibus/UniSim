@@ -64,15 +64,12 @@ struct CommonParams
 {
     glm::mat4 rayMatrix;
     glm::vec4 eyePosition;
-    GLuint instanceCount;
     GLfloat radiusScale;
     GLfloat exposure;
-    GLuint emitterStart;
-    GLuint emitterEnd;
     GLuint frameIndex;
 
-    GLuint pad1;
-    GLuint pad2;
+    int pad1;
+    glm::vec4 pad2;
 
     // Background
     glm::vec4 backgroundQuat;
@@ -82,8 +79,6 @@ struct CommonParams
 
     glm::vec2 halton[Radiation::HALTON_SAMPLE_COUNT];
 };
-
-const int MAX_OBJECT_COUNT = 100;
 
 Radiation::Radiation() :
     _frameIndex(0),
@@ -383,13 +378,17 @@ bool Radiation::initialize(const std::vector<std::shared_ptr<Object>>& objects, 
     glBindBuffer(GL_UNIFORM_BUFFER, _commonUbo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(CommonParams), nullptr, GL_STREAM_DRAW);
 
-    glGenBuffers(1, &_instancesUbo);
-    glBindBuffer(GL_UNIFORM_BUFFER, _instancesUbo);
-    glBufferData(GL_UNIFORM_BUFFER, MAX_OBJECT_COUNT * sizeof(GpuInstance), nullptr, GL_STREAM_DRAW);
+    glGenBuffers(1, &_instancesSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _instancesSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 0, nullptr, GL_STREAM_DRAW);
 
-    glGenBuffers(1, &_materialsUbo);
-    glBindBuffer(GL_UNIFORM_BUFFER, _materialsUbo);
-    glBufferData(GL_UNIFORM_BUFFER, gpuMaterials.size() * sizeof(GpuMaterial), gpuMaterials.data(), GL_STREAM_DRAW);
+    glGenBuffers(1, &_materialsSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _materialsSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, gpuMaterials.size() * sizeof(GpuMaterial), gpuMaterials.data(), GL_STREAM_DRAW);
+
+    glGenBuffers(1, &_emittersSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _emittersSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 0, nullptr, GL_STREAM_DRAW);
 
     _pathTraceFormat = GL_RGBA32F;
     _pathTraceUAVId = generateUAV();
@@ -429,11 +428,10 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
     CommonParams params;
     params.rayMatrix = glm::inverse(viewToScreen);
     params.eyePosition = glm::vec4(camera.position(), 1);
-    params.instanceCount = objects.size();
+    params.pad1 = 0;
+    params.pad2 = glm::vec4();
     params.radiusScale = 1;
     params.exposure = camera.exposure();
-    params.emitterStart = 0;
-    params.emitterEnd = 1;
     params.frameIndex = 0; // Must be constant for hasing
     params.backgroundQuat = glm::vec4(0, 0, 0, 1);// quatConjugate(EARTH_BASE_QUAT);
     params.backgroundImg.texture = _backgroundHdl;
@@ -443,7 +441,10 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
         params.halton[i] = _halton[i];
 
     std::vector<GpuInstance> gpuInstances;
-    gpuInstances.reserve(MAX_OBJECT_COUNT);
+    gpuInstances.reserve(objects.size());
+
+    std::vector<GLuint> gpuEmitters;
+
     for(std::size_t i = 0; i < objects.size(); ++i)
     {
         std::shared_ptr<Object> object = objects[i];
@@ -461,6 +462,11 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
         gpuInstance.radius = object->mesh()->radius();
         gpuInstance.mass = object->body()->mass();
         gpuInstance.materialId = _objectToMat[i];
+
+        if(glm::any(glm::greaterThan(object->material()->defaultEmission(), glm::dvec3())))
+        {
+            gpuEmitters.push_back(i);
+        }
     }
 
     std::size_t frameHash = std::hash<std::string_view>()(std::string_view((char*)&params, sizeof (CommonParams)));
@@ -480,15 +486,19 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, _commonUbo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(CommonParams), &params, GL_STREAM_DRAW);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, _instancesUbo);
-    glBufferData(GL_UNIFORM_BUFFER, MAX_OBJECT_COUNT * sizeof(GpuInstance), gpuInstances.data(), GL_STREAM_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _instancesSSBO);
+    GLsizei instancesSize = gpuInstances.size() * sizeof(GpuInstance);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, instancesSize, gpuInstances.data(), GL_STREAM_DRAW);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 2, _materialsUbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _materialsSSBO);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _emittersSSBO);
+    GLsizei emittersSize = gpuEmitters.size() * sizeof(decltype (gpuEmitters.front()));
+    glBufferData(GL_SHADER_STORAGE_BUFFER, emittersSize, gpuEmitters.data(), GL_STREAM_DRAW);
 
     glBindImageTexture(_pathTraceUnit, _pathTraceUAVId, 0, false, 0, GL_WRITE_ONLY, _pathTraceFormat);
 
     glDispatchCompute((camera.viewport().width + 7) / 8, (camera.viewport().width + 3) / 4, 1);
-
 
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
