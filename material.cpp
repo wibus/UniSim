@@ -13,49 +13,6 @@
 namespace unisim
 {
 
-Material::Material(const std::string& name) :
-    _name(name),
-    _albedo(nullptr),
-    _defaultAlbedo(1, 1, 1),
-    _defaultEmission(0, 0, 0),
-    _defaultRoughness(1),
-    _defaultMetalness(0),
-    _defaultReflectance(0.04)
-{
-
-}
-
-Material::~Material()
-{
-    delete _albedo;
-}
-
-
-void Material::setDefaultAlbedo(const glm::dvec3& albedo)
-{
-    _defaultAlbedo = albedo;
-}
-
-void Material::setDefaultEmission(const glm::dvec3& emission)
-{
-    _defaultEmission = emission;
-}
-
-void Material::setDefaultRoughness(float roughness)
-{
-    _defaultRoughness = roughness;
-}
-
-void Material::setDefaultMetalness(float metalness)
-{
-    _defaultMetalness = metalness;
-}
-
-void Material::setDefaultReflectance(float reflectance)
-{
-    _defaultReflectance = reflectance;
-}
-
 struct ErrorManager
 {
     jpeg_error_mgr defaultErrorManager;
@@ -76,27 +33,54 @@ void OutputMessage(j_common_ptr cinfo)
     fprintf(stderr, "%s\n", buffer);
 }
 
-bool Material::loadAlbedo(const std::string& fileName)
-{
-    if(_albedo)
-    {
-        delete _albedo;
-        _albedo = nullptr;
-    }
+unsigned char BLACK_UNORM8_DATA[4] = {0, 0, 0, 0};
+const Texture Texture::BLACK_UNORM8 = Texture(Texture::UNORM8, BLACK_UNORM8_DATA);
 
+float BLACK_Float32_DATA[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+const Texture Texture::BLACK_Float32= Texture(Texture::Float32, (unsigned char*)BLACK_Float32_DATA);
+
+
+Texture::Texture() :
+    width(0),
+    height(0),
+    format(UNORM8),
+    numComponents(4),
+    data(nullptr),
+    ownsMemory(true)
+{
+
+}
+
+Texture::~Texture()
+{
+    if(ownsMemory)
+        delete [] data;
+}
+
+Texture::Texture(Format format, unsigned char* pixelData) :
+    width(1),
+    height(1),
+    format(format),
+    numComponents(4),
+    data(pixelData),
+    ownsMemory(false)
+{}
+
+Texture* Texture::load(const std::string& fileName)
+{
     if(fileName.find(".jpg") != std::string::npos)
-        _albedo = loadJpeg(fileName);
+        return loadJpeg(fileName);
     else if(fileName.find(".png") != std::string::npos)
-        _albedo = loadPng(fileName);
+        return loadPng(fileName);
     else if(fileName.find(".exr") != std::string::npos)
-        _albedo = loadExr(fileName);
+        return loadExr(fileName);
     else
         std::cerr << "Unknow file type: " << fileName << std::endl;
 
-    return _albedo != nullptr;
+    return nullptr;
 }
 
-Texture* Material::loadJpeg(const std::string& fileName)
+Texture* Texture::loadJpeg(const std::string& fileName)
 {
     jpeg_decompress_struct cinfo;
     ErrorManager errorManager;
@@ -179,7 +163,7 @@ Texture* Material::loadJpeg(const std::string& fileName)
     return texture;
 }
 
-Texture* Material::loadPng(const std::string& fileName)
+Texture* Texture::loadPng(const std::string& fileName)
 {
     FILE *fp = fopen(fileName.c_str(), "rb");
 
@@ -263,7 +247,7 @@ Texture* Material::loadPng(const std::string& fileName)
     return texture;
 }
 
-Texture* Material::loadExr(const std::string& fileName)
+Texture* Texture::loadExr(const std::string& fileName)
 {
     const char* input = fileName.c_str();
 
@@ -300,6 +284,62 @@ Texture* Material::loadExr(const std::string& fileName)
 
         return texture;
     }
+}
+
+Material::Material(const std::string& name) :
+    _name(name),
+    _albedo(nullptr),
+    _defaultAlbedo(1, 1, 1),
+    _defaultEmission(0, 0, 0),
+    _defaultRoughness(1),
+    _defaultMetalness(0),
+    _defaultReflectance(0.04)
+{
+
+}
+
+Material::~Material()
+{
+    delete _albedo;
+}
+
+
+void Material::setDefaultAlbedo(const glm::dvec3& albedo)
+{
+    _defaultAlbedo = albedo;
+}
+
+void Material::setDefaultEmission(const glm::dvec3& emission)
+{
+    _defaultEmission = emission;
+}
+
+void Material::setDefaultRoughness(float roughness)
+{
+    _defaultRoughness = roughness;
+}
+
+void Material::setDefaultMetalness(float metalness)
+{
+    _defaultMetalness = metalness;
+}
+
+void Material::setDefaultReflectance(float reflectance)
+{
+    _defaultReflectance = reflectance;
+}
+
+bool Material::loadAlbedo(const std::string& fileName)
+{
+    if(_albedo)
+    {
+        delete _albedo;
+        _albedo = nullptr;
+    }
+
+    _albedo = Texture::load(fileName);
+
+    return _albedo != nullptr;
 }
 
 }

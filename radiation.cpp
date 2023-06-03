@@ -10,6 +10,7 @@
 
 #include "GLM/gtc/constants.hpp"
 
+#include "scene.h"
 #include "object.h"
 #include "body.h"
 #include "mesh.h"
@@ -36,6 +37,12 @@ struct GpuInstance
     uint materialId;
 
     float pad1;
+};
+
+struct GpuDirectionalLight
+{
+    glm::vec4 positionCosThetaMax;
+    glm::vec4 radianceSolidAngle;
 };
 
 struct GPUBindlessTexture
@@ -69,11 +76,9 @@ struct CommonParams
     GLuint frameIndex;
 
     int pad1;
-    glm::vec4 pad2;
 
     // Background
     glm::vec4 backgroundQuat;
-    GPUBindlessTexture backgroundImg;
 
     GPUBindlessTexture blueNoise[Radiation::BLUE_NOISE_TEX_COUNT];
 
@@ -249,7 +254,7 @@ GLuint generateImageTexture(const Texture& texture)
     return textureID;
 }
 
-GLuint64 makeImageBindless(Texture* texture, GLuint texId)
+GLuint64 makeImageBindless(const Texture* texture, GLuint texId)
 {
     GLenum format = GL_RGBA8;
     if(texture != nullptr)
@@ -300,25 +305,25 @@ GpuMaterial createGpuMaterial(const std::shared_ptr<Material>& material)
     return {GPUBindlessTexture(alebdoHdl), GPUBindlessTexture(0)};
 }
 
-bool Radiation::initialize(const std::vector<std::shared_ptr<Object>>& objects, const Viewport& viewport)
+bool Radiation::initialize(const Scene& scene, const Viewport& viewport)
 {
+    const std::vector<std::shared_ptr<Object>>& objects = scene.objects();
+
     bool ok = generateComputeProgram(_computePathTraceId, "shaders/pathtrace.glsl");
     ok = generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag") && ok;
 
     if(!ok)
         return false;
 
-    Material backgroundMat("Background");
-    if(backgroundMat.loadAlbedo("textures/kloppenheim_06_puresky_4k.exr"))
+    std::shared_ptr<Texture> skyTexture = scene.sky()->texture();
+    if(skyTexture)
     {
-        _backgroundTexId = generateImageTexture(*backgroundMat.albedo());
-        _backgroundHdl = makeImageBindless(backgroundMat.albedo(), _backgroundTexId);
+        _backgroundTexId = generateImageTexture(*skyTexture);
     }
     else
     {
         std::cerr << "Cannot load sky texture. Did you install the texture pack?" << std::endl;
-        _backgroundTexId = 0;
-        _backgroundHdl = 0;
+        _backgroundTexId = generateImageTexture(Texture::BLACK_Float32);
     }
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
@@ -382,6 +387,10 @@ bool Radiation::initialize(const std::vector<std::shared_ptr<Object>>& objects, 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, _instancesSSBO);
     glBufferData(GL_SHADER_STORAGE_BUFFER, 0, nullptr, GL_STREAM_DRAW);
 
+    glGenBuffers(1, &_dirLightsSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _dirLightsSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 0, nullptr, GL_STREAM_DRAW);
+
     glGenBuffers(1, &_materialsSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, _materialsSSBO);
     glBufferData(GL_SHADER_STORAGE_BUFFER, gpuMaterials.size() * sizeof(GpuMaterial), gpuMaterials.data(), GL_STREAM_DRAW);
@@ -398,6 +407,8 @@ bool Radiation::initialize(const std::vector<std::shared_ptr<Object>>& objects, 
     _pathTraceLoc = glGetUniformLocation(_computePathTraceId, "result");
     glProgramUniform1i(_computePathTraceId, _pathTraceLoc, _pathTraceUnit);
 
+    _backgroundUnit = 0;
+    _backgroundLoc = glGetUniformLocation(_computePathTraceId, "backgroundImg");
 
     return ok;
 }
@@ -416,7 +427,7 @@ glm::vec3 toLinear(const glm::vec3& sRGB)
     return glm::mix(higher, lower, cutoff);
 }
 
-void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double dt, const Camera &camera)
+void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
 {
     glUseProgram(_computePathTraceId);
 
@@ -429,17 +440,16 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
     params.rayMatrix = glm::inverse(viewToScreen);
     params.eyePosition = glm::vec4(camera.position(), 1);
     params.pad1 = 0;
-    params.pad2 = glm::vec4();
     params.radiusScale = 1;
     params.exposure = camera.exposure();
     params.frameIndex = 0; // Must be constant for hasing
     params.backgroundQuat = glm::vec4(0, 0, 0, 1);// quatConjugate(EARTH_BASE_QUAT);
-    params.backgroundImg.texture = _backgroundHdl;
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
         params.blueNoise[i].texture = _blueNoiseTexHdls[i];
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
         params.halton[i] = _halton[i];
 
+    const std::vector<std::shared_ptr<Object>>& objects = scene.objects();
     std::vector<GpuInstance> gpuInstances;
     gpuInstances.reserve(objects.size());
 
@@ -469,8 +479,26 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
         }
     }
 
+
+    const std::vector<std::shared_ptr<DirectionalLight>>& directionalLights = scene.directionalLights();
+    std::vector<GpuDirectionalLight> gpuDirectionalLights;
+    gpuDirectionalLights.reserve(directionalLights.size());
+    for(std::size_t i = 0; i < directionalLights.size(); ++i)
+    {
+        std::shared_ptr<DirectionalLight> directionalLight = directionalLights[i];
+        GpuDirectionalLight& gpuDirectionalLight = gpuDirectionalLights.emplace_back();
+        gpuDirectionalLight.positionCosThetaMax = glm::vec4(
+                    directionalLight->position(),
+                    1 - directionalLight->solidAngle() / (2 * glm::pi<float>()));
+        gpuDirectionalLight.radianceSolidAngle = glm::vec4(
+                    directionalLight->radiance(),
+                    directionalLight->solidAngle());
+    }
+
+
     std::size_t frameHash = std::hash<std::string_view>()(std::string_view((char*)&params, sizeof (CommonParams)));
     frameHash ^= std::hash<std::string_view>()(std::string_view((char*)gpuInstances.data(), sizeof (GpuInstance) * gpuInstances.size()));
+    frameHash ^= std::hash<std::string_view>()(std::string_view((char*)gpuDirectionalLights.data(), sizeof (GpuDirectionalLight) * gpuDirectionalLights.size()));
 
     if(frameHash != _lastFrameHash)
         _frameIndex = 0;
@@ -490,11 +518,19 @@ void Radiation::draw(const std::vector<std::shared_ptr<Object>>& objects, double
     GLsizei instancesSize = gpuInstances.size() * sizeof(GpuInstance);
     glBufferData(GL_SHADER_STORAGE_BUFFER, instancesSize, gpuInstances.data(), GL_STREAM_DRAW);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _materialsSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _dirLightsSSBO);
+    GLsizei dirLightsSize = gpuDirectionalLights.size() * sizeof(GpuDirectionalLight);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, dirLightsSize, gpuDirectionalLights.data(), GL_STREAM_DRAW);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _emittersSSBO);
     GLsizei emittersSize = gpuEmitters.size() * sizeof(decltype (gpuEmitters.front()));
     glBufferData(GL_SHADER_STORAGE_BUFFER, emittersSize, gpuEmitters.data(), GL_STREAM_DRAW);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, _materialsSSBO);
+
+    glUniform1i(_backgroundLoc, _backgroundUnit);
+    glActiveTexture(GL_TEXTURE0 + _backgroundUnit);
+    glBindTexture(GL_TEXTURE_2D, _backgroundTexId);
 
     glBindImageTexture(_pathTraceUnit, _pathTraceUAVId, 0, false, 0, GL_WRITE_ONLY, _pathTraceFormat);
 

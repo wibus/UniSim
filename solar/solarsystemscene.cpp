@@ -20,6 +20,7 @@ std::shared_ptr<Object> makePlanet(const std::string& name, double radius, doubl
 
 SolarSystemScene::SolarSystemScene()
 {
+    _sky->setTexture("textures/background.jpg");
 
     // Sun
     std::shared_ptr<Object> sun = makePlanet("Sun", 696.340e6, 1.41f);

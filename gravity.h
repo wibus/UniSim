@@ -4,20 +4,20 @@
 #include <vector>
 #include <memory>
 
-#include "object.h"
-
 
 namespace unisim
 {
+
+class Scene;
 
 class Gravity
 {
 public:
     Gravity();
 
-    bool initialize(const std::vector<std::shared_ptr<Object>>& objects) const;
+    bool initialize(const Scene& scene) const;
 
-    void update(std::vector<std::shared_ptr<Object>>& objects, double dt);
+    void update(Scene& scene, double dt);
 
 public:
 };

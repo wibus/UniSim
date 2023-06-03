@@ -5,6 +5,9 @@
 #define GOLDEN_RATIO 1.618033988749894
 #define DELTA (1 / 0.0)
 
+#define IS_UNBIASED 0
+const uint PATH_LENGTH = 4;
+
 struct Instance
 {
     vec4 albedo;
@@ -21,6 +24,12 @@ struct Instance
     float pad1;
 };
 
+struct DirectionalLight
+{
+    vec4 positionCosThetaMax;
+    vec4 radianceSolidAngle;
+};
+
 struct Material
 {
     layout(rgba8) readonly image2D albedo;
@@ -32,6 +41,9 @@ struct Ray
     vec3 origin;
     vec3 direction;
     vec3 throughput;
+#if !IS_UNBIASED
+    float diffusivity;
+#endif
     uint depth;
     float bsdfPdf;
 };
@@ -53,7 +65,7 @@ struct HitInfo
     float specularA;
     float specularA2;
     float NdotV;
-    float areaPdf;
+    float instanceAreaPdf;
 };
 
 layout (std140, binding = 0) uniform CommonParams
@@ -65,11 +77,9 @@ layout (std140, binding = 0) uniform CommonParams
     uint frameIndex;
 
     int pad1;
-    vec4 pad2;
 
     // Background
     vec4 backgroundQuat;
-    layout(rgba32f) readonly image2D backgroundImg;
 
     layout(rgba8) readonly image2D blueNoise[64];
 
@@ -81,9 +91,9 @@ layout (std140, binding = 1) buffer Instances
     Instance instances[];
 };
 
-layout (std140, binding = 2) buffer Materials
+layout (std140, binding = 2) buffer DirectionalLights
 {
-    Material materials[];
+    DirectionalLight directionalLights[];
 };
 
 layout (std430, binding = 3) buffer Emitters
@@ -91,9 +101,14 @@ layout (std430, binding = 3) buffer Emitters
     uint emitters[];
 };
 
-uniform layout(binding = 4, rgba32f) image2D result;
+layout (std140, binding = 4) buffer Materials
+{
+    Material materials[];
+};
 
-const uint PATH_LENGTH = 4;
+uniform layout(binding = 0) sampler2D backgroundImg;
+
+uniform layout(binding = 6, rgba32f) image2D result;
 
 float sqr(float v)
 {
@@ -264,6 +279,14 @@ vec3 sampleCosineHemisphere(float U1, float U2)
     return vec3(xy, z);
 }
 
+vec3 sampleUniformCone(float U1, float U2, float cosThetaMax)
+{
+    float phi = U2 * 2 * PI;
+    float cosTheta = (1 - U1) + U1 * cosThetaMax;
+    float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+}
+
 Ray genRay(uvec2 pixelPos)
 {
     vec2 noiseOffset = sampleBlueNoise(frameIndex, 0, false);
@@ -279,6 +302,9 @@ Ray genRay(uvec2 pixelPos)
     ray.direction = normalize(rayDir.xyz / rayDir.w);
     ray.origin = eyePosition.xyz;
     ray.throughput = vec3(1, 1, 1);
+#if !IS_UNBIASED
+    ray.diffusivity = 0;
+#endif
     ray.depth = 0;
     ray.bsdfPdf = DELTA;
 
@@ -378,9 +404,33 @@ HitInfo probe(in Ray ray, in Intersection intersection)
     float sinThetaMaxSqr = iRSqr / distanceSqr;
     float cosThetaMax = sqrt(max(0, 1 - sinThetaMaxSqr));
     float solidAngle = 2 * PI * (1 - cosThetaMax);
-    hitInfo.areaPdf = 1 / solidAngle;
+    hitInfo.instanceAreaPdf = 1 / solidAngle;
 
     return hitInfo;
+}
+
+vec3 evaluateBSDF(Ray ray, HitInfo hitInfo, vec3 L, float solidAngle)
+{
+    float lightAreaPdf = 1 / solidAngle;
+
+    vec3 H = normalize(L - ray.direction);
+    float NdotL = max(0, dot(hitInfo.normal, L));
+    float NdotH = dot(hitInfo.normal, H);
+    float HdotV = -dot(H, ray.direction);
+    float NdotV = hitInfo.NdotV;
+
+    vec3 f = fresnel(HdotV, hitInfo.specularF0);
+    float ndf = ggxNDF(hitInfo.specularA2, NdotH);
+
+    float diffuseWeight = misHeuristic(1, lightAreaPdf, 1, cosineHemispherePdf(NdotL));
+    vec3 diffuse = hitInfo.diffuseAlbedo / PI * (1 - f) * diffuseWeight;
+
+    vec3 specularAlbedo = f * ndf * ggxSmithG2AndDenom(hitInfo.specularA2, NdotV, NdotL);
+    float specularPdf = ggxVisibleNormalsDistributionFunction(hitInfo.specularA2, NdotV, NdotH, HdotV) / (4 * HdotV);
+    float specularWeight = hitInfo.specularA != 0 ? misHeuristic(1, lightAreaPdf, 1, specularPdf) : 0;
+    vec3 specular = (NdotL > 0 && NdotV > 0 && hitInfo.specularA2 != 0) ? specularAlbedo * specularWeight : vec3(0, 0, 0);
+
+    return NdotL * (diffuse + specular) * solidAngle;
 }
 
 vec3 sampleSphereLight(uint emitterId, Ray ray, HitInfo hitInfo)
@@ -396,7 +446,6 @@ vec3 sampleSphereLight(uint emitterId, Ray ray, HitInfo hitInfo)
     float cosThetaMax = sqrt(max(0, 1 - sinThetaMaxSqr));
 
     float solidAngle = 2 * PI * (1 - cosThetaMax);
-    float areaPdf = 1 / solidAngle;
 
     // Importance sample cone
     vec2 noise = sampleBlueNoise(frameIndex, ray.depth, true);
@@ -417,37 +466,42 @@ vec3 sampleSphereLight(uint emitterId, Ray ray, HitInfo hitInfo)
     vec3 lightP = lightN.x * lT + lightN.y * lB + lightN.z * lN;
     vec3 L = normalize(hitToLight + lightP);
 
-    vec3 H = normalize(L - ray.direction);
-    float NdotL = max(0, dot(hitInfo.normal, L));
-    float NdotH = dot(hitInfo.normal, H);
-    float HdotV = -dot(H, ray.direction);
-    float NdotV = hitInfo.NdotV;
+    Ray shadowRay;
+    shadowRay.origin = hitInfo.position;
+    shadowRay.direction = L;
 
-    vec3 f = fresnel(HdotV, hitInfo.specularF0);
-    float ndf = ggxNDF(hitInfo.specularA2, NdotH);
+    Intersection shadowIntersection = raycast(shadowRay);
+    if(shadowIntersection.instanceId == emitterId)
+        return evaluateBSDF(ray, hitInfo, L, solidAngle) * emitter.emission.rgb;
+    else
+        return vec3(0);
+}
 
-    float diffuseWeight = misHeuristic(1, areaPdf, 1, cosineHemispherePdf(NdotL));
-    vec3 diffuse = hitInfo.diffuseAlbedo / PI * (1 - f) * diffuseWeight;
+vec3 sampleDirectionalLight(uint lightId, Ray ray, HitInfo hitInfo)
+{
+    DirectionalLight light = directionalLights[lightId];
 
-    vec3 specularAlbedo = f * ndf * ggxSmithG2AndDenom(hitInfo.specularA2, NdotV, NdotL);
-    float specularPdf = ggxVisibleNormalsDistributionFunction(hitInfo.specularA2, NdotV, NdotH, HdotV) / (4 * HdotV);
-    float specularWeight = hitInfo.specularA != 0 ? misHeuristic(1, areaPdf, 1, specularPdf) : 0;
-    vec3 specular = (NdotL > 0 && NdotV > 0 && hitInfo.specularA2 != 0) ? specularAlbedo * specularWeight : vec3(0, 0, 0);
+    vec3 T, B, N = light.positionCosThetaMax.xyz;
+    makeOrthBase(N, T, B);
+
+    vec2 noise = sampleBlueNoise(frameIndex, ray.depth, true);
+    vec3 l = sampleUniformCone(noise.r, noise.g, light.positionCosThetaMax.w);
+    vec3 L = normalize(l.x * T + l.y * B + l.z * N);
 
     Ray shadowRay;
     shadowRay.origin = hitInfo.position;
     shadowRay.direction = L;
 
     Intersection shadowIntersection = raycast(shadowRay);
-    if(shadowIntersection.instanceId == emitterId || shadowIntersection.t == 1 / 0.0)
-        return NdotL * (diffuse + specular) * emitter.emission.rgb * solidAngle;
+    if(shadowIntersection.t == 1 / 0.0)
+        return evaluateBSDF(ray, hitInfo, L, light.radianceSolidAngle.a) * light.radianceSolidAngle.rgb;
     else
-        return vec3(0.0);
+        return vec3(0);
 }
 
 vec3 shadeHit(Ray ray, HitInfo hitInfo)
 {
-    vec3 L_out = vec3(0, 0, 0);
+    vec3 L_out = vec3(0);
 
     for(uint e = 0; e < emitters.length(); ++e)
     {
@@ -459,20 +513,39 @@ vec3 shadeHit(Ray ray, HitInfo hitInfo)
         L_out += sampleSphereLight(emitterId, ray, hitInfo);
     }
 
+    for(uint dl = 0; dl < directionalLights.length(); ++dl)
+    {
+        L_out += sampleDirectionalLight(dl, ray, hitInfo);
+    }
+
     // Emission
-    float weight = ray.bsdfPdf != DELTA ? misHeuristic(1, ray.bsdfPdf, 1, hitInfo.areaPdf) : 1;
+    float weight = ray.bsdfPdf != DELTA ? misHeuristic(1, ray.bsdfPdf, 1, hitInfo.instanceAreaPdf) : 1;
     L_out += weight * hitInfo.emission;
 
     return ray.throughput * L_out;
 }
 
-vec3 shadeBackground(in Ray ray)
+vec3 shadeSky(in Ray ray)
 {
     vec2 uv = findUV(backgroundQuat, ray.direction);
-    ivec2 imgSize = imageSize(backgroundImg);
-    vec3 lum = imageLoad(backgroundImg, ivec2(imgSize * vec2(uv.x, 1 - uv.y))).rgb;
+    vec3 skyLuminance = texture2D(backgroundImg, vec2(uv.x, 1 - uv.y)).rgb;
 
-    return toLinear(lum) * ray.throughput;
+    vec3 L_in = toLinear(skyLuminance);
+
+    for(uint dl = 0; dl < directionalLights.length(); ++dl)
+    {
+        DirectionalLight light = directionalLights[dl];
+        float cosTheta = dot(light.positionCosThetaMax.xyz, ray.direction);
+
+        if(cosTheta >= light.positionCosThetaMax.w)
+        {
+            float lightAreaPdf = 1 / light.radianceSolidAngle.a;
+            float weight = ray.bsdfPdf != DELTA ? misHeuristic(1, ray.bsdfPdf, 1, lightAreaPdf) : 1;
+            L_in += weight * light.radianceSolidAngle.rgb;
+        }
+    }
+
+    return ray.throughput * L_in;
 }
 
 Ray scatter(Ray rayIn, HitInfo hitInfo)
@@ -511,6 +584,10 @@ Ray scatter(Ray rayIn, HitInfo hitInfo)
         rayOut.direction = reflectionDirection;
         rayOut.bsdfPdf = hitInfo.specularA == 0 ? DELTA : pdf;
         rayOut.throughput = rayIn.throughput * specularAlbedo / r;
+#if !IS_UNBIASED
+        rayOut.throughput *= mix(1 - rayIn.diffusivity, 1, min(1, hitInfo.specularA));
+        rayOut.diffusivity = mix(rayIn.diffusivity, 1, min(1, hitInfo.specularA));
+#endif
     }
     else if(specularNoise.x >= r && r != 1)
     {
@@ -519,6 +596,9 @@ Ray scatter(Ray rayIn, HitInfo hitInfo)
         rayOut.direction = normalize(dir.x * T + dir.y * B + dir.z * N);
         rayOut.bsdfPdf = cosineHemispherePdf(dir.z);
         rayOut.throughput = rayIn.throughput * hitInfo.diffuseAlbedo * (1 - f) / (1 - r);
+#if !IS_UNBIASED
+        rayOut.diffusivity = 1;
+#endif
     }
     else
     {
@@ -549,7 +629,7 @@ void main()
         }
         else
         {
-            colorAccum += shadeBackground(ray);
+            colorAccum += shadeSky(ray);
             break;
         }
     }

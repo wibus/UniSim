@@ -23,14 +23,27 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
     return object;
 }
 
+std::shared_ptr<DirectionalLight> makeDirLight(const glm::dvec3& position, const glm::dvec3& radiance, double solidAngle)
+{
+    std::shared_ptr<DirectionalLight> light(new DirectionalLight());
+
+    light->setPosition(glm::normalize(position));
+    light->setRadiance(radiance);
+    light->setSolidAngle(solidAngle);
+
+    return light;
+}
+
 PathTracerScene::PathTracerScene()
 {
+    _sky->setTexture("textures/syferfontein_0d_clear_puresky_4k.exr");
+
     auto light = makeObject("Light", 1, {0, 7.5, 9});
     auto floor = makeObject("Floor", 1000, {0, 0, -1000});
     auto ceiling = makeObject("Ceiling", 1000, {0, 0, 1015});
     auto wallLeft = makeObject("Wall Left", 1000, {-1015, 0, 0});
     auto wallRight = makeObject("Wall Right", 1000, {1015, 0, 0});
-    auto wallFront = makeObject("Wall Front", 1000, {0, 1030, 0});
+    auto wallFront = makeObject("Wall Front", 1000, {0, -1030, 0});
     auto ballLeft = makeObject("Ball Left", 2, {-3, 12, 2});
     auto ballRight = makeObject("Ball Right", 2, {3, 12, 2});
     auto ballFront = makeObject("Ball Right", 1, {0, 10, 1});
@@ -60,13 +73,16 @@ PathTracerScene::PathTracerScene()
 
     _objects.push_back(light);
     _objects.push_back(floor);
-    _objects.push_back(ceiling);
-    _objects.push_back(wallLeft);
-    _objects.push_back(wallRight);
-    _objects.push_back(wallFront);
+    //_objects.push_back(ceiling);
+    //_objects.push_back(wallLeft);
+    //_objects.push_back(wallRight);
+    //_objects.push_back(wallFront);
     _objects.push_back(ballLeft);
     _objects.push_back(ballRight);
     _objects.push_back(ballFront);
+
+    auto sun = makeDirLight(glm::dvec3(2, -1, 1), 1.6e5 * glm::dvec3(1, 0.9, 0.7), 60.0e-6);
+    _directionalLights.push_back(sun);
 }
 
 }

@@ -13,15 +13,27 @@ struct Texture
 {
     enum Format {UNORM8, Float32};
 
-    Texture() : width(0), height(0), format(UNORM8), numComponents(4), data(nullptr) {}
-    ~Texture() { delete [] data; }
+    Texture();
+    ~Texture();
     operator bool() const { return data != nullptr; }
+
+    static const Texture BLACK_UNORM8;
+    static const Texture BLACK_Float32;
+
+    static Texture* load(const std::string& fileName);
+    static Texture* loadJpeg(const std::string& fileName);
+    static Texture* loadPng(const std::string& fileName);
+    static Texture* loadExr(const std::string& fileName);
 
     int width;
     int height;
     Format format;
     int numComponents;
     unsigned char* data;
+    bool ownsMemory;
+
+private:
+    Texture(Format format, unsigned char *pixelData);
 };
 
 class Material
@@ -49,10 +61,6 @@ public:
     void setDefaultReflectance(float reflectance);
 
 private:
-    Texture* loadJpeg(const std::string& fileName);
-    Texture* loadPng(const std::string& fileName);
-    Texture* loadExr(const std::string& fileName);
-
     std::string _name;
     Texture* _albedo;
 

@@ -11,7 +11,7 @@
 namespace unisim
 {
 
-class Object;
+class Scene;
 class Camera;
 struct Viewport;
 
@@ -20,10 +20,10 @@ class Radiation
 public:
     Radiation();
 
-    bool initialize(const std::vector<std::shared_ptr<Object>>& objects, const Viewport& viewport);
+    bool initialize(const Scene &scene, const Viewport& viewport);
     void setViewport(Viewport viewport);
 
-    void draw(const std::vector<std::shared_ptr<Object>>& objects, double dt, const Camera& camera);
+    void draw(const Scene &scene, double dt, const Camera& camera);
 
     static const unsigned int BLUE_NOISE_TEX_COUNT = 64;
     static const unsigned int HALTON_SAMPLE_COUNT = 64;
@@ -35,13 +35,15 @@ private:
 
     GLuint _commonUbo;
     GLuint _instancesSSBO;
+    GLuint _dirLightsSSBO;
     GLuint _materialsSSBO;
     GLuint _emittersSSBO;
 
     std::vector<GLuint> _objectToMat;
 
     GLuint _backgroundTexId;
-    GLuint64 _backgroundHdl;
+    GLuint _backgroundLoc;
+    GLint _backgroundUnit;
 
     GLuint _blueNoiseTexIds[BLUE_NOISE_TEX_COUNT];
     GLuint64 _blueNoiseTexHdls[BLUE_NOISE_TEX_COUNT];

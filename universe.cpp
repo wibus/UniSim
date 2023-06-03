@@ -109,8 +109,8 @@ int Universe::launch(int argc, char** argv)
     setup();
 
     bool ok = true;
-    ok = ok && _gravity.initialize(_project->scene().objects());
-    ok = ok && _radiation.initialize(_project->scene().objects(), _viewport);
+    ok = ok && _gravity.initialize(_project->scene());
+    ok = ok && _radiation.initialize(_project->scene(), _viewport);
 
     _dt = 0;
     _lastTime = std::chrono::high_resolution_clock::now();
@@ -196,13 +196,13 @@ void Universe::update()
 
     _dt *= 60 * 60 * 24 * _timeFactor;
 
-    _gravity.update(_project->scene().objects(), _dt);
+    _gravity.update(_project->scene(), _dt);
     _project->cameraMan().update(_inputs, _dt);
 }
 
 void Universe::draw()
 {
-    _radiation.draw(_project->scene().objects(), _dt, _project->cameraMan().camera());
+    _radiation.draw(_project->scene(), _dt, _project->cameraMan().camera());
 }
 
 }

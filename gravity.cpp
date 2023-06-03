@@ -1,6 +1,8 @@
 #include "gravity.h"
 
 #include "units.h"
+#include "scene.h"
+#include "object.h"
 #include "body.h"
 
 
@@ -12,13 +14,15 @@ Gravity::Gravity()
 
 }
 
-bool Gravity::initialize(const std::vector<std::shared_ptr<Object>>& objects) const
+bool Gravity::initialize(const Scene& scene) const
 {
     return true;
 }
 
-void Gravity::update(std::vector<std::shared_ptr<Object>>& objects, double dt)
+void Gravity::update(Scene& scene, double dt)
 {
+    std::vector<std::shared_ptr<Object>>& objects = scene.objects();
+
     if(objects.empty())
         return;
 

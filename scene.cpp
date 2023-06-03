@@ -8,7 +8,30 @@
 namespace unisim
 {
 
-Scene::Scene()
+
+DirectionalLight::DirectionalLight()
+{
+
+}
+
+DirectionalLight::~DirectionalLight()
+{
+
+}
+
+Sky::Sky()
+{
+
+}
+
+void Sky::setTexture(const std::string& fileName)
+{
+    _texture.reset(Texture::load(fileName));
+}
+
+
+Scene::Scene() :
+    _sky(new Sky())
 {
 
 }
