@@ -62,6 +62,8 @@ set(EngineFile
     project.cpp
     random.h
     random.cpp
+    ui.h
+    ui.cpp
 )
 
 # Shaders
@@ -80,7 +82,9 @@ set(SolarSystemFiles
     solar/solarsystemscene.h
     solar/solarsystemscene.cpp
     solar/solarsystemcamera.h
-    solar/solarsystemcamera.cpp)
+    solar/solarsystemcamera.cpp
+    solar/solarsystemui.h
+    solar/solarsystemui.cpp)
 
 # Path Tracer
 set(PathTracerSystemFiles
@@ -89,7 +93,9 @@ set(PathTracerSystemFiles
     pathtracer/pathtracerscene.h
     pathtracer/pathtracerscene.cpp
     pathtracer/pathtracercamera.h
-    pathtracer/pathtracercamera.cpp)
+    pathtracer/pathtracercamera.cpp
+    pathtracer/pathtracerui.h
+    pathtracer/pathtracerui.cpp)
 
 add_executable(UniSim
     main.cpp

@@ -1,6 +1,7 @@
 #include "project.h"
 
 #include "scene.h"
+#include "ui.h"
 
 
 namespace unisim
@@ -16,7 +17,7 @@ Project::~Project()
 
 }
 
-void Project::reset(Scene* scene)
+void Project::reset(Scene* scene, Ui* ui)
 {
     _scene.reset(scene);
 
@@ -27,6 +28,8 @@ void Project::reset(Scene* scene)
     {
         addView(cameraMan->camera().viewport());
     }
+
+    _ui.reset(ui);
 }
 
 int Project::addCameraMan(CameraMan* cameraMan)

@@ -1,7 +1,8 @@
 #include "pathtracerproject.h"
 
-#include "pathtracerscene.h"
 #include "pathtracercamera.h"
+#include "pathtracerscene.h"
+#include "pathtracerui.h"
 
 
 namespace unisim
@@ -9,7 +10,7 @@ namespace unisim
 
 PathTracerProject::PathTracerProject()
 {
-    reset(new PathTracerScene());
+    reset(new PathTracerScene(), new PathTracerUi());
 }
 
 int PathTracerProject::addView(Viewport viewport)

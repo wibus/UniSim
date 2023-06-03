@@ -6,10 +6,15 @@
 
 #include <GLFW/glfw3.h>
 
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
 #include "units.h"
 #include "material.h"
 #include "scene.h"
 #include "project.h"
+#include "ui.h"
 
 #include "solar/solarsystemproject.h"
 #include "pathtracer/pathtracerproject.h"
@@ -58,6 +63,11 @@ void glfWHandleScroll(GLFWwindow*, double xoffset, double yoffset)
     Universe::getInstance().handleMouseScroll(event);
 }
 
+void glfwErrorCallback(int error, const char* description)
+{
+    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+}
+
 Universe::Universe() :
     _timeFactor(0.0)
 {
@@ -73,6 +83,7 @@ int Universe::launch(int argc, char** argv)
 
     GLFWwindow* window;
 
+    glfwSetErrorCallback(glfwErrorCallback);
     if (!glfwInit())
         return -1;
 
@@ -106,6 +117,19 @@ int Universe::launch(int argc, char** argv)
     glfwSetMouseButtonCallback(window, glfWHandleMouseButton);
     glfwSetScrollCallback(window, glfWHandleScroll);
 
+    // Setup ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    const char* glsl_version = "#version 440";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
     setup();
 
     bool ok = true;
@@ -119,12 +143,22 @@ int Universe::launch(int argc, char** argv)
 
     while (!glfwWindowShouldClose(window) && ok)
     {
+        glfwPollEvents();
+
+        // Start ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
         update();
         draw();
 
-        glfwSwapBuffers(window);
+        _project->ui().render(_project->scene());
 
-        glfwPollEvents();
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        glfwSwapBuffers(window);
     }
 
     glfwTerminate();
@@ -146,7 +180,21 @@ void Universe::handleWindowResize(GLFWwindow* window, int width, int height)
 
 void Universe::handleKeyboard(const KeyboardEvent& event)
 {
-    _inputs.handleKeyboard(event);
+    // Open Close ImGui Window
+    if(event.action == GLFW_PRESS)
+    {
+        if(event.key == GLFW_KEY_F10)
+        {
+            if(_project->ui().isShown())
+                _project->ui().hide();
+            else
+                _project->ui().show();
+        }
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+    if(io.WantCaptureKeyboard)
+        return;
 
     if(event.action == GLFW_PRESS)
     {
@@ -158,6 +206,8 @@ void Universe::handleKeyboard(const KeyboardEvent& event)
                 _timeFactor = 1.0;
         }
     }
+
+    _inputs.handleKeyboard(event);
 
     _project->cameraMan().handleKeyboard(_inputs, event);
 }
@@ -171,6 +221,10 @@ void Universe::handleMouseMove(const MouseMoveEvent& event)
 
 void Universe::handleMouseButton(const MouseButtonEvent& event)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if(io.WantCaptureMouse)
+        return;
+
     _inputs.handleMouseButton(event);
 
     _project->cameraMan().handleMouseButton(_inputs, event);
@@ -178,6 +232,10 @@ void Universe::handleMouseButton(const MouseButtonEvent& event)
 
 void Universe::handleMouseScroll(const MouseScrollEvent& event)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if(io.WantCaptureMouse)
+        return;
+
     _inputs.handleMouseScroll(event);
 
     _project->cameraMan().handleMouseScroll(_inputs, event);

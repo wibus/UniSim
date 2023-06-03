@@ -21,6 +21,10 @@ set(GLFW_LIBRARIES glfw)
 set(GLM_INCLUDE_DIRS)
 set(GLM_LIBRARIES)
 
+# ImGui
+add_subdirectory(imgui)
+set(IMGUI_LIBRARIES imgui)
+
 
 #libjpeg
 add_subdirectory(libjpeg)
@@ -62,5 +66,6 @@ set(OTS_LIBRARIES
     ${LIBJPEG_LIBRARIES}
     ${LIBPNG_LIBRARIES}
     ${TINYEXR_LIBRARIES}
+    ${IMGUI_LIBRARIES}
     PARENT_SCOPE
 )

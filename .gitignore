@@ -34,3 +34,5 @@
 # Misc
 *.user
 
+# ImGui
+imgui.ini
