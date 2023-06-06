@@ -276,20 +276,21 @@ GLuint64 makeImageBindless(const Texture* texture, GLuint texId)
     return hdl;
 }
 
-GLuint generateUAV()
+GLuint generateUAV(int width, int height, GLint format)
 {
     GLuint textureID = 0;
     glGenTextures(1, &textureID);
+
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     return textureID;
 }
 
-void updateUAV(GLuint textureID, int width, int height, GLint format)
+void destroyUAV(GLuint textureID)
 {
-    glBindTexture(GL_TEXTURE_2D, textureID);
-
-    glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glDeleteTextures(1, &textureID);
 }
 
 GpuMaterial createGpuMaterial(const std::shared_ptr<Material>& material)
@@ -401,8 +402,7 @@ bool Radiation::initialize(const Scene& scene, const Viewport& viewport)
     glBufferData(GL_SHADER_STORAGE_BUFFER, 0, nullptr, GL_STREAM_DRAW);
 
     _pathTraceFormat = GL_RGBA32F;
-    _pathTraceUAVId = generateUAV();
-    updateUAV(_pathTraceUAVId, viewport.width, viewport.height, _pathTraceFormat);
+    _pathTraceUAVId = generateUAV(viewport.width, viewport.height, _pathTraceFormat);
 
     _pathTraceUnit = 0;
     _pathTraceLoc = glGetUniformLocation(_computePathTraceId, "result");
@@ -416,7 +416,8 @@ bool Radiation::initialize(const Scene& scene, const Viewport& viewport)
 
 void Radiation::setViewport(Viewport viewport)
 {
-    updateUAV(_pathTraceUAVId, viewport.width, viewport.height, _pathTraceFormat);
+    destroyUAV(_pathTraceUAVId);
+    _pathTraceUAVId = generateUAV(viewport.width, viewport.height, _pathTraceFormat);
 }
 
 glm::vec3 toLinear(const glm::vec3& sRGB)
