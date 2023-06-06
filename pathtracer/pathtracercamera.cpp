@@ -16,10 +16,10 @@
 namespace unisim
 {
 
-const double PathTracerCameraMan::ZOOM_INC = 0.1;
-const double PathTracerCameraMan::EXPOSURE_INC = glm::sqrt(2.0);
-const double PathTracerCameraMan::ROTATE_INC = glm::pi<double>() * 0.01;
-const double PathTracerCameraMan::APPROACH_INC = 1.01;
+const float PathTracerCameraMan::ZOOM_INC = 0.1;
+const float PathTracerCameraMan::EXPOSURE_INC = glm::sqrt(2.0);
+const float PathTracerCameraMan::ROTATE_INC = glm::pi<float>() * 0.01;
+const float PathTracerCameraMan::APPROACH_INC = 1.01;
 
 PathTracerCameraMan::PathTracerCameraMan(Scene& scene, Viewport viewport) :
     CameraMan(viewport),
@@ -38,7 +38,7 @@ PathTracerCameraMan::PathTracerCameraMan(Scene& scene, Viewport viewport) :
     _position = glm::dvec3(0, -5, 5);
 }
 
-void PathTracerCameraMan::update(const Inputs& inputs, double dt)
+void PathTracerCameraMan::update(const Inputs& inputs, float dt)
 {
     if(inputs.keyboard().keyPressed[GLFW_KEY_W])
         moveForward();
@@ -118,16 +118,16 @@ void PathTracerCameraMan::orbit(int newBodyId, int oldBodyId)
 
 void PathTracerCameraMan::zoomIn()
 {
-    double factor = 4.0 * (_camera.fieldOfView() * (glm::pi<double>() - _camera.fieldOfView())) / (glm::pi<double>() * glm::pi<double>());
-    double zoom = 1 + (ZOOM_INC * glm::sqrt(factor));
-    _camera.setFieldOfView(glm::mix(0.0, _camera.fieldOfView(), 1 / zoom));
+    float factor = 4.0 * (_camera.fieldOfView() * (glm::pi<float>() - _camera.fieldOfView())) / (glm::pi<float>() * glm::pi<float>());
+    float zoom = 1 + (ZOOM_INC * glm::sqrt(factor));
+    _camera.setFieldOfView(glm::mix(0.0f, _camera.fieldOfView(), 1 / zoom));
 }
 
 void PathTracerCameraMan::zoomOut()
 {
-    double factor = 4.0 * (_camera.fieldOfView() * (glm::pi<double>() - _camera.fieldOfView())) / (glm::pi<double>() * glm::pi<double>());
-    double zoom = 1 + (ZOOM_INC * glm::sqrt(factor));
-    _camera.setFieldOfView(glm::mix(0.0, _camera.fieldOfView(), zoom));
+    float factor = 4.0 * (_camera.fieldOfView() * (glm::pi<float>() - _camera.fieldOfView())) / (glm::pi<float>() * glm::pi<float>());
+    float zoom = 1 + (ZOOM_INC * glm::sqrt(factor));
+    _camera.setFieldOfView(glm::mix(0.0f, _camera.fieldOfView(), zoom));
 }
 
 
@@ -149,7 +149,7 @@ void PathTracerCameraMan::enableAutoExposure(bool enabled)
 
 void PathTracerCameraMan::rotatePrimary(int dx, int dy)
 {
-    double factor = _camera.fieldOfView() / glm::pi<double>();
+    float factor = _camera.fieldOfView() / glm::pi<float>();
     _pan   = quatMul(quat(glm::dvec3(0, 0, 1), -ROTATE_INC * dx * factor), _pan);
     _tilt  = quatMul(quat(glm::dvec3(1, 0, 0), -ROTATE_INC * dy * factor), _tilt);
 }

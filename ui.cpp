@@ -1,5 +1,15 @@
 #include "ui.h"
 
+#include <imgui/imgui.h>
+
+#include <GLM/gtc/constants.hpp>
+
+#include "../scene.h"
+#include "../object.h"
+#include "../body.h"
+#include "../mesh.h"
+#include "../material.h"
+#include "../camera.h"
 
 namespace unisim
 {
@@ -24,6 +34,286 @@ void Ui::show()
 void Ui::hide()
 {
     _showUi = false;
+}
+
+bool displayExposure(float& exposure)
+{
+    float ev = glm::log2(exposure);
+    if(ImGui::SliderFloat("Exposure", &ev, -10, 10))
+    {
+        exposure = glm::pow(2.0f, ev);
+        return true;
+    }
+
+    return false;
+}
+
+void displayTexture(Texture* texture)
+{
+    if(texture == nullptr)
+        return;
+
+    int dimensions[2] = {texture->width, texture->height};
+    ImGui::InputInt2("Dimensions", &dimensions[0], ImGuiInputTextFlags_ReadOnly);
+    ImGui::Text("Format %s", texture->format == Texture::UNORM8 ? "UNORM8" : "Float32");
+    int numComponents = texture->numComponents;
+    ImGui::InputInt("Num Components", &numComponents);
+    bool ownsMemory = texture->ownsMemory;
+    ImGui::Checkbox("Owns Memory", &ownsMemory);
+    uint64_t handle = texture->handle;
+    ImGui::Image((void*)handle, ImVec2(512, (512.0f / dimensions[0]) * dimensions[1]));
+}
+
+void displaySky(Scene& scene)
+{
+    if(ImGui::TreeNode("Sky"))
+    {
+        glm::vec4 quaternion = scene.sky()->quaternion();
+        if(ImGui::InputFloat4("Quaternion", &quaternion[0]))
+        {
+            quaternion = glm::normalize(quaternion);
+            scene.sky()->setQuaternion(quaternion);
+        }
+
+        float exposure = scene.sky()->exposure();
+        if(displayExposure(exposure))
+        {
+            scene.sky()->setExposure(exposure);
+        }
+
+        displayTexture(scene.sky()->texture().get());
+
+        ImGui::TreePop();
+    }
+}
+
+void displayDirectionalLights(Scene& scene)
+{
+    if(ImGui::TreeNode("Directional Lights"))
+    {
+        for(const auto& light : scene.directionalLights())
+        {
+            if(ImGui::TreeNode(light->name().c_str()))
+            {
+                glm::vec3 direction = light->direction();
+                if(ImGui::SliderFloat3("Direction", &direction[0], -1, 1))
+                    light->setDirection(glm::normalize(direction));
+
+                glm::vec3 radianceColor = light->radianceColor();
+                if(ImGui::ColorPicker3("Radiance Color", &radianceColor[0]))
+                    light->setRadianceColor(radianceColor);
+
+                float radianceValue = light->radianceValue();
+                if(ImGui::InputFloat("Radiance Value", &radianceValue))
+                    light->setRadianceValue(glm::max(0.0f, radianceValue));
+
+                float solidAngle = light->solidAngle();
+                if(ImGui::InputFloat("Solid Angle", &solidAngle, 0.0f, 0.0f, "%.6f"))
+                    light->setSolidAngle(glm::clamp(solidAngle, 0.0f ,4 * glm::pi<float>()));
+
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::TreePop();
+    }
+}
+
+void displayObjects(Scene& scene)
+{
+    if(ImGui::TreeNode("Objects"))
+    {
+        for(const auto& object : scene.objects())
+        {
+            if(ImGui::TreeNode(object->name().c_str()))
+            {
+                auto body = object->body();
+                auto mesh = object->mesh();
+                auto material = object->material();
+
+                if(body && ImGui::TreeNode("Body"))
+                {
+                    bool isStatic = body->isStatic();
+                    if(ImGui::Checkbox("Is Static", &isStatic))
+                        body->setIsStatic(isStatic);
+
+                    double radius = body->radius();
+                    if(ImGui::InputDouble("Radius", &radius, 0.1))
+                    {
+                        radius = glm::max(1e-6, radius);
+                        body->setRadius(radius);
+                        if(mesh && mesh->isSphere())
+                            mesh->setRadius(radius);
+                    }
+
+                    double mass = body->mass();
+                    if(ImGui::InputDouble("Mass", &mass, 0.1))
+                        body->setMass(glm::max(0.0, mass));
+
+                    double area = body->area();
+                    ImGui::InputDouble("Area", &area, 0.0, 0.0, "%.6f", ImGuiInputTextFlags_ReadOnly);
+                    double volume = body->volume();
+                    ImGui::InputDouble("Volume", &volume, 0.0, 0.0, "%.6f", ImGuiInputTextFlags_ReadOnly);
+                    double density = body->density();
+                    ImGui::InputDouble("Density", &density, 0.0, 0.0, "%.6f", ImGuiInputTextFlags_ReadOnly);
+
+                    glm::vec3 position = body->position();
+                    if(ImGui::InputFloat3("Position", &position[0]))
+                        body->setPosition(glm::dvec3(position));
+
+                    glm::vec3 linearVelocity = body->linearVelocity();
+                    if(ImGui::InputFloat3("Velocity", &linearVelocity[0]))
+                        body->setLinearVelocity(glm::dvec3(linearVelocity));
+
+                    glm::vec4 quaternion = body->quaternion();
+                    if(ImGui::InputFloat4("Quaternion", &quaternion[0]))
+                        body->setQuaternion(glm::dvec4(quaternion));
+
+                    double angularSpeed = body->angularSpeed();
+                    if(ImGui::InputDouble("Angular Speed", &angularSpeed, glm::pi<double>() / 180))
+                        body->setAngularSpeed(angularSpeed);
+
+                    ImGui::TreePop();
+                }
+
+                if(mesh && ImGui::TreeNode("Mesh"))
+                {
+                    bool isSphere = mesh->isSphere();
+                    ImGui::Checkbox("Is Sphere", &isSphere);
+
+                    float radius = mesh->radius();
+                    if(mesh->isSphere() && ImGui::InputFloat("Radius", &radius))
+                    {
+                        radius = glm::max(1e-6f, radius);
+                        mesh->setRadius(radius);
+                        if(body)
+                            body->setRadius(radius);
+                    }
+
+                    ImGui::TreePop();
+                }
+
+                if(material && ImGui::TreeNode("Material"))
+                {
+                    displayTexture(material->albedo());
+
+                    glm::vec3 albedo = material->defaultAlbedo();
+                    if(ImGui::ColorPicker3("Albedo", &albedo[0]))
+                        material->setDefaultAlbedo(albedo);
+
+                    glm::vec3 emissionColor = material->defaultEmissionColor();
+                    if(ImGui::ColorPicker3("Emission", &emissionColor[0]))
+                        material->setDefaultEmissionColor(emissionColor);
+
+                    float emissionLuminance = material->defaultEmissionLuminance();
+                    if(ImGui::InputFloat("Luminance", &emissionLuminance))
+                        material->setDefaultEmissionLuminance(emissionLuminance);
+
+                    float roughness = material->defaultRoughness();
+                    if(ImGui::SliderFloat("Roughness", &roughness, 0, 1))
+                        material->setDefaultRoughness(roughness);
+
+                    float metalness = material->defaultMetalness();
+                    if(ImGui::SliderFloat("Metalness", &metalness, 0, 1))
+                        material->setDefaultMetalness(metalness);
+
+                    float reflectance = material->defaultReflectance();
+                    if(ImGui::InputFloat("Reflectance", &reflectance, 0.01f))
+                    {
+                        reflectance = glm::clamp(reflectance, 0.0f, 1.0f);
+                        material->setDefaultReflectance(reflectance);
+                    }
+
+                    ImGui::TreePop();
+                }
+
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::TreePop();
+    }
+}
+
+void displayCamera(CameraMan& cameraMan)
+{
+    Camera& camera = cameraMan.camera();
+
+    int viewport[2] = {camera.viewport().width, camera.viewport().height};
+    ImGui::InputInt2("Viewport", &viewport[0], ImGuiInputTextFlags_ReadOnly);
+
+    float exposure = camera.exposure();
+    if(displayExposure(exposure))
+        camera.setExposure(exposure);
+
+    float fov = camera.fieldOfView();
+    if(ImGui::SliderAngle("FOV", &fov, 1, 179))
+        camera.setFieldOfView(fov);
+
+    glm::vec3 position = camera.position();
+    if(ImGui::InputFloat3("Position", &position[0]))
+        camera.setPosition(position);
+
+    glm::vec3 lookAt = camera.lookAt();
+    if(ImGui::InputFloat3("Look At", &lookAt[0]))
+        camera.setLookAt(lookAt);
+
+    glm::vec3 up = camera.up();
+    if(ImGui::InputFloat3("Up", &up[0]))
+        camera.setUp(glm::normalize(up));
+
+    ImGui::Separator();
+    glm::mat4 view = glm::transpose(camera.view());
+    ImGui::InputFloat4("View", &view[0][0]);
+    ImGui::InputFloat4("",     &view[1][0]);
+    ImGui::InputFloat4("",     &view[2][0]);
+    ImGui::InputFloat4("",     &view[3][0]);
+
+    ImGui::Separator();
+    glm::mat4 proj = glm::transpose(camera.proj());
+    ImGui::InputFloat4("Projection", &proj[0][0]);
+    ImGui::InputFloat4("",           &proj[1][0]);
+    ImGui::InputFloat4("",           &proj[2][0]);
+    ImGui::InputFloat4("",           &proj[3][0]);
+
+    ImGui::Separator();
+    glm::mat4 screen = glm::transpose(camera.screen());
+    ImGui::InputFloat4("Screen", &screen[0][0]);
+    ImGui::InputFloat4("",       &screen[1][0]);
+    ImGui::InputFloat4("",       &screen[2][0]);
+    ImGui::InputFloat4("",       &screen[3][0]);
+
+    ImGui::Separator();
+}
+
+void Ui::render(Scene &scene, CameraMan& cameraMan)
+{
+    if(!_showUi)
+        return;
+
+    if(ImGui::Begin(scene.name().c_str(), &_showUi))
+    {
+        if(ImGui::BeginTabBar("#tabs"))
+        {
+            if(ImGui::BeginTabItem("Scene"))
+            {
+                displaySky(scene);
+                displayDirectionalLights(scene);
+                displayObjects(scene);
+                ImGui::EndTabItem();
+            }
+
+            if(ImGui::BeginTabItem("Camera"))
+            {
+                displayCamera(cameraMan);
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
+    }
+
+    ImGui::End();
 }
 
 }

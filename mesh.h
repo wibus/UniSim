@@ -9,16 +9,17 @@ namespace unisim
 class Mesh
 {
 public:
-    Mesh(bool isSphere, double radius);
+    Mesh(bool isSphere, float radius);
     virtual ~Mesh();
 
     bool isSphere() const { return _isSphere; }
 
-    double radius() const { return _radius; }
+    float radius() const { return _radius; }
+    void setRadius(float radius) { _radius = radius; }
 
 private:
     bool _isSphere;
-    double _radius;
+    float _radius;
 };
 
 }

@@ -13,8 +13,6 @@ public:
     SolarSystemUi();
     virtual ~SolarSystemUi();
 
-    void render(Scene& scene) override;
-
 private:
 };
 

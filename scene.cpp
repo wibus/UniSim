@@ -9,7 +9,9 @@ namespace unisim
 {
 
 
-DirectionalLight::DirectionalLight()
+DirectionalLight::DirectionalLight(const std::string& name) :
+    _name(name),
+    _radianceValue(1)
 {
 
 }
@@ -19,7 +21,9 @@ DirectionalLight::~DirectionalLight()
 
 }
 
-Sky::Sky()
+Sky::Sky() :
+    _quaternion(0, 0, 0, 1),
+    _exposure(1)
 {
 
 }
@@ -30,7 +34,8 @@ void Sky::setTexture(const std::string& fileName)
 }
 
 
-Scene::Scene() :
+Scene::Scene(const std::string& name) :
+    _name(name),
     _sky(new Sky())
 {
 

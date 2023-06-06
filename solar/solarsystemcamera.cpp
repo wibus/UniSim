@@ -16,10 +16,10 @@
 namespace unisim
 {
 
-const double SolarSystemCameraMan::ZOON_INC = 0.1;
-const double SolarSystemCameraMan::EXPOSURE_INC = glm::sqrt(2.0);
-const double SolarSystemCameraMan::ROTATE_INC = glm::pi<double>() * 0.001;
-const double SolarSystemCameraMan::APPROACH_INC = 1.01;
+const float SolarSystemCameraMan::ZOON_INC = 0.1;
+const float SolarSystemCameraMan::EXPOSURE_INC = glm::sqrt(2.0);
+const float SolarSystemCameraMan::ROTATE_INC = glm::pi<float>() * 0.001;
+const float SolarSystemCameraMan::APPROACH_INC = 1.01;
 
 SolarSystemCameraMan::SolarSystemCameraMan(Scene& scene, Viewport viewport) :
     CameraMan(viewport),
@@ -42,7 +42,7 @@ SolarSystemCameraMan::SolarSystemCameraMan(Scene& scene, Viewport viewport) :
     setDistance(2.5e7);
 }
 
-void SolarSystemCameraMan::update(const Inputs& inputs, double dt)
+void SolarSystemCameraMan::update(const Inputs& inputs, float dt)
 {
     if(inputs.keyboard().keyPressed[GLFW_KEY_W])
         moveForward();
@@ -171,9 +171,6 @@ void SolarSystemCameraMan::handleMouseScroll(const Inputs& inputs, const MouseSc
 {
     if(event.yoffset != 0)
     {
-        double cx = inputs.mouse().xpos / _camera.viewport().width;
-        double cy = inputs.mouse().ypos / _camera.viewport().height;
-
         if(event.yoffset > 0)
         {
             zoomIn();
@@ -202,7 +199,7 @@ void SolarSystemCameraMan::setBodyIndex(int bodyId)
         orbit(bodyId, oldBodyId);
 }
 
-void SolarSystemCameraMan::setDistance(double distance)
+void SolarSystemCameraMan::setDistance(float distance)
 {
     _distance = distance;
 }
@@ -230,14 +227,14 @@ void SolarSystemCameraMan::orbit(int newBodyId, int oldBodyId)
         {
             if(oldBodyId != -1 && oldBodyId < _scene.objects().size())
             {
-                if(!(glm::any(glm::bvec3(_scene.objects()[oldBodyId]->material()->defaultEmission())) ||
-                     glm::any(glm::bvec3(_scene.objects()[newBodyId]->material()->defaultEmission()))))
+                if(!(glm::any(glm::bvec3(_scene.objects()[oldBodyId]->material()->defaultEmissionColor())) ||
+                     glm::any(glm::bvec3(_scene.objects()[newBodyId]->material()->defaultEmissionColor()))))
                 {
                 glm::dvec3 oldPos = _scene.objects()[oldBodyId]->body()->position();
-                double oldRelIrradiance = 1.0 / glm::dot(oldPos, oldPos);
+                float oldRelIrradiance = 1.0 / glm::dot(oldPos, oldPos);
 
                 glm::dvec3 newPos = _scene.objects()[newBodyId]->body()->position();
-                double newRelIrradiance = 1.0 / glm::dot(newPos, newPos);
+                float newRelIrradiance = 1.0 / glm::dot(newPos, newPos);
 
                 _camera.setExposure(_camera.exposure() * oldRelIrradiance / newRelIrradiance);
                 }
@@ -256,9 +253,9 @@ void SolarSystemCameraMan::zoomIn()
     case Mode::Orbit:
     case Mode::Ground:
     {
-        double factor = 4.0 * (_camera.fieldOfView() * (glm::pi<double>() - _camera.fieldOfView())) / (glm::pi<double>() * glm::pi<double>());
-        double zoom = 1 + (ZOON_INC * glm::sqrt(factor));
-        _camera.setFieldOfView(glm::mix(0.0, _camera.fieldOfView(), 1 / zoom));
+        float factor = 4.0 * (_camera.fieldOfView() * (glm::pi<float>() - _camera.fieldOfView())) / (glm::pi<float>() * glm::pi<float>());
+        float zoom = 1 + (ZOON_INC * glm::sqrt(factor));
+        _camera.setFieldOfView(glm::mix(0.0f, _camera.fieldOfView(), 1 / zoom));
     }
         break;
     }
@@ -274,9 +271,9 @@ void SolarSystemCameraMan::zoomOut()
     case Mode::Orbit:
     case Mode::Ground:
     {
-        double factor = 4.0 * (_camera.fieldOfView() * (glm::pi<double>() - _camera.fieldOfView())) / (glm::pi<double>() * glm::pi<double>());
-        double zoom = 1 + (ZOON_INC * glm::sqrt(factor));
-        _camera.setFieldOfView(glm::mix(0.0, _camera.fieldOfView(), zoom));
+        float factor = 4.0 * (_camera.fieldOfView() * (glm::pi<float>() - _camera.fieldOfView())) / (glm::pi<float>() * glm::pi<float>());
+        float zoom = 1 + (ZOON_INC * glm::sqrt(factor));
+        _camera.setFieldOfView(glm::mix(0.0f, _camera.fieldOfView(), zoom));
     }
         break;
     }

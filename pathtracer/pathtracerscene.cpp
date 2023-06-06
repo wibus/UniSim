@@ -11,7 +11,7 @@ namespace unisim
 
 std::shared_ptr<Object> makeObject(const std::string& name, double radius, const glm::dvec3& position, Object* parent = nullptr)
 {
-    std::shared_ptr<Body> body(new Body(radius, 1));
+    std::shared_ptr<Body> body(new Body(radius, 1, true));
     body->setPosition(position);
 
     std::shared_ptr<Mesh> mesh(new Mesh(true, radius));
@@ -23,18 +23,20 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
     return object;
 }
 
-std::shared_ptr<DirectionalLight> makeDirLight(const glm::dvec3& position, const glm::dvec3& radiance, double solidAngle)
+std::shared_ptr<DirectionalLight> makeDirLight(const std::string& name, const glm::dvec3& position, const glm::dvec3& radianceColor, double radianceValue, double solidAngle)
 {
-    std::shared_ptr<DirectionalLight> light(new DirectionalLight());
+    std::shared_ptr<DirectionalLight> light(new DirectionalLight(name));
 
-    light->setPosition(glm::normalize(position));
-    light->setRadiance(radiance);
+    light->setDirection(glm::normalize(position));
+    light->setRadianceColor(radianceColor);
+    light->setRadianceValue(radianceValue);
     light->setSolidAngle(solidAngle);
 
     return light;
 }
 
-PathTracerScene::PathTracerScene()
+PathTracerScene::PathTracerScene() :
+    Scene("Path Tracer")
 {
     _sky->setTexture("textures/syferfontein_0d_clear_puresky_4k.exr");
 
@@ -46,9 +48,10 @@ PathTracerScene::PathTracerScene()
     auto wallFront = makeObject("Wall Front", 1000, {0, -1030, 0});
     auto ballLeft = makeObject("Ball Left", 2, {-3, 12, 2});
     auto ballRight = makeObject("Ball Right", 2, {3, 12, 2});
-    auto ballFront = makeObject("Ball Right", 1, {0, 10, 1});
+    auto ballFront = makeObject("Ball Front", 1, {0, 10, 1});
 
-    light->material()->setDefaultEmission({25, 25, 25});
+    light->material()->setDefaultEmissionColor({1, 1, 1});
+    light->material()->setDefaultEmissionLuminance(25);
 
     light->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
     floor->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
@@ -81,7 +84,7 @@ PathTracerScene::PathTracerScene()
     _objects.push_back(ballRight);
     _objects.push_back(ballFront);
 
-    auto sun = makeDirLight(glm::dvec3(2, -1, 1), 1.6e5 * glm::dvec3(1, 0.9, 0.7), 60.0e-6);
+    auto sun = makeDirLight("Sun", glm::dvec3(2, -1, 1), glm::dvec3(1, 0.9, 0.7), 1.6e5, 60.0e-6);
     _directionalLights.push_back(sun);
 }
 

@@ -41,10 +41,10 @@ void Gravity::update(Scene& scene, double dt)
             double F = G * bodyA.mass() * bodyB.mass() / dSquared;
 
             if(!bodyA.isStatic())
-                bodyA.setLinearMomentum(bodyA.linearMomentum() + dt * U * (F / bodyA.mass()));
+                bodyA.setLinearVelocity(bodyA.linearVelocity() + dt * U * (F / bodyA.mass()));
 
             if(!bodyB.isStatic())
-                bodyB.setLinearMomentum(bodyB.linearMomentum() - dt * U * (F / bodyB.mass()));
+                bodyB.setLinearVelocity(bodyB.linearVelocity() - dt * U * (F / bodyB.mass()));
         }
     }
 
@@ -55,8 +55,8 @@ void Gravity::update(Scene& scene, double dt)
         if(body.isStatic())
             continue;
 
-        body.setQuaternion(quatMul(body.quaternion(), quat(glm::dvec3(0, 0, 1), body.rotation() * dt)));
-        body.setPosition(body.position() + dt * body.linearMomentum());
+        body.setQuaternion(quatMul(body.quaternion(), quat(glm::dvec3(0, 0, 1), body.angularSpeed() * dt)));
+        body.setPosition(body.position() + dt * body.linearVelocity());
     }
 }
 

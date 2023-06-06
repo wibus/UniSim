@@ -153,7 +153,7 @@ int Universe::launch(int argc, char** argv)
         update();
         draw();
 
-        _project->ui().render(_project->scene());
+        _project->ui().render(_project->scene(), _project->cameraMan());
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

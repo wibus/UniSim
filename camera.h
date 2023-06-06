@@ -30,11 +30,11 @@ public:
     const Viewport& viewport() const;
     void setViewport(Viewport viewport);
 
-    double exposure() const;
-    void setExposure(double exp);
+    float exposure() const;
+    void setExposure(float exp);
 
-    double fieldOfView() const;
-    void setFieldOfView(double fov);
+    float fieldOfView() const;
+    void setFieldOfView(float fov);
 
     glm::dvec3 position() const;
     void setPosition(const glm::dvec3& pos);
@@ -55,9 +55,9 @@ private:
     glm::dvec3 _position;
     glm::dvec3 _lookAt;
     glm::dvec3 _up;
-    double _fov;
+    float _fov;
 
-    double _exposure;
+    float _exposure;
     bool _autoExposure;
 };
 
@@ -68,11 +68,12 @@ public:
 
     CameraMan(Viewport viewport);
 
+    Camera& camera();
     const Camera& camera() const;
 
     void setViewport(Viewport viewport);
 
-    virtual void update(const Inputs& inputs, double dt) = 0;
+    virtual void update(const Inputs& inputs, float dt) = 0;
 
     virtual void handleKeyboard(const Inputs& inputs, const KeyboardEvent& event);
     virtual void handleMouseMove(const Inputs& inputs, const MouseMoveEvent& event);
@@ -91,12 +92,12 @@ inline const Viewport& Camera::viewport() const
     return _viewport;
 }
 
-inline double Camera::exposure() const
+inline float Camera::exposure() const
 {
     return _exposure;
 }
 
-inline double Camera::fieldOfView() const
+inline float Camera::fieldOfView() const
 {
     return _fov;
 }
@@ -114,6 +115,11 @@ inline glm::dvec3 Camera::lookAt() const
 inline glm::dvec3 Camera::up() const
 {
     return _up;
+}
+
+inline Camera& CameraMan::camera()
+{
+    return _camera;
 }
 
 inline const Camera& CameraMan::camera() const

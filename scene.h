@@ -24,38 +24,55 @@ public:
     void setTexture(const std::shared_ptr<Texture>& texture) { _texture = texture; }
     void setTexture(const std::string& fileName);
 
+    glm::vec4 quaternion() const { return _quaternion; }
+    void setQuaternion(const glm::vec4& quaternion) { _quaternion = quaternion; }
+
+    float exposure() const { return _exposure; }
+    void setExposure(float exposure) { _exposure = exposure; }
+
 private:
     std::shared_ptr<Texture> _texture;
+    glm::vec4 _quaternion;
+    float _exposure;
 };
 
 
 class DirectionalLight
 {
 public:
-    DirectionalLight();
+    DirectionalLight(const std::string& name);
     ~DirectionalLight();
 
-    glm::dvec3 position() const { return _position; }
-    void setPosition(const glm::dvec3& position) { _position = position; }
+    const std::string& name() const { return _name; }
 
-    glm::dvec3 radiance() const { return _radiance; }
-    void setRadiance(const glm::dvec3& radiance) { _radiance = radiance; }
+    glm::vec3 direction() const { return _position; }
+    void setDirection(const glm::vec3& position) { _position = position; }
 
-    double solidAngle() const { return _solidAngle; }
-    void setSolidAngle(double solidAngle) { _solidAngle = solidAngle; }
+    glm::vec3 radianceColor() const { return _radianceColor; }
+    void setRadianceColor(const glm::vec3& radiance) { _radianceColor = radiance; }
+
+    float radianceValue() const { return _radianceValue; }
+    void setRadianceValue(float radiance) { _radianceValue = radiance; }
+
+    float solidAngle() const { return _solidAngle; }
+    void setSolidAngle(float solidAngle) { _solidAngle = solidAngle; }
 
 private:
-    glm::dvec3 _position;
-    glm::dvec3 _radiance;
-    double _solidAngle;
+    std::string _name;
+    glm::vec3 _position;
+    glm::vec3 _radianceColor;
+    float _radianceValue;
+    float _solidAngle;
 };
 
 
 class Scene
 {
 public:
-    Scene();
+    Scene(const std::string& name);
     virtual ~Scene();
+
+    const std::string& name() const { return _name; }
 
     std::shared_ptr<Sky> sky() const { return _sky; }
 
@@ -66,6 +83,8 @@ public:
     const std::vector<std::shared_ptr<DirectionalLight>>& directionalLights() const { return _directionalLights; }
 
 protected:
+    std::string _name;
+
     std::shared_ptr<Sky> _sky;
 
     std::vector<std::shared_ptr<Object>> _objects;

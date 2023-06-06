@@ -24,11 +24,13 @@ double solveEccentricAnomaly(double e, double M)
     return solveEccentricAnomaly(M, e, M, 4);
 }
 
-Body::Body(double radius, double density, bool isStatic) :
+Body::Body(double radius, double densityGramPerCm3, bool isStatic) :
     _quaternion(0, 0, 1, 0),
     _position(0, 0, 0),
+    _angularSpeed(0),
+    _linearVelocity(0, 0, 0),
     _radius(radius),
-    _mass(4 / 3.0f * glm::pi<double>() * radius * radius * radius * (density * 1e3)),
+    _mass(4 / 3.0f * glm::pi<double>() * radius * radius * radius * (densityGramPerCm3 * 1e3)),
     _isStatic(isStatic)
 {
 
@@ -37,6 +39,41 @@ Body::Body(double radius, double density, bool isStatic) :
 Body::~Body()
 {
 
+}
+
+void Body::setPosition(const glm::dvec3 &position)
+{
+    _position = position;
+}
+
+void Body::setLinearVelocity(const glm::dvec3& linearVelocity)
+{
+    _linearVelocity = linearVelocity;
+}
+
+void Body::setQuaternion(const glm::dvec4& quaternion)
+{
+    _quaternion = quaternion;
+}
+
+void Body::setAngularSpeed(double angularSpeed)
+{
+    _angularSpeed = angularSpeed;
+}
+
+double Body::area() const
+{
+    return 4.0 * glm::pi<double>() * _radius * _radius;
+}
+
+double Body::volume() const
+{
+    return 4.0 / 3.0 * glm::pi<double>() * _radius * _radius * _radius;
+}
+
+double Body::density() const
+{
+    return _mass / volume();
 }
 
 // ref: https://personal.math.ubc.ca/~cass/courses/m309-01a/orbits.pdf
@@ -93,12 +130,12 @@ void Body::setupOrbit(
     double y_1 = b * glm::sin(E_1);
 
     _position = x_1 * u + y_1 * v;
-    _linearMomentum = ((x_1 * u + y_1 * v) - (x_0 * u + y_0 * v)) / (T_1 - T_0);
+    _linearVelocity = ((x_1 * u + y_1 * v) - (x_0 * u + y_0 * v)) / (T_1 - T_0);
 
     if(parent)
     {
         _position +=       parent->position();
-        _linearMomentum += parent->linearMomentum();
+        _linearVelocity += parent->linearVelocity();
     }
 }
 
@@ -108,34 +145,13 @@ void Body::setupRotation(
         double rightAscension,
         double declination)
 {
-    _rotation = 2 * glm::pi<double>() / ED(rotationPeriod);
+    _angularSpeed = 2 * glm::pi<double>() / ED(rotationPeriod);
 
     glm::dvec4 rightAscensionQuat = quat(glm::dvec3(0, 0, 1), glm::radians(rightAscension));
     glm::dvec4 declinationQuat    = quat(glm::dvec3(0, 1, 0), glm::radians(90 -declination));
     glm::dvec4 phaseQuat          = quat(glm::dvec3(0, 0, 1), glm::radians(phase));
 
     _quaternion = quatMul(EARTH_BASE_QUAT, quatMul(rightAscensionQuat, quatMul(declinationQuat, phaseQuat)));
-}
-
-
-void Body::setQuaternion(const glm::dvec4& quaternion)
-{
-    _quaternion = quaternion;
-}
-
-void Body::setPosition(const glm::dvec3 &position)
-{
-    _position = position;
-}
-
-void Body::setRotation(double rotation)
-{
-    _rotation = rotation;
-}
-
-void Body::setLinearMomentum(const glm::dvec3& momentum)
-{
-    _linearMomentum = momentum;
 }
 
 }

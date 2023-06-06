@@ -24,7 +24,7 @@ public:
 
     virtual ~Object();
 
-    std::string name() const { return _name; }
+    const std::string& name() const { return _name; }
 
     void setBody(const std::shared_ptr<Body>& body);
     std::shared_ptr<Body> body() const { return _body; }

@@ -32,8 +32,12 @@ struct Texture
     unsigned char* data;
     bool ownsMemory;
 
+    // ImGui image ID
+    unsigned int handle;
+
 private:
     Texture(Format format, unsigned char *pixelData);
+
 };
 
 class Material
@@ -45,11 +49,14 @@ public:
     bool loadAlbedo(const std::string& fileName);
     Texture* albedo() const;
 
-    glm::dvec3 defaultAlbedo() const { return _defaultAlbedo; }
-    void setDefaultAlbedo(const glm::dvec3& albedo);
+    glm::vec3 defaultAlbedo() const { return _defaultAlbedo; }
+    void setDefaultAlbedo(const glm::vec3& albedo);
 
-    glm::dvec3 defaultEmission() const { return _defaultEmission; }
-    void setDefaultEmission(const glm::dvec3& emission);
+    glm::vec3 defaultEmissionColor() const { return _defaultEmissionColor; }
+    void setDefaultEmissionColor(const glm::vec3& emissionColor);
+
+    float defaultEmissionLuminance() const { return _defaultEmissionLuminance; }
+    void setDefaultEmissionLuminance(float emissionLuminance);
 
     float defaultRoughness() const { return _defaultRoughness; }
     void setDefaultRoughness(float roughness);
@@ -64,8 +71,9 @@ private:
     std::string _name;
     Texture* _albedo;
 
-    glm::dvec3 _defaultAlbedo;
-    glm::dvec3 _defaultEmission;
+    glm::vec3 _defaultAlbedo;
+    glm::vec3 _defaultEmissionColor;
+    float _defaultEmissionLuminance;
     float _defaultRoughness;
     float _defaultMetalness;
     float _defaultReflectance;

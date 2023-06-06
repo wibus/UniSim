@@ -21,12 +21,12 @@ void Camera::setViewport(Viewport viewport)
     _viewport = viewport;
 }
 
-void Camera::setExposure(double exp)
+void Camera::setExposure(float exp)
 {
     _exposure = exp;
 }
 
-void Camera::setFieldOfView(double fov)
+void Camera::setFieldOfView(float fov)
 {
     _fov = fov;
 }
@@ -58,9 +58,9 @@ glm::mat4 Camera::proj() const
 {
     return glm::perspective(
         _fov,
-        _viewport.width / (double) _viewport.height,
-        1.0,
-        2.0);
+        _viewport.width / (float) _viewport.height,
+        1.0f,
+        2.0f);
 }
 
 glm::mat4 Camera::screen() const

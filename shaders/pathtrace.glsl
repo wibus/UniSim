@@ -26,7 +26,7 @@ struct Instance
 
 struct DirectionalLight
 {
-    vec4 positionCosThetaMax;
+    vec4 directionCosThetaMax;
     vec4 radianceSolidAngle;
 };
 
@@ -72,13 +72,13 @@ layout (std140, binding = 0) uniform CommonParams
 {
     mat4 rayMatrix;
     vec4 eyePosition;
-    float radiusScale;
     float exposure;
     uint frameIndex;
 
     int pad1;
 
     // Background
+    float backgroundExposure;
     vec4 backgroundQuat;
 
     layout(rgba8) readonly image2D blueNoise[64];
@@ -331,10 +331,10 @@ Intersection intersects(in Ray ray, in uint instanceId)
 
     float dSqr = (dot(L, L) - t_ca*t_ca);
 
-    if(dSqr > instance.radius * instance.radius * (radiusScale * radiusScale))
+    if(dSqr > instance.radius * instance.radius)
         return intersection;
 
-    float t_hc = sqrt(instance.radius * instance.radius * (radiusScale * radiusScale) - dSqr);
+    float t_hc = sqrt(instance.radius * instance.radius - dSqr);
     float t_0 = t_ca - t_hc;
     float t_1 = t_ca + t_hc;
 
@@ -481,11 +481,11 @@ vec3 sampleDirectionalLight(uint lightId, Ray ray, HitInfo hitInfo)
 {
     DirectionalLight light = directionalLights[lightId];
 
-    vec3 T, B, N = light.positionCosThetaMax.xyz;
+    vec3 T, B, N = light.directionCosThetaMax.xyz;
     makeOrthBase(N, T, B);
 
     vec2 noise = sampleBlueNoise(frameIndex, ray.depth, true);
-    vec3 l = sampleUniformCone(noise.r, noise.g, light.positionCosThetaMax.w);
+    vec3 l = sampleUniformCone(noise.r, noise.g, light.directionCosThetaMax.w);
     vec3 L = normalize(l.x * T + l.y * B + l.z * N);
 
     Ray shadowRay;
@@ -530,14 +530,14 @@ vec3 shadeSky(in Ray ray)
     vec2 uv = findUV(backgroundQuat, ray.direction);
     vec3 skyLuminance = texture2D(backgroundImg, vec2(uv.x, 1 - uv.y)).rgb;
 
-    vec3 L_in = toLinear(skyLuminance);
+    vec3 L_in = toLinear(skyLuminance) * backgroundExposure;
 
     for(uint dl = 0; dl < directionalLights.length(); ++dl)
     {
         DirectionalLight light = directionalLights[dl];
-        float cosTheta = dot(light.positionCosThetaMax.xyz, ray.direction);
+        float cosTheta = dot(light.directionCosThetaMax.xyz, ray.direction);
 
-        if(cosTheta >= light.positionCosThetaMax.w)
+        if(cosTheta >= light.directionCosThetaMax.w)
         {
             float lightAreaPdf = 1 / light.radianceSolidAngle.a;
             float weight = ray.bsdfPdf != DELTA ? misHeuristic(1, ray.bsdfPdf, 1, lightAreaPdf) : 1;

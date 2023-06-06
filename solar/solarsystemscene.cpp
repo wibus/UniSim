@@ -1,5 +1,6 @@
 #include "solarsystemscene.h"
 
+#include "../units.h"
 #include "../object.h"
 #include "../body.h"
 #include "../mesh.h"
@@ -18,14 +19,16 @@ std::shared_ptr<Object> makePlanet(const std::string& name, double radius, doubl
     return object;
 }
 
-SolarSystemScene::SolarSystemScene()
+SolarSystemScene::SolarSystemScene() :
+    Scene("Solar System")
 {
     _sky->setTexture("textures/background.jpg");
+    _sky->setQuaternion(quatConjugate(EARTH_BASE_QUAT));
 
     // Sun
     std::shared_ptr<Object> sun = makePlanet("Sun", 696.340e6, 1.41f);
     sun->material()->setDefaultAlbedo(glm::dvec3(1.0, 1.0, 0.5));
-    sun->material()->setDefaultEmission(glm::dvec3(1.0, 1.0, 1.0) * 2.009e7);
+    sun->material()->setDefaultEmissionColor(glm::dvec3(1.0, 1.0, 1.0) * 2.009e7);
     _objects.push_back(sun);
 
     // Planets
@@ -60,25 +63,27 @@ SolarSystemScene::SolarSystemScene()
     auto setupMaterial = [](
             std::shared_ptr<Object> body,
             const std::string& name,
-            const glm::dvec3& defaultAlbedo,
-            const glm::dvec3& defaultEmission = glm::dvec3())
+            const glm::vec3& defaultAlbedo,
+            const glm::vec3& defaultEmission = glm::vec3(),
+            float defaultEmissionLuminance = 0.0f)
     {
         std::shared_ptr<Material> material(new Material(name));
         material->loadAlbedo("textures/"+name+"_albedo.jpg");
         material->setDefaultAlbedo(defaultAlbedo);
-        material->setDefaultEmission(defaultEmission);
+        material->setDefaultEmissionColor(defaultEmission);
+        material->setDefaultEmissionLuminance(defaultEmissionLuminance);
         body->setMaterial(material);
     };
 
-    setupMaterial(sun,      "sun",      glm::dvec3(1.0, 1.0, 0.5), glm::dvec3(1.0, 1.0, 1.0) * 2.009e7);
-    setupMaterial(mercury,  "mercury",  glm::dvec3(0.5, 0.5, 0.5));
-    setupMaterial(venus,    "venus",    glm::dvec3(0.8, 0.5, 0.2));
-    setupMaterial(earth,    "earth",    glm::dvec3(0.1, 0.8, 0.5));
-    setupMaterial(mars,     "mars",     glm::dvec3(0.8, 0.3, 0.1));
-    setupMaterial(jupiter,  "jupiter",  glm::dvec3(0.8, 0.6, 0.5));
-    setupMaterial(saturn,   "saturn",   glm::dvec3(0.8, 0.9, 0.3));
-    setupMaterial(uranus,   "uranus",   glm::dvec3(0.1, 0.5, 0.8));
-    setupMaterial(neptune,  "neptune",  glm::dvec3(0.1, 0.1, 0.7));
+    setupMaterial(sun,      "sun",      glm::vec3(1.0, 1.0, 0.5), glm::vec3(1.0, 1.0, 1.0), 2.009e7);
+    setupMaterial(mercury,  "mercury",  glm::vec3(0.5, 0.5, 0.5));
+    setupMaterial(venus,    "venus",    glm::vec3(0.8, 0.5, 0.2));
+    setupMaterial(earth,    "earth",    glm::vec3(0.1, 0.8, 0.5));
+    setupMaterial(mars,     "mars",     glm::vec3(0.8, 0.3, 0.1));
+    setupMaterial(jupiter,  "jupiter",  glm::vec3(0.8, 0.6, 0.5));
+    setupMaterial(saturn,   "saturn",   glm::vec3(0.8, 0.9, 0.3));
+    setupMaterial(uranus,   "uranus",   glm::vec3(0.1, 0.5, 0.8));
+    setupMaterial(neptune,  "neptune",  glm::vec3(0.1, 0.1, 0.7));
 
     _objects.push_back(mercury);
     _objects.push_back(venus);

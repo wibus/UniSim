@@ -3,7 +3,7 @@
 namespace unisim
 {
 
-Mesh::Mesh(bool isSphere, double radius) :
+Mesh::Mesh(bool isSphere, float radius) :
     _isSphere(isSphere),
     _radius(radius)
 {

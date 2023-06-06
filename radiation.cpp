@@ -41,7 +41,7 @@ struct GpuInstance
 
 struct GpuDirectionalLight
 {
-    glm::vec4 positionCosThetaMax;
+    glm::vec4 directionCosThetaMax;
     glm::vec4 radianceSolidAngle;
 };
 
@@ -71,13 +71,13 @@ struct CommonParams
 {
     glm::mat4 rayMatrix;
     glm::vec4 eyePosition;
-    GLfloat radiusScale;
     GLfloat exposure;
     GLuint frameIndex;
 
-    int pad1;
+    GLint pad1;
 
     // Background
+    float backgroundExposure;
     glm::vec4 backgroundQuat;
 
     GPUBindlessTexture blueNoise[Radiation::BLUE_NOISE_TEX_COUNT];
@@ -300,6 +300,7 @@ GpuMaterial createGpuMaterial(const std::shared_ptr<Material>& material)
     {
         GLuint albedoId = generateImageTexture(*material->albedo());
         alebdoHdl = makeImageBindless(material->albedo(), albedoId);
+        material->albedo()->handle = albedoId;
     }
 
     return {GPUBindlessTexture(alebdoHdl), GPUBindlessTexture(0)};
@@ -319,6 +320,7 @@ bool Radiation::initialize(const Scene& scene, const Viewport& viewport)
     if(skyTexture)
     {
         _backgroundTexId = generateImageTexture(*skyTexture);
+        skyTexture->handle = _backgroundTexId;
     }
     else
     {
@@ -332,11 +334,10 @@ bool Radiation::initialize(const Scene& scene, const Viewport& viewport)
         ss << "LDR_RGBA_" << i << ".png";
         std::string blueNoiseName = ss.str();
 
-        Material blueNoiseMat(blueNoiseName);
-        if(blueNoiseMat.loadAlbedo("textures/bluenoise64/" + blueNoiseName))
+        if(Texture* texture = Texture::load("textures/bluenoise64/" + blueNoiseName))
         {
-            _blueNoiseTexIds[i] = generateImageTexture(*blueNoiseMat.albedo());
-            _blueNoiseTexHdls[i] = makeImageBindless(blueNoiseMat.albedo(), _blueNoiseTexIds[i]);
+            _blueNoiseTexIds[i] = generateImageTexture(*texture);
+            _blueNoiseTexHdls[i] = makeImageBindless(texture, _blueNoiseTexIds[i]);
         }
         else
         {
@@ -439,11 +440,11 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
     CommonParams params;
     params.rayMatrix = glm::inverse(viewToScreen);
     params.eyePosition = glm::vec4(camera.position(), 1);
-    params.pad1 = 0;
-    params.radiusScale = 1;
     params.exposure = camera.exposure();
     params.frameIndex = 0; // Must be constant for hasing
-    params.backgroundQuat = glm::vec4(0, 0, 0, 1);// quatConjugate(EARTH_BASE_QUAT);
+    params.pad1 = 1;
+    params.backgroundExposure = scene.sky()->exposure();
+    params.backgroundQuat = scene.sky()->quaternion();
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
         params.blueNoise[i].texture = _blueNoiseTexHdls[i];
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
@@ -460,7 +461,9 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
         std::shared_ptr<Object> object = objects[i];
         GpuInstance& gpuInstance = gpuInstances.emplace_back();
         gpuInstance.albedo = glm::vec4(object->material()->defaultAlbedo(), 1.0);
-        gpuInstance.emission = glm::vec4(object->material()->defaultEmission(), 1.0);
+        gpuInstance.emission = glm::vec4(object->material()->defaultEmissionColor()
+                                         * object->material()->defaultEmissionLuminance(),
+                                         1.0);
         gpuInstance.specular = glm::vec4(
                     // Roughness to GGX's 'a' parameter
                     object->material()->defaultRoughness() * object->material()->defaultRoughness(),
@@ -473,7 +476,7 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
         gpuInstance.mass = object->body()->mass();
         gpuInstance.materialId = _objectToMat[i];
 
-        if(glm::any(glm::greaterThan(object->material()->defaultEmission(), glm::dvec3())))
+        if(glm::any(glm::greaterThan(object->material()->defaultEmissionColor(), glm::vec3())))
         {
             gpuEmitters.push_back(i);
         }
@@ -487,11 +490,11 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
     {
         std::shared_ptr<DirectionalLight> directionalLight = directionalLights[i];
         GpuDirectionalLight& gpuDirectionalLight = gpuDirectionalLights.emplace_back();
-        gpuDirectionalLight.positionCosThetaMax = glm::vec4(
-                    directionalLight->position(),
+        gpuDirectionalLight.directionCosThetaMax = glm::vec4(
+                    directionalLight->direction(),
                     1 - directionalLight->solidAngle() / (2 * glm::pi<float>()));
         gpuDirectionalLight.radianceSolidAngle = glm::vec4(
-                    directionalLight->radiance(),
+                    directionalLight->radianceColor() * directionalLight->radianceValue(),
                     directionalLight->solidAngle());
     }
 

@@ -12,9 +12,6 @@ class PathTracerUi : public Ui
 public:
     PathTracerUi();
     virtual ~PathTracerUi();
-
-    void render(Scene& scene) override;
-
 private:
 };
 

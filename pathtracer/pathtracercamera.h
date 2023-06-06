@@ -12,7 +12,7 @@ class PathTracerCameraMan : public CameraMan
 public:
     PathTracerCameraMan(Scene &scene, Viewport viewport);
 
-    void update(const Inputs& inputs, double dt) override;
+    void update(const Inputs& inputs, float dt) override;
 
     void handleKeyboard(const Inputs& inputs, const KeyboardEvent& event) override;
     void handleMouseMove(const Inputs& inputs, const MouseMoveEvent& event) override;
@@ -35,10 +35,10 @@ public:
     void strafeUp();
     void strafeDown();
 
-    static const double ZOOM_INC;
-    static const double EXPOSURE_INC;
-    static const double ROTATE_INC;
-    static const double APPROACH_INC;
+    static const float ZOOM_INC;
+    static const float EXPOSURE_INC;
+    static const float ROTATE_INC;
+    static const float APPROACH_INC;
 
 protected:
     void orbit(int newBodyId, int oldBodyId);

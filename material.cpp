@@ -46,7 +46,8 @@ Texture::Texture() :
     format(UNORM8),
     numComponents(4),
     data(nullptr),
-    ownsMemory(true)
+    ownsMemory(true),
+    handle(0)
 {
 
 }
@@ -63,7 +64,8 @@ Texture::Texture(Format format, unsigned char* pixelData) :
     format(format),
     numComponents(4),
     data(pixelData),
-    ownsMemory(false)
+    ownsMemory(false),
+    handle(0)
 {}
 
 Texture* Texture::load(const std::string& fileName)
@@ -148,7 +150,7 @@ Texture* Texture::loadJpeg(const std::string& fileName)
                     if(cinfo.num_components > 3)
                         p[i * texture->numComponents + 3] = scanline[i * cinfo.num_components + 3];
                     else
-                        p[i * texture->numComponents + 3] = 0;
+                        p[i * texture->numComponents + 3] = 255;
                 }
             }
         }
@@ -290,7 +292,8 @@ Material::Material(const std::string& name) :
     _name(name),
     _albedo(nullptr),
     _defaultAlbedo(1, 1, 1),
-    _defaultEmission(0, 0, 0),
+    _defaultEmissionColor(0, 0, 0),
+    _defaultEmissionLuminance(0),
     _defaultRoughness(1),
     _defaultMetalness(0),
     _defaultReflectance(0.04)
@@ -304,14 +307,19 @@ Material::~Material()
 }
 
 
-void Material::setDefaultAlbedo(const glm::dvec3& albedo)
+void Material::setDefaultAlbedo(const glm::vec3& albedo)
 {
     _defaultAlbedo = albedo;
 }
 
-void Material::setDefaultEmission(const glm::dvec3& emission)
+void Material::setDefaultEmissionColor(const glm::vec3& emissionColor)
 {
-    _defaultEmission = emission;
+    _defaultEmissionColor = emissionColor;
+}
+
+void Material::setDefaultEmissionLuminance(float emissionLuminance)
+{
+    _defaultEmissionLuminance = emissionLuminance;
 }
 
 void Material::setDefaultRoughness(float roughness)
