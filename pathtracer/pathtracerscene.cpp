@@ -23,13 +23,13 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
     return object;
 }
 
-std::shared_ptr<DirectionalLight> makeDirLight(const std::string& name, const glm::dvec3& position, const glm::dvec3& radianceColor, double radianceValue, double solidAngle)
+std::shared_ptr<DirectionalLight> makeDirLight(const std::string& name, const glm::dvec3& position, const glm::dvec3& emission, double luminance, double solidAngle)
 {
     std::shared_ptr<DirectionalLight> light(new DirectionalLight(name));
 
     light->setDirection(glm::normalize(position));
-    light->setRadianceColor(radianceColor);
-    light->setRadianceValue(radianceValue);
+    light->setEmissionColor(emission);
+    light->setEmissionLuminance(luminance);
     light->setSolidAngle(solidAngle);
 
     return light;
@@ -39,6 +39,7 @@ PathTracerScene::PathTracerScene() :
     Scene("Path Tracer")
 {
     _sky->setTexture("textures/syferfontein_0d_clear_puresky_4k.exr");
+    _sky->setExposure(glm::pow(2.0f, 10.0f));
 
     auto light = makeObject("Light", 1, {0, 7.5, 9});
     auto floor = makeObject("Floor", 1000, {0, 0, -1000});
@@ -84,7 +85,7 @@ PathTracerScene::PathTracerScene() :
     _objects.push_back(ballRight);
     _objects.push_back(ballFront);
 
-    auto sun = makeDirLight("Sun", glm::dvec3(2, -1, 1), glm::dvec3(1, 0.9, 0.7), 1.6e5, 60.0e-6);
+    auto sun = makeDirLight("Sun", glm::dvec3(2, -1, 1), glm::dvec3(1, 0.9, 0.7), 1.6e9, 60.0e-6);
     _directionalLights.push_back(sun);
 }
 

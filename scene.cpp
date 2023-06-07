@@ -11,7 +11,8 @@ namespace unisim
 
 DirectionalLight::DirectionalLight(const std::string& name) :
     _name(name),
-    _radianceValue(1)
+    _emissionColor(1, 1, 1),
+    _emissionLuminance(1)
 {
 
 }

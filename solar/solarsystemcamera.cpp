@@ -17,7 +17,7 @@ namespace unisim
 {
 
 const float SolarSystemCameraMan::ZOON_INC = 0.1;
-const float SolarSystemCameraMan::EXPOSURE_INC = glm::sqrt(2.0);
+const float SolarSystemCameraMan::EV_INC = 0.5;
 const float SolarSystemCameraMan::ROTATE_INC = glm::pi<float>() * 0.001;
 const float SolarSystemCameraMan::APPROACH_INC = 1.01;
 
@@ -36,7 +36,7 @@ SolarSystemCameraMan::SolarSystemCameraMan(Scene& scene, Viewport viewport) :
     _autoExpose(true)
 {
     _camera.setViewport(viewport);
-    _camera.setExposure(0.004);
+    _camera.setEV(15);
     setBodyIndex(3);
     setMode(SolarSystemCameraMan::Mode::Orbit);
     setDistance(2.5e7);
@@ -230,13 +230,13 @@ void SolarSystemCameraMan::orbit(int newBodyId, int oldBodyId)
                 if(!(glm::any(glm::bvec3(_scene.objects()[oldBodyId]->material()->defaultEmissionColor())) ||
                      glm::any(glm::bvec3(_scene.objects()[newBodyId]->material()->defaultEmissionColor()))))
                 {
-                glm::dvec3 oldPos = _scene.objects()[oldBodyId]->body()->position();
-                float oldRelIrradiance = 1.0 / glm::dot(oldPos, oldPos);
+                    glm::dvec3 oldPos = _scene.objects()[oldBodyId]->body()->position();
+                    float oldRelIrradiance = 1.0 / glm::dot(oldPos, oldPos);
 
-                glm::dvec3 newPos = _scene.objects()[newBodyId]->body()->position();
-                float newRelIrradiance = 1.0 / glm::dot(newPos, newPos);
+                    glm::dvec3 newPos = _scene.objects()[newBodyId]->body()->position();
+                    float newRelIrradiance = 1.0 / glm::dot(newPos, newPos);
 
-                _camera.setExposure(_camera.exposure() * oldRelIrradiance / newRelIrradiance);
+                    _camera.setIso(_camera.iso() * newRelIrradiance / oldRelIrradiance);
                 }
             }
         }
@@ -282,12 +282,12 @@ void SolarSystemCameraMan::zoomOut()
 
 void SolarSystemCameraMan::exposeUp()
 {
-    _camera.setExposure(_camera.exposure() * EXPOSURE_INC);
+    _camera.setEV(_camera.ev() - EV_INC);
 }
 
 void SolarSystemCameraMan::exposeDown()
 {
-    _camera.setExposure(_camera.exposure() / EXPOSURE_INC);
+    _camera.setEV(_camera.ev() + EV_INC);
 }
 
 void SolarSystemCameraMan::enableAutoExposure(bool enabled)

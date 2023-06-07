@@ -17,7 +17,7 @@ namespace unisim
 {
 
 const float PathTracerCameraMan::ZOOM_INC = 0.1;
-const float PathTracerCameraMan::EXPOSURE_INC = glm::sqrt(2.0);
+const float PathTracerCameraMan::EV_INC = 0.5;
 const float PathTracerCameraMan::ROTATE_INC = glm::pi<float>() * 0.01;
 const float PathTracerCameraMan::APPROACH_INC = 1.01;
 
@@ -33,9 +33,9 @@ PathTracerCameraMan::PathTracerCameraMan(Scene& scene, Viewport viewport) :
     _autoExpose(true)
 {
     _camera.setViewport(viewport);
-    _camera.setExposure(1);
 
     _position = glm::dvec3(0, -5, 5);
+    rotatePrimary(0, 20);
 }
 
 void PathTracerCameraMan::update(const Inputs& inputs, float dt)
@@ -133,12 +133,12 @@ void PathTracerCameraMan::zoomOut()
 
 void PathTracerCameraMan::exposeUp()
 {
-    _camera.setExposure(_camera.exposure() * EXPOSURE_INC);
+    _camera.setEV(_camera.ev() - EV_INC);
 }
 
 void PathTracerCameraMan::exposeDown()
 {
-    _camera.setExposure(_camera.exposure() / EXPOSURE_INC);
+    _camera.setEV(_camera.ev() + EV_INC);
 }
 
 void PathTracerCameraMan::enableAutoExposure(bool enabled)

@@ -12,8 +12,16 @@ Camera::Camera(Viewport viewport) :
     _lookAt(0, -1, 0),
     _up(0, 0, 1),
     _fov(45.0 / 180.0 * glm::pi<double>()),
-    _exposure(1)
+    _ev(1),
+    _filmHeight(0.024),
+    _focalLength(0.035),
+    _aperture(16),
+    _shutterSpeed(1 / 100.0f),
+    _iso(100)
 {
+    updateEV();
+    // Update field of view
+    setFocalLength(_focalLength);
 }
 
 void Camera::setViewport(Viewport viewport)
@@ -21,14 +29,58 @@ void Camera::setViewport(Viewport viewport)
     _viewport = viewport;
 }
 
-void Camera::setExposure(float exp)
+void Camera::setFilmHeight(float height)
 {
-    _exposure = exp;
+    _filmHeight = height;
+
+    // Update focal length
+    setFieldOfView(_fov);
+}
+
+void Camera::setFocalLength(float length)
+{
+    _focalLength = length;
+
+    _fov = 2 * glm::atan(_filmHeight / (2 * _focalLength));
 }
 
 void Camera::setFieldOfView(float fov)
 {
     _fov = fov;
+
+    _focalLength = _filmHeight / glm::tan(_fov * 0.5f) * 0.5f;
+}
+
+void Camera::setAperture(float aperture)
+{
+    _aperture = aperture;
+    updateEV();
+}
+
+void Camera::setShutterSpeed(float speed)
+{
+    _shutterSpeed = speed;
+    updateEV();
+}
+
+void Camera::setIso(float iso)
+{
+    _iso = iso;
+    updateEV();
+}
+
+void Camera::setEV(float ev)
+{
+    _ev = ev;
+
+    _iso = glm::exp2(_ev) * 100.0f * _shutterSpeed / (_aperture * _aperture);
+}
+
+float Camera::exposure() const
+{
+    float sunIlluminanceNoon = 30000;
+    float sunny16Light = (16 * 16 * 100);
+    return (sunny16Light / glm::exp2(_ev)) / sunIlluminanceNoon;
 }
 
 void Camera::setPosition(const glm::dvec3& pos)
@@ -69,6 +121,11 @@ glm::mat4 Camera::screen() const
         glm::scale(glm::vec3(_viewport.width, _viewport.height, 1.0)) *
         glm::scale(glm::vec3(0.5, 0.5, 1.0)) *
         glm::translate(glm::vec3(1, 1, 0));
+}
+
+void Camera::updateEV()
+{
+    _ev = glm::log2(_aperture * _aperture * _iso / (100 * _shutterSpeed));
 }
 
 CameraMan::CameraMan(Viewport viewport) :

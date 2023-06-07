@@ -27,7 +27,7 @@ struct Instance
 struct DirectionalLight
 {
     vec4 directionCosThetaMax;
-    vec4 radianceSolidAngle;
+    vec4 emissionSolidAngle;
 };
 
 struct Material
@@ -494,7 +494,7 @@ vec3 sampleDirectionalLight(uint lightId, Ray ray, HitInfo hitInfo)
 
     Intersection shadowIntersection = raycast(shadowRay);
     if(shadowIntersection.t == 1 / 0.0)
-        return evaluateBSDF(ray, hitInfo, L, light.radianceSolidAngle.a) * light.radianceSolidAngle.rgb;
+        return evaluateBSDF(ray, hitInfo, L, light.emissionSolidAngle.a) * light.emissionSolidAngle.rgb;
     else
         return vec3(0);
 }
@@ -539,9 +539,9 @@ vec3 shadeSky(in Ray ray)
 
         if(cosTheta >= light.directionCosThetaMax.w)
         {
-            float lightAreaPdf = 1 / light.radianceSolidAngle.a;
+            float lightAreaPdf = 1 / light.emissionSolidAngle.a;
             float weight = ray.bsdfPdf != DELTA ? misHeuristic(1, ray.bsdfPdf, 1, lightAreaPdf) : 1;
-            L_in += weight * light.radianceSolidAngle.rgb;
+            L_in += weight * light.emissionSolidAngle.rgb;
         }
     }
 

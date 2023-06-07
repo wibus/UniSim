@@ -42,7 +42,7 @@ struct GpuInstance
 struct GpuDirectionalLight
 {
     glm::vec4 directionCosThetaMax;
-    glm::vec4 radianceSolidAngle;
+    glm::vec4 emissionSolidAngle;
 };
 
 struct GPUBindlessTexture
@@ -494,8 +494,8 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
         gpuDirectionalLight.directionCosThetaMax = glm::vec4(
                     directionalLight->direction(),
                     1 - directionalLight->solidAngle() / (2 * glm::pi<float>()));
-        gpuDirectionalLight.radianceSolidAngle = glm::vec4(
-                    directionalLight->radianceColor() * directionalLight->radianceValue(),
+        gpuDirectionalLight.emissionSolidAngle = glm::vec4(
+                    directionalLight->emissionColor() * directionalLight->emissionLuminance(),
                     directionalLight->solidAngle());
     }
 

@@ -30,11 +30,28 @@ public:
     const Viewport& viewport() const;
     void setViewport(Viewport viewport);
 
-    float exposure() const;
-    void setExposure(float exp);
+    float filmHeight() const { return _filmHeight; }
+    void setFilmHeight(float height);
+
+    float focalLength() const { return _focalLength; }
+    void setFocalLength(float length);
 
     float fieldOfView() const;
     void setFieldOfView(float fov);
+
+    float aperture() const { return _aperture; }
+    void setAperture(float aperture);
+
+    float shutterSpeed() const { return _shutterSpeed; }
+    void setShutterSpeed(float speed);
+
+    float iso() const { return _iso; }
+    void setIso(float iso);
+
+    float ev() const;
+    void setEV(float ev);
+
+    float exposure() const;
 
     glm::dvec3 position() const;
     void setPosition(const glm::dvec3& pos);
@@ -50,6 +67,8 @@ public:
     glm::mat4 screen() const;
 
 private:
+    void updateEV();
+
     Viewport _viewport;
 
     glm::dvec3 _position;
@@ -57,8 +76,13 @@ private:
     glm::dvec3 _up;
     float _fov;
 
-    float _exposure;
-    bool _autoExposure;
+    float _ev;
+
+    float _filmHeight;
+    float _focalLength;
+    float _aperture;
+    float _shutterSpeed;
+    float _iso;
 };
 
 class CameraMan
@@ -92,9 +116,9 @@ inline const Viewport& Camera::viewport() const
     return _viewport;
 }
 
-inline float Camera::exposure() const
+inline float Camera::ev() const
 {
-    return _exposure;
+    return _ev;
 }
 
 inline float Camera::fieldOfView() const

@@ -41,7 +41,7 @@ public:
     void strafeDown();
 
     static const float ZOON_INC;
-    static const float EXPOSURE_INC;
+    static const float EV_INC;
     static const float ROTATE_INC;
     static const float APPROACH_INC;
 

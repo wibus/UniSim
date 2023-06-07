@@ -48,11 +48,11 @@ public:
     glm::vec3 direction() const { return _position; }
     void setDirection(const glm::vec3& position) { _position = position; }
 
-    glm::vec3 radianceColor() const { return _radianceColor; }
-    void setRadianceColor(const glm::vec3& radiance) { _radianceColor = radiance; }
+    glm::vec3 emissionColor() const { return _emissionColor; }
+    void setEmissionColor(const glm::vec3& color) { _emissionColor = color; }
 
-    float radianceValue() const { return _radianceValue; }
-    void setRadianceValue(float radiance) { _radianceValue = radiance; }
+    float emissionLuminance() const { return _emissionLuminance; }
+    void setEmissionLuminance(float luminance) { _emissionLuminance = luminance; }
 
     float solidAngle() const { return _solidAngle; }
     void setSolidAngle(float solidAngle) { _solidAngle = solidAngle; }
@@ -60,8 +60,8 @@ public:
 private:
     std::string _name;
     glm::vec3 _position;
-    glm::vec3 _radianceColor;
-    float _radianceValue;
+    glm::vec3 _emissionColor;
+    float _emissionLuminance;
     float _solidAngle;
 };
 

@@ -39,7 +39,7 @@ void Ui::hide()
 bool displayExposure(float& exposure)
 {
     float ev = glm::log2(exposure);
-    if(ImGui::SliderFloat("Exposure", &ev, -10, 10))
+    if(ImGui::SliderFloat("Exposure", &ev, -20, 20))
     {
         exposure = glm::pow(2.0f, ev);
         return true;
@@ -99,13 +99,13 @@ void displayDirectionalLights(Scene& scene)
                 if(ImGui::SliderFloat3("Direction", &direction[0], -1, 1))
                     light->setDirection(glm::normalize(direction));
 
-                glm::vec3 radianceColor = light->radianceColor();
-                if(ImGui::ColorPicker3("Radiance Color", &radianceColor[0]))
-                    light->setRadianceColor(radianceColor);
+                glm::vec3 emissionColor = light->emissionColor();
+                if(ImGui::ColorPicker3("Emission Color", &emissionColor[0]))
+                    light->setEmissionColor(emissionColor);
 
-                float radianceValue = light->radianceValue();
-                if(ImGui::InputFloat("Radiance Value", &radianceValue))
-                    light->setRadianceValue(glm::max(0.0f, radianceValue));
+                float emissionLuminance = light->emissionLuminance();
+                if(ImGui::InputFloat("Emission Luminance", &emissionLuminance))
+                    light->setEmissionLuminance(glm::max(0.0f, emissionLuminance));
 
                 float solidAngle = light->solidAngle();
                 if(ImGui::InputFloat("Solid Angle", &solidAngle, 0.0f, 0.0f, "%.6f"))
@@ -242,13 +242,35 @@ void displayCamera(CameraMan& cameraMan)
     int viewport[2] = {camera.viewport().width, camera.viewport().height};
     ImGui::InputInt2("Viewport", &viewport[0], ImGuiInputTextFlags_ReadOnly);
 
-    float exposure = camera.exposure();
-    if(displayExposure(exposure))
-        camera.setExposure(exposure);
+    float filmHeight = camera.filmHeight() * 1000.0f;
+    if(ImGui::InputFloat("Film Height mm", &filmHeight))
+        camera.setFilmHeight(filmHeight / 1000.0f);
+
+    float focalLength = camera.focalLength() * 1000.0f;
+    if(ImGui::InputFloat("Focal Length", &focalLength))
+        camera.setFocalLength(focalLength / 1000.0f);
 
     float fov = camera.fieldOfView();
     if(ImGui::SliderAngle("FOV", &fov, 1, 179))
         camera.setFieldOfView(fov);
+
+    float aperture = camera.aperture();
+    if(ImGui::InputFloat("Aperture", &aperture, 0, 0, "%.1f"))
+        camera.setAperture(aperture);
+
+    float shutterSpeed = camera.shutterSpeed();
+    if(ImGui::InputFloat("Shutter Speed", &shutterSpeed))
+        camera.setShutterSpeed(shutterSpeed);
+
+    float iso = camera.iso();
+    if(ImGui::InputFloat("ISO", &iso))
+        camera.setIso(iso);
+
+    float ev = camera.ev();
+    if(ImGui::SliderFloat("EV", &ev, -6.0f, 17.0f))
+        camera.setEV(ev);
+
+    ImGui::Separator();
 
     glm::vec3 position = camera.position();
     if(ImGui::InputFloat3("Position", &position[0]))
