@@ -71,19 +71,20 @@ struct HitInfo
 layout (std140, binding = 0) uniform CommonParams
 {
     mat4 rayMatrix;
-    vec4 eyePosition;
+    vec4 lensePosition;
+    vec4 lenseDirection;
+    float focusDistance;
+    float apertureRadius;
     float exposure;
+
     uint frameIndex;
 
-    int pad1;
+    layout(rgba8) readonly image2D blueNoise[64];
+    vec4 halton[64];
 
     // Background
-    float backgroundExposure;
     vec4 backgroundQuat;
-
-    layout(rgba8) readonly image2D blueNoise[64];
-
-    vec2 halton[64];
+    float backgroundExposure;
 };
 
 layout (std140, binding = 1) buffer Instances
@@ -167,21 +168,20 @@ void makeOrthBase(in vec3 N, out vec3 T, out vec3 B)
     B = normalize(cross(N, T));
 }
 
-vec2 sampleBlueNoise(uint frame, uint depth, bool isShadow)
+vec4 sampleBlueNoise(uint depth)
 {
-    uint cycle = frame / 64;
+    uint cycle = frameIndex / 64;
 
     uint haltonIndex = cycle % 64;
-    vec2 haltonSample = halton[haltonIndex];
+    vec2 haltonSample = vec2(halton[haltonIndex]);
     ivec2 haltonOffset = ivec2(haltonSample * 64);
     ivec2 blueNoiseXY = (ivec2(gl_GlobalInvocationID.xy) + haltonOffset) % 64;
 
-    uint bluneNoiseIndex = (frame + depth) % 64;
-    vec4 blueNoiseChannels = imageLoad(blueNoise[bluneNoiseIndex], blueNoiseXY);
-    vec2 blueNoise = (!isShadow ? blueNoiseChannels.rg : blueNoiseChannels.ba);
+    uint bluenNoiseIndex = (frameIndex + depth) % 64;
+    vec4 blueNoise = imageLoad(blueNoise[bluenNoiseIndex], blueNoiseXY);
 
-    vec2 goldenScramble = GOLDEN_RATIO * vec2(1, 2) * cycle;
-    vec2 noise = fract(blueNoise + goldenScramble);
+    vec4 goldenScramble = GOLDEN_RATIO * vec4(1, 2, 3, 4) * cycle;
+    vec4 noise = fract(blueNoise + goldenScramble);
 
     return noise;
 }
@@ -287,20 +287,38 @@ vec3 sampleUniformCone(float U1, float U2, float cosThetaMax)
     return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
 }
 
+vec2 sampleUniformDisk(float U1, float U2)
+{
+    float r = sqrt(U1);
+    float a = U2 * 2 * PI;
+    return vec2(cos(a), sin(a)) * r;
+}
+
 Ray genRay(uvec2 pixelPos)
 {
-    vec2 noiseOffset = sampleBlueNoise(frameIndex, 0, false);
+    vec4 noise = sampleBlueNoise(0);
 
     vec4 pixelClip = vec4(
-        float(pixelPos.x) + noiseOffset.x,
-        float(pixelPos.y) + noiseOffset.y,
+        float(pixelPos.x) + noise.x,
+        float(pixelPos.y) + noise.y,
         0, 1);
 
-    vec4 rayDir = rayMatrix * pixelClip;
+    vec4 unprojRay = rayMatrix * pixelClip;
+    vec3 primaryDir = normalize(unprojRay.xyz / unprojRay.w);
+    float RoD = dot(primaryDir, lenseDirection.xyz);
+    float focusT = focusDistance / RoD;
+    vec3 focusPoint = lensePosition.xyz + primaryDir * focusT;
+
+    vec3 T, B, N = lenseDirection.xyz;
+    makeOrthBase(N, T, B);
+
+    vec2 offset = sampleUniformDisk(noise.z, noise.w) * apertureRadius;
+    vec3 rayOrigin = lensePosition.xyz + T * offset.x + B * offset.y;
+    vec3 rayDirection = normalize(focusPoint - rayOrigin);
 
     Ray ray;
-    ray.direction = normalize(rayDir.xyz / rayDir.w);
-    ray.origin = eyePosition.xyz;
+    ray.direction = rayDirection;
+    ray.origin = rayOrigin;
     ray.throughput = vec3(1, 1, 1);
 #if !IS_UNBIASED
     ray.diffusivity = 0;
@@ -433,7 +451,7 @@ vec3 evaluateBSDF(Ray ray, HitInfo hitInfo, vec3 L, float solidAngle)
     return NdotL * (diffuse + specular) * solidAngle;
 }
 
-vec3 sampleSphereLight(uint emitterId, Ray ray, HitInfo hitInfo)
+vec3 sampleSphereLight(uint emitterId, Ray ray, HitInfo hitInfo, vec4 noise)
 {
     Instance emitter = instances[emitterId];
 
@@ -448,11 +466,9 @@ vec3 sampleSphereLight(uint emitterId, Ray ray, HitInfo hitInfo)
     float solidAngle = 2 * PI * (1 - cosThetaMax);
 
     // Importance sample cone
-    vec2 noise = sampleBlueNoise(frameIndex, ray.depth, true);
-
-    float cosTheta = (1 - noise.x) + noise.x * cosThetaMax;
+    float cosTheta = (1 - noise.b) + noise.b * cosThetaMax;
     float sinTheta = sqrt(max(0, 1 - cosTheta*cosTheta));
-    float phi = noise.y * 2 * PI;
+    float phi = noise.a * 2 * PI;
 
     float dc = sqrt(distanceSqr);
     float ds = dc * cosTheta - sqrt(max(0, lRSqr - dc * dc * sinTheta * sinTheta));
@@ -477,15 +493,14 @@ vec3 sampleSphereLight(uint emitterId, Ray ray, HitInfo hitInfo)
         return vec3(0);
 }
 
-vec3 sampleDirectionalLight(uint lightId, Ray ray, HitInfo hitInfo)
+vec3 sampleDirectionalLight(uint lightId, Ray ray, HitInfo hitInfo, vec4 noise)
 {
     DirectionalLight light = directionalLights[lightId];
 
     vec3 T, B, N = light.directionCosThetaMax.xyz;
     makeOrthBase(N, T, B);
 
-    vec2 noise = sampleBlueNoise(frameIndex, ray.depth, true);
-    vec3 l = sampleUniformCone(noise.r, noise.g, light.directionCosThetaMax.w);
+    vec3 l = sampleUniformCone(noise.b, noise.a, light.directionCosThetaMax.w);
     vec3 L = normalize(l.x * T + l.y * B + l.z * N);
 
     Ray shadowRay;
@@ -503,6 +518,8 @@ vec3 shadeHit(Ray ray, HitInfo hitInfo)
 {
     vec3 L_out = vec3(0);
 
+    vec4 noise = sampleBlueNoise(ray.depth + PATH_LENGTH);
+
     for(uint e = 0; e < emitters.length(); ++e)
     {
         uint emitterId = emitters[e];
@@ -510,12 +527,12 @@ vec3 shadeHit(Ray ray, HitInfo hitInfo)
         if(emitterId == hitInfo.instanceId)
             continue;
 
-        L_out += sampleSphereLight(emitterId, ray, hitInfo);
+        L_out += sampleSphereLight(emitterId, ray, hitInfo, noise);
     }
 
     for(uint dl = 0; dl < directionalLights.length(); ++dl)
     {
-        L_out += sampleDirectionalLight(dl, ray, hitInfo);
+        L_out += sampleDirectionalLight(dl, ray, hitInfo, noise);
     }
 
     // Emission
@@ -554,7 +571,7 @@ Ray scatter(Ray rayIn, HitInfo hitInfo)
     rayOut.origin = hitInfo.position + hitInfo.normal * 1e-9;
     rayOut.depth = rayIn.depth + 1;
 
-    vec2 noise = sampleBlueNoise(frameIndex, rayOut.depth, false);
+    vec4 noise = sampleBlueNoise(rayOut.depth);
 
     vec3 T, B, N = hitInfo.normal;
     makeOrthBase(N, T, B);
@@ -574,9 +591,7 @@ Ray scatter(Ray rayIn, HitInfo hitInfo)
 
     float r = specularLuminance != 0 ? specularLuminance / (specularLuminance + diffuseLuminance) : 0;
 
-    vec2 specularNoise = sampleBlueNoise(frameIndex + 32, rayOut.depth, false);
-
-    if(specularNoise.x < r)
+    if(noise.z < r)
     {
         float HdotV = dot(V, H);
         float pdf = ggxVisibleNormalsDistributionFunction(hitInfo.specularA2, V.z, H.z, HdotV) / (4 * HdotV);
@@ -589,7 +604,7 @@ Ray scatter(Ray rayIn, HitInfo hitInfo)
         rayOut.diffusivity = mix(rayIn.diffusivity, 1, min(1, hitInfo.specularA));
 #endif
     }
-    else if(specularNoise.x >= r && r != 1)
+    else if(noise.z >= r && r != 1)
     {
         // Diffuse
         vec3 dir = sampleCosineHemisphere(noise.r, noise.g);

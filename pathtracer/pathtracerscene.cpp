@@ -77,10 +77,10 @@ PathTracerScene::PathTracerScene() :
 
     _objects.push_back(light);
     _objects.push_back(floor);
-    //_objects.push_back(ceiling);
-    //_objects.push_back(wallLeft);
-    //_objects.push_back(wallRight);
-    //_objects.push_back(wallFront);
+    _objects.push_back(ceiling);
+    _objects.push_back(wallLeft);
+    _objects.push_back(wallRight);
+    _objects.push_back(wallFront);
     _objects.push_back(ballLeft);
     _objects.push_back(ballRight);
     _objects.push_back(ballFront);

@@ -48,7 +48,7 @@ private:
     GLuint _blueNoiseTexIds[BLUE_NOISE_TEX_COUNT];
     GLuint64 _blueNoiseTexHdls[BLUE_NOISE_TEX_COUNT];
 
-    glm::vec2 _halton[HALTON_SAMPLE_COUNT];
+    glm::vec4 _halton[HALTON_SAMPLE_COUNT];
 
     GLuint _pathTraceUAVId;
     GLuint _pathTraceLoc;

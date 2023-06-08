@@ -64,6 +64,87 @@ void displayTexture(Texture* texture)
     ImGui::Image((void*)handle, ImVec2(512, (512.0f / dimensions[0]) * dimensions[1]));
 }
 
+void displayCamera(CameraMan& cameraMan)
+{
+    Camera& camera = cameraMan.camera();
+
+    int viewport[2] = {camera.viewport().width, camera.viewport().height};
+    ImGui::InputInt2("Viewport", &viewport[0], ImGuiInputTextFlags_ReadOnly);
+
+    float filmHeight = camera.filmHeight() * 1000.0f;
+    if(ImGui::InputFloat("Film Height mm", &filmHeight))
+        camera.setFilmHeight(filmHeight / 1000.0f);
+
+    float focalLength = camera.focalLength() * 1000.0f;
+    if(ImGui::InputFloat("Focal Length", &focalLength))
+        camera.setFocalLength(focalLength / 1000.0f);
+
+    float focusDistance = camera.focusDistance();
+    if(ImGui::InputFloat("Focus Distance", &focusDistance))
+        camera.setFocusDistance(focusDistance);
+
+    bool dofENabled = camera.dofEnable();
+    if(ImGui::Checkbox("DOF Enabled", &dofENabled))
+        camera.setDofEnabled(dofENabled);
+
+    float fov = camera.fieldOfView();
+    if(ImGui::SliderAngle("FOV", &fov, 1, 179))
+        camera.setFieldOfView(fov);
+
+    float fstop = camera.fstop();
+    if(ImGui::InputFloat("f-stop", &fstop, 0, 0, "%.1f"))
+        camera.setFstop(fstop);
+
+    float shutterSpeed = camera.shutterSpeed();
+    if(ImGui::InputFloat("Shutter Speed", &shutterSpeed))
+        camera.setShutterSpeed(shutterSpeed);
+
+    float iso = camera.iso();
+    if(ImGui::InputFloat("ISO", &iso))
+        camera.setIso(iso);
+
+    float ev = camera.ev();
+    if(ImGui::SliderFloat("EV", &ev, -6.0f, 17.0f))
+        camera.setEV(ev);
+
+    ImGui::Separator();
+
+    glm::vec3 position = camera.position();
+    if(ImGui::InputFloat3("Position", &position[0]))
+        camera.setPosition(position);
+
+    glm::vec3 lookAt = camera.lookAt();
+    if(ImGui::InputFloat3("Look At", &lookAt[0]))
+        camera.setLookAt(lookAt);
+
+    glm::vec3 up = camera.up();
+    if(ImGui::InputFloat3("Up", &up[0]))
+        camera.setUp(glm::normalize(up));
+
+    ImGui::Separator();
+    glm::mat4 view = glm::transpose(camera.view());
+    ImGui::InputFloat4("View", &view[0][0]);
+    ImGui::InputFloat4("",     &view[1][0]);
+    ImGui::InputFloat4("",     &view[2][0]);
+    ImGui::InputFloat4("",     &view[3][0]);
+
+    ImGui::Separator();
+    glm::mat4 proj = glm::transpose(camera.proj());
+    ImGui::InputFloat4("Projection", &proj[0][0]);
+    ImGui::InputFloat4("",           &proj[1][0]);
+    ImGui::InputFloat4("",           &proj[2][0]);
+    ImGui::InputFloat4("",           &proj[3][0]);
+
+    ImGui::Separator();
+    glm::mat4 screen = glm::transpose(camera.screen());
+    ImGui::InputFloat4("Screen", &screen[0][0]);
+    ImGui::InputFloat4("",       &screen[1][0]);
+    ImGui::InputFloat4("",       &screen[2][0]);
+    ImGui::InputFloat4("",       &screen[3][0]);
+
+    ImGui::Separator();
+}
+
 void displaySky(Scene& scene)
 {
     if(ImGui::TreeNode("Sky"))
@@ -235,79 +316,6 @@ void displayObjects(Scene& scene)
     }
 }
 
-void displayCamera(CameraMan& cameraMan)
-{
-    Camera& camera = cameraMan.camera();
-
-    int viewport[2] = {camera.viewport().width, camera.viewport().height};
-    ImGui::InputInt2("Viewport", &viewport[0], ImGuiInputTextFlags_ReadOnly);
-
-    float filmHeight = camera.filmHeight() * 1000.0f;
-    if(ImGui::InputFloat("Film Height mm", &filmHeight))
-        camera.setFilmHeight(filmHeight / 1000.0f);
-
-    float focalLength = camera.focalLength() * 1000.0f;
-    if(ImGui::InputFloat("Focal Length", &focalLength))
-        camera.setFocalLength(focalLength / 1000.0f);
-
-    float fov = camera.fieldOfView();
-    if(ImGui::SliderAngle("FOV", &fov, 1, 179))
-        camera.setFieldOfView(fov);
-
-    float aperture = camera.aperture();
-    if(ImGui::InputFloat("Aperture", &aperture, 0, 0, "%.1f"))
-        camera.setAperture(aperture);
-
-    float shutterSpeed = camera.shutterSpeed();
-    if(ImGui::InputFloat("Shutter Speed", &shutterSpeed))
-        camera.setShutterSpeed(shutterSpeed);
-
-    float iso = camera.iso();
-    if(ImGui::InputFloat("ISO", &iso))
-        camera.setIso(iso);
-
-    float ev = camera.ev();
-    if(ImGui::SliderFloat("EV", &ev, -6.0f, 17.0f))
-        camera.setEV(ev);
-
-    ImGui::Separator();
-
-    glm::vec3 position = camera.position();
-    if(ImGui::InputFloat3("Position", &position[0]))
-        camera.setPosition(position);
-
-    glm::vec3 lookAt = camera.lookAt();
-    if(ImGui::InputFloat3("Look At", &lookAt[0]))
-        camera.setLookAt(lookAt);
-
-    glm::vec3 up = camera.up();
-    if(ImGui::InputFloat3("Up", &up[0]))
-        camera.setUp(glm::normalize(up));
-
-    ImGui::Separator();
-    glm::mat4 view = glm::transpose(camera.view());
-    ImGui::InputFloat4("View", &view[0][0]);
-    ImGui::InputFloat4("",     &view[1][0]);
-    ImGui::InputFloat4("",     &view[2][0]);
-    ImGui::InputFloat4("",     &view[3][0]);
-
-    ImGui::Separator();
-    glm::mat4 proj = glm::transpose(camera.proj());
-    ImGui::InputFloat4("Projection", &proj[0][0]);
-    ImGui::InputFloat4("",           &proj[1][0]);
-    ImGui::InputFloat4("",           &proj[2][0]);
-    ImGui::InputFloat4("",           &proj[3][0]);
-
-    ImGui::Separator();
-    glm::mat4 screen = glm::transpose(camera.screen());
-    ImGui::InputFloat4("Screen", &screen[0][0]);
-    ImGui::InputFloat4("",       &screen[1][0]);
-    ImGui::InputFloat4("",       &screen[2][0]);
-    ImGui::InputFloat4("",       &screen[3][0]);
-
-    ImGui::Separator();
-}
-
 void Ui::render(Scene &scene, CameraMan& cameraMan)
 {
     if(!_showUi)
@@ -317,17 +325,17 @@ void Ui::render(Scene &scene, CameraMan& cameraMan)
     {
         if(ImGui::BeginTabBar("#tabs"))
         {
+            if(ImGui::BeginTabItem("Camera"))
+            {
+                displayCamera(cameraMan);
+                ImGui::EndTabItem();
+            }
+
             if(ImGui::BeginTabItem("Scene"))
             {
                 displaySky(scene);
                 displayDirectionalLights(scene);
                 displayObjects(scene);
-                ImGui::EndTabItem();
-            }
-
-            if(ImGui::BeginTabItem("Camera"))
-            {
-                displayCamera(cameraMan);
                 ImGui::EndTabItem();
             }
 

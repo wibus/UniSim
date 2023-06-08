@@ -15,7 +15,9 @@ Camera::Camera(Viewport viewport) :
     _ev(1),
     _filmHeight(0.024),
     _focalLength(0.035),
-    _aperture(16),
+    _focusDistance(5.0f),
+    _dofEnabled(true),
+    _fstop(16),
     _shutterSpeed(1 / 100.0f),
     _iso(100)
 {
@@ -51,9 +53,9 @@ void Camera::setFieldOfView(float fov)
     _focalLength = _filmHeight / glm::tan(_fov * 0.5f) * 0.5f;
 }
 
-void Camera::setAperture(float aperture)
+void Camera::setFstop(float fstop)
 {
-    _aperture = aperture;
+    _fstop = fstop;
     updateEV();
 }
 
@@ -73,7 +75,7 @@ void Camera::setEV(float ev)
 {
     _ev = ev;
 
-    _iso = glm::exp2(_ev) * 100.0f * _shutterSpeed / (_aperture * _aperture);
+    _iso = 100.0f * _fstop * _fstop / (glm::exp2(_ev) * _shutterSpeed);
 }
 
 float Camera::exposure() const
@@ -125,7 +127,7 @@ glm::mat4 Camera::screen() const
 
 void Camera::updateEV()
 {
-    _ev = glm::log2(_aperture * _aperture * _iso / (100 * _shutterSpeed));
+    _ev = glm::log2(_fstop * _fstop * 100 / (_iso * _shutterSpeed));
 }
 
 CameraMan::CameraMan(Viewport viewport) :

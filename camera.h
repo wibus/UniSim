@@ -36,11 +36,17 @@ public:
     float focalLength() const { return _focalLength; }
     void setFocalLength(float length);
 
+    float focusDistance() const { return _focusDistance; }
+    void setFocusDistance(float distance) { _focusDistance = distance; }
+
+    bool dofEnable() const { return _dofEnabled; }
+    void setDofEnabled(bool enabled) { _dofEnabled = enabled; }
+
     float fieldOfView() const;
     void setFieldOfView(float fov);
 
-    float aperture() const { return _aperture; }
-    void setAperture(float aperture);
+    float fstop() const { return _fstop; }
+    void setFstop(float fstop);
 
     float shutterSpeed() const { return _shutterSpeed; }
     void setShutterSpeed(float speed);
@@ -62,6 +68,8 @@ public:
     glm::dvec3 up() const;
     void setUp(const glm::dvec3& up);
 
+    glm::dvec3 direction() const;
+
     glm::dmat4 view() const;
     glm::mat4 proj() const;
     glm::mat4 screen() const;
@@ -80,7 +88,9 @@ private:
 
     float _filmHeight;
     float _focalLength;
-    float _aperture;
+    float _focusDistance;
+    bool _dofEnabled;
+    float _fstop;
     float _shutterSpeed;
     float _iso;
 };
@@ -139,6 +149,11 @@ inline glm::dvec3 Camera::lookAt() const
 inline glm::dvec3 Camera::up() const
 {
     return _up;
+}
+
+inline glm::dvec3 Camera::direction() const
+{
+    return glm::normalize(_lookAt - _position);
 }
 
 inline Camera& CameraMan::camera()

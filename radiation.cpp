@@ -70,19 +70,20 @@ struct GpuMaterial
 struct CommonParams
 {
     glm::mat4 rayMatrix;
-    glm::vec4 eyePosition;
+    glm::vec4 lensePosition;
+    glm::vec4 lenseDirection;
+    GLfloat focusDistance;
+    GLfloat apertureRadius;
     GLfloat exposure;
+
     GLuint frameIndex;
 
-    GLint pad1;
+    GPUBindlessTexture blueNoise[Radiation::BLUE_NOISE_TEX_COUNT];
+    glm::vec4 halton[Radiation::HALTON_SAMPLE_COUNT];
 
     // Background
-    float backgroundExposure;
     glm::vec4 backgroundQuat;
-
-    GPUBindlessTexture blueNoise[Radiation::BLUE_NOISE_TEX_COUNT];
-
-    glm::vec2 halton[Radiation::HALTON_SAMPLE_COUNT];
+    float backgroundExposure;
 };
 
 Radiation::Radiation() :
@@ -91,8 +92,8 @@ Radiation::Radiation() :
 {
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
     {
-        double* sample = halton(i, 2);
-        _halton[i] = glm::vec2(sample[0], sample[1]);
+        double* sample = halton(i, 4);
+        _halton[i] = glm::vec4(sample[0], sample[1], sample[2], sample[4]);
         delete sample;
     }
 }
@@ -440,16 +441,21 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
 
     CommonParams params;
     params.rayMatrix = glm::inverse(viewToScreen);
-    params.eyePosition = glm::vec4(camera.position(), 1);
+    params.lensePosition = glm::vec4(camera.position(), 1);
+    params.lenseDirection = glm::vec4(camera.direction(), 0);
+    params.focusDistance = camera.focusDistance();
+    params.apertureRadius = camera.dofEnable() ? camera.focalLength() / camera.fstop() * 0.5f : 0.0f;
     params.exposure = camera.exposure();
+
     params.frameIndex = 0; // Must be constant for hasing
-    params.pad1 = 1;
-    params.backgroundExposure = scene.sky()->exposure();
-    params.backgroundQuat = scene.sky()->quaternion();
+
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
         params.blueNoise[i].texture = _blueNoiseTexHdls[i];
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
         params.halton[i] = _halton[i];
+
+    params.backgroundQuat = scene.sky()->quaternion();
+    params.backgroundExposure = scene.sky()->exposure();
 
     const std::vector<std::shared_ptr<Object>>& objects = scene.objects();
     std::vector<GpuInstance> gpuInstances;
