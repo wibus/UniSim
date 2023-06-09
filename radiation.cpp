@@ -18,10 +18,17 @@
 #include "units.h"
 #include "material.h"
 #include "random.h"
+#include "profiler.h"
 
 
 namespace unisim
 {
+
+DeclareProfilePointGpu(Frame);
+DeclareProfilePointGpu(Clear);
+DeclareProfilePointGpu(PathTrace);
+DeclareProfilePointGpu(ColorGrade);
+
 
 struct GpuInstance
 {
@@ -432,7 +439,7 @@ glm::vec3 toLinear(const glm::vec3& sRGB)
 
 void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
 {
-    glUseProgram(_computePathTraceId);
+    ProfileGpu(Frame);
 
     glm::mat4 view(glm::mat3(camera.view()));
     glm::mat4 proj = camera.proj();
@@ -521,41 +528,54 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
     _lastFrameHash = frameHash;
     params.frameIndex = _frameIndex;
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, _commonUbo);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(CommonParams), &params, GL_STREAM_DRAW);
+    {
+        ProfileGpu(PathTrace);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _instancesSSBO);
-    GLsizei instancesSize = gpuInstances.size() * sizeof(GpuInstance);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, instancesSize, gpuInstances.data(), GL_STREAM_DRAW);
+        glUseProgram(_computePathTraceId);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _dirLightsSSBO);
-    GLsizei dirLightsSize = gpuDirectionalLights.size() * sizeof(GpuDirectionalLight);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, dirLightsSize, gpuDirectionalLights.data(), GL_STREAM_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 0, _commonUbo);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(CommonParams), &params, GL_STREAM_DRAW);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _emittersSSBO);
-    GLsizei emittersSize = gpuEmitters.size() * sizeof(decltype (gpuEmitters.front()));
-    glBufferData(GL_SHADER_STORAGE_BUFFER, emittersSize, gpuEmitters.data(), GL_STREAM_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _instancesSSBO);
+        GLsizei instancesSize = gpuInstances.size() * sizeof(GpuInstance);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, instancesSize, gpuInstances.data(), GL_STREAM_DRAW);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, _materialsSSBO);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _dirLightsSSBO);
+        GLsizei dirLightsSize = gpuDirectionalLights.size() * sizeof(GpuDirectionalLight);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, dirLightsSize, gpuDirectionalLights.data(), GL_STREAM_DRAW);
 
-    glUniform1i(_backgroundLoc, _backgroundUnit);
-    glActiveTexture(GL_TEXTURE0 + _backgroundUnit);
-    glBindTexture(GL_TEXTURE_2D, _backgroundTexId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _emittersSSBO);
+        GLsizei emittersSize = gpuEmitters.size() * sizeof(decltype (gpuEmitters.front()));
+        glBufferData(GL_SHADER_STORAGE_BUFFER, emittersSize, gpuEmitters.data(), GL_STREAM_DRAW);
 
-    glBindImageTexture(_pathTraceUnit, _pathTraceUAVId, 0, false, 0, GL_WRITE_ONLY, _pathTraceFormat);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, _materialsSSBO);
 
-    glDispatchCompute((camera.viewport().width + 7) / 8, (camera.viewport().width + 3) / 4, 1);
+        glUniform1i(_backgroundLoc, _backgroundUnit);
+        glActiveTexture(GL_TEXTURE0 + _backgroundUnit);
+        glBindTexture(GL_TEXTURE_2D, _backgroundTexId);
 
+        glBindImageTexture(_pathTraceUnit, _pathTraceUAVId, 0, false, 0, GL_WRITE_ONLY, _pathTraceFormat);
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glDispatchCompute((camera.viewport().width + 7) / 8, (camera.viewport().width + 3) / 4, 1);
+    }
 
-    glUseProgram(_colorGradingId);
+    {
+        ProfileGpu(Clear);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _pathTraceUAVId);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
 
-    glBindVertexArray(_vao);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 3);
+    {
+        ProfileGpu(ColorGrade);
+
+        glUseProgram(_colorGradingId);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _pathTraceUAVId);
+
+        glBindVertexArray(_vao);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 3);
+    }
 
     glUseProgram(0);
 

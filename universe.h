@@ -38,7 +38,7 @@ public:
     void handleMouseButton(const MouseButtonEvent& event);
     void handleMouseScroll(const MouseScrollEvent& event);
 
-    void setup();
+    bool setup();
     void update();
     void draw();
 

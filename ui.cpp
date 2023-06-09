@@ -4,12 +4,14 @@
 
 #include <GLM/gtc/constants.hpp>
 
-#include "../scene.h"
-#include "../object.h"
-#include "../body.h"
-#include "../mesh.h"
-#include "../material.h"
-#include "../camera.h"
+#include "scene.h"
+#include "object.h"
+#include "body.h"
+#include "mesh.h"
+#include "material.h"
+#include "camera.h"
+#include "profiler.h"
+
 
 namespace unisim
 {
@@ -336,6 +338,12 @@ void Ui::render(Scene &scene, CameraMan& cameraMan)
                 displaySky(scene);
                 displayDirectionalLights(scene);
                 displayObjects(scene);
+                ImGui::EndTabItem();
+            }
+
+            if(ImGui::BeginTabItem("Profiler"))
+            {
+                Profiler::GetInstance().renderUi();
                 ImGui::EndTabItem();
             }
 

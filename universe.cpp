@@ -15,6 +15,7 @@
 #include "scene.h"
 #include "project.h"
 #include "ui.h"
+#include "profiler.h"
 
 #include "solar/solarsystemproject.h"
 #include "pathtracer/pathtracerproject.h"
@@ -22,6 +23,12 @@
 
 namespace unisim
 {
+
+DeclareProfilePoint(Frame);
+DeclareProfilePoint(Update);
+DeclareProfilePoint(Draw);
+DeclareProfilePoint(ImGuiRender);
+DeclareProfilePoint(SwapBuffers);
 
 Universe& Universe::getInstance()
 {
@@ -130,19 +137,13 @@ int Universe::launch(int argc, char** argv)
     const char* glsl_version = "#version 440";
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    setup();
-
-    bool ok = true;
-    ok = ok && _gravity.initialize(_project->scene());
-    ok = ok && _radiation.initialize(_project->scene(), _viewport);
-
-    _dt = 0;
-    _lastTime = std::chrono::high_resolution_clock::now();
-
-    _project->addView(_viewport);
+    bool ok = setup();
 
     while (!glfwWindowShouldClose(window) && ok)
     {
+        Profiler::GetInstance().swapFrames();
+        Profile(Frame);
+
         glfwPollEvents();
 
         // Start ImGui frame
@@ -153,12 +154,16 @@ int Universe::launch(int argc, char** argv)
         update();
         draw();
 
-        _project->ui().render(_project->scene(), _project->cameraMan());
+        {
+            Profile(ImGuiRender);
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
 
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        glfwSwapBuffers(window);
+        {
+            Profile(SwapBuffers);
+            glfwSwapBuffers(window);
+        }
     }
 
     glfwTerminate();
@@ -241,12 +246,26 @@ void Universe::handleMouseScroll(const MouseScrollEvent& event)
     _project->cameraMan().handleMouseScroll(_inputs, event);
 }
 
-void Universe::setup()
+bool Universe::setup()
 {
+    Profiler::GetInstance().initize();
+
+    bool ok = true;
+    ok = ok && _gravity.initialize(_project->scene());
+    ok = ok && _radiation.initialize(_project->scene(), _viewport);
+
+    _dt = 0;
+    _lastTime = std::chrono::high_resolution_clock::now();
+
+    _project->addView(_viewport);
+
+    return ok;
 }
 
 void Universe::update()
 {
+    Profile(Update);
+
     auto currentTime = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> timeDiff = currentTime - _lastTime;
     _lastTime = currentTime;
@@ -260,7 +279,13 @@ void Universe::update()
 
 void Universe::draw()
 {
+    Profile(Draw);
+
     _radiation.draw(_project->scene(), _dt, _project->cameraMan().camera());
+
+    _project->ui().render(
+        _project->scene(),
+        _project->cameraMan());
 }
 
 }

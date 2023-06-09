@@ -58,6 +58,8 @@ set(EngineFile
     mesh.cpp
     scene.h
     scene.cpp
+    profiler.h
+    profiler.cpp
     project.h
     project.cpp
     random.h
