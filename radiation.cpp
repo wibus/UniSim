@@ -24,7 +24,7 @@
 namespace unisim
 {
 
-DeclareProfilePointGpu(Frame);
+DeclareProfilePointGpu(Radiation);
 DeclareProfilePointGpu(Clear);
 DeclareProfilePointGpu(PathTrace);
 DeclareProfilePointGpu(ColorGrade);
@@ -439,7 +439,7 @@ glm::vec3 toLinear(const glm::vec3& sRGB)
 
 void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
 {
-    ProfileGpu(Frame);
+    ProfileGpu(Radiation);
 
     glm::mat4 view(glm::mat3(camera.view()));
     glm::mat4 proj = camera.proj();

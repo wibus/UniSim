@@ -24,11 +24,15 @@
 namespace unisim
 {
 
-DeclareProfilePoint(Frame);
+DeclareProfilePoint(PollEvents);
 DeclareProfilePoint(Update);
 DeclareProfilePoint(Draw);
-DeclareProfilePoint(ImGuiRender);
+DeclareProfilePoint(ImGui_NewFrame);
+DeclareProfilePoint(ImGui_Render);
 DeclareProfilePoint(SwapBuffers);
+
+DeclareProfilePointGpu(ImGui);
+DeclareProfilePointGpu(SwapBuffers);
 
 Universe& Universe::getInstance()
 {
@@ -142,26 +146,33 @@ int Universe::launch(int argc, char** argv)
     while (!glfwWindowShouldClose(window) && ok)
     {
         Profiler::GetInstance().swapFrames();
-        Profile(Frame);
 
-        glfwPollEvents();
+        {
+            Profile(PollEvents);
+            glfwPollEvents();
+        }
 
         // Start ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        {
+            Profile(ImGui_NewFrame);
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+        }
 
         update();
         draw();
 
         {
-            Profile(ImGuiRender);
+            Profile(ImGui_Render);
+            ProfileGpu(ImGui);
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
 
         {
             Profile(SwapBuffers);
+            ProfileGpu(SwapBuffers);
             glfwSwapBuffers(window);
         }
     }

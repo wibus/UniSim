@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+struct ImVec2;
+class ImDrawList;
 
 namespace unisim
 {
@@ -17,6 +19,22 @@ struct GPUProfilePoint;
 
 class Profiler
 {
+    struct ProfileNode
+    {
+        int profileId;
+        int parent;
+        std::vector<unsigned int> children;
+    };
+
+    struct ResolvedPoint
+    {
+        const char* name;
+        uint64_t recStartNs;
+        uint64_t recStopNs;
+        uint64_t recElapsedNs;
+        std::vector<unsigned int> children;
+    };
+
     Profiler();
 public:
     ~Profiler();
@@ -32,17 +50,32 @@ public:
     void startCpuPoint(ProfileIdCpu id);
     void stopCpuPoint(ProfileIdCpu id);
 
-    void startGpuPoint(ProfileIdCpu id);
-    void stopGpuPoint(ProfileIdCpu id);
+    void startGpuPoint(ProfileIdGpu id);
+    void stopGpuPoint(ProfileIdGpu id);
 
     void renderUi();
 
 private:
+    void renderChildrenText(const std::vector<ResolvedPoint>& tree, int nodeId);
+    float renderChildrenRect(const std::vector<ResolvedPoint>& tree, int nodeId, double scale, double bias, const ImVec2& p, ImDrawList* draw_list);
+    void renderPointRect(const ResolvedPoint& pt, double scale, double bias, const ImVec2& p, ImDrawList* draw_list);
+
     bool _initialized;
-    unsigned int _gpuFrame;
+    unsigned int _frame;
 
     std::vector<CPUProfilePoint> _cpuPoints;
     std::vector<GPUProfilePoint> _gpuPoints;
+
+    ResolvedPoint _renderedSyncPt;
+
+    unsigned int _currCpuNode;
+    std::vector<ProfileNode> _activeCpuTree;
+    std::vector<ProfileNode> _completedCpuTree;
+    std::vector<ResolvedPoint> _renderedCpuTree;
+    unsigned int _currGpuNode;
+    std::vector<ProfileNode> _activeGpuTree;
+    std::vector<ProfileNode> _completedGpuTree;
+    std::vector<ResolvedPoint> _renderedGpuTree;
 };
 
 
@@ -79,11 +112,13 @@ private:
     ProfileIdGpu _id;
 };
 
-#define DeclareProfilePoint(name) static ProfileIdCpu ProfileIdCpu_##name = Profiler::GetInstance().registerCpuPoint(#name)
-#define Profile(name) ScoppedCpuPoint profilePoint_##name(ProfileIdCpu_##name)
+#define PID_CPU(name) ProfileIdCpu_##name
+#define DeclareProfilePoint(name) static ProfileIdCpu PID_CPU(name) = Profiler::GetInstance().registerCpuPoint(#name)
+#define Profile(name) ScoppedCpuPoint profilePoint_##name(PID_CPU(name))
 
-#define DeclareProfilePointGpu(name) static ProfileIdGpu ProfileIdGpu_##name = Profiler::GetInstance().registerGpuPoint(#name)
-#define ProfileGpu(name) ScoppedGpuPoint profilePointGpu_##name(ProfileIdGpu_##name)
+#define PID_GPU(name) ProfileIdGpu_##name
+#define DeclareProfilePointGpu(name) static ProfileIdGpu PID_GPU(name) = Profiler::GetInstance().registerGpuPoint(#name)
+#define ProfileGpu(name) ScoppedGpuPoint profilePointGpu_##name(PID_GPU(name))
 
 }
 
