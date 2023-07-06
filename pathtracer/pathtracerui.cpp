@@ -5,7 +5,7 @@ namespace unisim
 {
 
 PathTracerUi::PathTracerUi() :
-    Ui(true)
+    Ui(false)
 {
 
 }

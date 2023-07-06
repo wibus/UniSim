@@ -92,8 +92,6 @@ int Universe::launch(int argc, char** argv)
     _argc = argc;
     _argv = argv;
 
-    GLFWwindow* window;
-
     glfwSetErrorCallback(glfwErrorCallback);
     if (!glfwInit())
         return -1;
@@ -101,17 +99,65 @@ int Universe::launch(int argc, char** argv)
     _viewport.width = 1280;
     _viewport.height = 720;
 
+    int monitorCount;
+    GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+
+    int monitorScore = -1;
+    const int SMALL_MONITOR_SCORE = 1;
+    const int LARGE_MONITOR_SCORE = 0;
+
+    int viewportX = 0, viewportY = 0;
+    GLFWmonitor* chosenMonitor = nullptr;
+
+    for(int i = 0; i < monitorCount; ++i)
+    {
+        int xpos, ypos, width, height;
+        glfwGetMonitorWorkarea(monitors[i], &xpos, &ypos, &width, &height);
+
+        if(width <= _viewport.width || height <= 1024)
+        {
+            if(monitorScore < SMALL_MONITOR_SCORE)
+            {
+                chosenMonitor = monitors[i];
+                monitorScore = SMALL_MONITOR_SCORE;
+
+                _viewport.width = width;
+                _viewport.height = height;
+                viewportX = xpos;
+                viewportY = ypos;
+            }
+        }
+        else
+        {
+            if(monitorScore < LARGE_MONITOR_SCORE)
+            {
+                chosenMonitor = monitors[i];
+                monitorScore = LARGE_MONITOR_SCORE;
+
+                viewportX = xpos + (width - _viewport.width) / 2;
+                viewportY = ypos + (height - _viewport.height) / 2;
+            }
+        }
+    }
+
+    if(!chosenMonitor)
+    {
+        return -2;
+    }
+
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
-    window = glfwCreateWindow(_viewport.width, _viewport.height, "Universe", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(_viewport.width, _viewport.height, "Universe", NULL, NULL);
 
     if (!window)
     {
         glfwTerminate();
         return -1;
     }
+
+    glfwSetWindowPos(window, viewportX, viewportY);
 
     glfwMakeContextCurrent(window);
 
