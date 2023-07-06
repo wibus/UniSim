@@ -4,6 +4,7 @@
 #include <GLM/glm.hpp>
 
 #include <string>
+#include <vector>
 
 
 namespace unisim
@@ -15,7 +16,7 @@ struct Texture
 
     Texture();
     ~Texture();
-    operator bool() const { return data != nullptr; }
+    operator bool() const { return !data.empty(); }
 
     static const Texture BLACK_UNORM8;
     static const Texture BLACK_Float32;
@@ -29,14 +30,13 @@ struct Texture
     int height;
     Format format;
     int numComponents;
-    unsigned char* data;
-    bool ownsMemory;
+    std::vector<unsigned char> data;
 
     // ImGui image ID
     unsigned int handle;
 
 private:
-    Texture(Format format, unsigned char *pixelData);
+    Texture(Format format, unsigned char* pixelData);
 
 };
 

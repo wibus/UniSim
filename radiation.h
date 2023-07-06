@@ -7,29 +7,33 @@
 #include <GLM/glm.hpp>
 #include <GL/glew.h>
 
+#include "graphic.h"
+#include "camera.h"
+
 
 namespace unisim
 {
 
 class Scene;
-class Camera;
-struct Viewport;
 
-class Radiation
+class Radiation : public GraphicTask
 {
 public:
     Radiation();
 
-    bool initialize(const Scene &scene, const Viewport& viewport);
-    void setViewport(Viewport viewport);
+    void registerDynamicResources(GraphicContext& context) override;
+    bool defineResources(GraphicContext& context) override;
 
-    void draw(const Scene &scene, double dt, const Camera& camera);
+    void update(GraphicContext& context) override;
+    void render(GraphicContext& context) override;
 
     static const unsigned int BLUE_NOISE_TEX_COUNT = 64;
     static const unsigned int HALTON_SAMPLE_COUNT = 64;
     static const unsigned int MAX_FRAME_COUNT = 4096;
 
 private:
+    void setViewport(Viewport viewport);
+
     GLuint _vbo;
     GLuint _vao;
 
@@ -41,16 +45,25 @@ private:
 
     std::vector<GLuint> _objectToMat;
 
-    GLuint _backgroundTexId;
-    GLuint _backgroundLoc;
-    GLint _backgroundUnit;
+    struct MaterialResources
+    {
+        ResourceId textureAlbedo;
+        ResourceId textureSpecular;
+        ResourceId bindlessAlbedo;
+        ResourceId bindlessSpecular;
+    };
 
-    GLuint _blueNoiseTexIds[BLUE_NOISE_TEX_COUNT];
-    GLuint64 _blueNoiseTexHdls[BLUE_NOISE_TEX_COUNT];
+    std::vector<MaterialResources> _objectsResourceIds;
+
+    ResourceId _blueNoiseTextureResourceIds[BLUE_NOISE_TEX_COUNT];
+    ResourceId _blueNoiseBindlessResourceIds[BLUE_NOISE_TEX_COUNT];
+
 
     glm::vec4 _halton[HALTON_SAMPLE_COUNT];
 
-    GLuint _pathTraceUAVId;
+    GLuint _backgroundLoc;
+    GLint _backgroundUnit;
+
     GLuint _pathTraceLoc;
     GLuint _pathTraceUnit;
     GLint _pathTraceFormat;
@@ -60,6 +73,8 @@ private:
 
     unsigned int _frameIndex;
     std::size_t _lastFrameHash;
+
+    Viewport _viewport;
 };
 
 }

@@ -11,10 +11,14 @@
 #include "material.h"
 #include "camera.h"
 #include "profiler.h"
+#include "sky.h"
+#include "graphic.h"
 
 
 namespace unisim
 {
+
+DeclareResource(SkyMap);
 
 Ui::Ui(bool showUi) :
     _showUi(showUi)
@@ -60,16 +64,12 @@ void displayTexture(Texture* texture)
     ImGui::Text("Format %s", texture->format == Texture::UNORM8 ? "UNORM8" : "Float32");
     int numComponents = texture->numComponents;
     ImGui::InputInt("Num Components", &numComponents);
-    bool ownsMemory = texture->ownsMemory;
-    ImGui::Checkbox("Owns Memory", &ownsMemory);
     uint64_t handle = texture->handle;
     ImGui::Image((void*)handle, ImVec2(512, (512.0f / dimensions[0]) * dimensions[1]));
 }
 
-void displayCamera(CameraMan& cameraMan)
+void displayCamera(Camera& camera)
 {
-    Camera& camera = cameraMan.camera();
-
     int viewport[2] = {camera.viewport().width, camera.viewport().height};
     ImGui::InputInt2("Viewport", &viewport[0], ImGuiInputTextFlags_ReadOnly);
 
@@ -147,7 +147,7 @@ void displayCamera(CameraMan& cameraMan)
     ImGui::Separator();
 }
 
-void displaySky(Scene& scene)
+void displaySky(const ResourceManager& resources, Scene& scene)
 {
     if(ImGui::TreeNode("Sky"))
     {
@@ -164,7 +164,10 @@ void displaySky(Scene& scene)
             scene.sky()->setExposure(exposure);
         }
 
-        displayTexture(scene.sky()->texture().get());
+        uint64_t imgHandle = resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId;
+        unsigned int dimensions[2] = {scene.sky()->width(), scene.sky()->height()};
+        ImVec2 size(512, (512.0f / dimensions[0]) * dimensions[1]);
+        ImGui::Image((void*)imgHandle, size);
 
         ImGui::TreePop();
     }
@@ -318,7 +321,7 @@ void displayObjects(Scene& scene)
     }
 }
 
-void Ui::render(Scene &scene, CameraMan& cameraMan)
+void Ui::render(const ResourceManager& resources, Scene &scene, Camera& camera)
 {
     if(!_showUi)
         return;
@@ -329,13 +332,13 @@ void Ui::render(Scene &scene, CameraMan& cameraMan)
         {
             if(ImGui::BeginTabItem("Camera"))
             {
-                displayCamera(cameraMan);
+                displayCamera(camera);
                 ImGui::EndTabItem();
             }
 
             if(ImGui::BeginTabItem("Scene"))
             {
-                displaySky(scene);
+                displaySky(resources, scene);
                 displayDirectionalLights(scene);
                 displayObjects(scene);
                 ImGui::EndTabItem();

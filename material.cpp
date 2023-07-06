@@ -45,8 +45,6 @@ Texture::Texture() :
     height(0),
     format(UNORM8),
     numComponents(4),
-    data(nullptr),
-    ownsMemory(true),
     handle(0)
 {
 
@@ -54,8 +52,6 @@ Texture::Texture() :
 
 Texture::~Texture()
 {
-    if(ownsMemory)
-        delete [] data;
 }
 
 Texture::Texture(Format format, unsigned char* pixelData) :
@@ -63,10 +59,14 @@ Texture::Texture(Format format, unsigned char* pixelData) :
     height(1),
     format(format),
     numComponents(4),
-    data(pixelData),
-    ownsMemory(false),
     handle(0)
-{}
+{
+    data.resize(4);
+    data[0] = pixelData[0];
+    data[1] = pixelData[1];
+    data[2] = pixelData[2];
+    data[3] = pixelData[3];
+}
 
 Texture* Texture::load(const std::string& fileName)
 {
@@ -120,13 +120,13 @@ Texture* Texture::loadJpeg(const std::string& fileName)
     texture->height = cinfo.image_height;
     texture->format = Texture::UNORM8;
     texture->numComponents = 4;//cinfo.num_components;
-    texture->data = new uint8_t[texture->width * texture->height * texture->numComponents];
+    texture->data.resize(texture->width * texture->height * texture->numComponents);
 
     if(texture->numComponents == cinfo.num_components)
     {
         while(cinfo.output_scanline < cinfo.image_height)
         {
-            uint8_t* p = texture->data + cinfo.output_scanline * cinfo.image_width * cinfo.num_components;
+            uint8_t* p = &texture->data.at(cinfo.output_scanline * cinfo.image_width * cinfo.num_components);
             jpeg_read_scanlines(&cinfo, &p, 1);
         }
     }
@@ -136,7 +136,7 @@ Texture* Texture::loadJpeg(const std::string& fileName)
 
         while(cinfo.output_scanline < cinfo.image_height)
         {
-            uint8_t* p = texture->data + cinfo.output_scanline * texture->width * texture->numComponents;
+            uint8_t* p = &texture->data.at(cinfo.output_scanline * texture->width * texture->numComponents);
             jpeg_read_scanlines(&cinfo, &scanline, 1);
 
             for(int i = 0; i < texture->width; ++i)
@@ -189,7 +189,7 @@ Texture* Texture::loadPng(const std::string& fileName)
     texture->height     = png_get_image_height(png, info);
     texture->format = Texture::UNORM8;
     texture->numComponents = 4;
-    texture->data = new uint8_t[texture->width * texture->height * texture->numComponents];
+    texture->data.resize(texture->width * texture->height * texture->numComponents);
 
     png_byte color_type = png_get_color_type(png, info);
     png_byte bit_depth  = png_get_bit_depth(png, info);
@@ -238,7 +238,7 @@ Texture* Texture::loadPng(const std::string& fileName)
 
     for(int y = 0; y < texture->height; ++y)
     {
-        unsigned char* p = texture->data + lineStride * y;
+        unsigned char* p = &texture->data.at(lineStride * y);
         std::memcpy(p, row_pointers[y], lineStride);
     }
 
@@ -279,8 +279,8 @@ Texture* Texture::loadExr(const std::string& fileName)
 
         int byteCount = sizeof(float) * texture->width * texture->height * texture->numComponents;
 
-        texture->data = new uint8_t[byteCount];
-        memcpy(texture->data, out, byteCount);
+        texture->data.resize(byteCount);
+        memcpy(&texture->data.at(0), out, byteCount);
 
         free(out); // release memory of image data
 

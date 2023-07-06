@@ -19,6 +19,7 @@
 #include "material.h"
 #include "random.h"
 #include "profiler.h"
+#include "sky.h"
 
 
 namespace unisim
@@ -29,6 +30,8 @@ DeclareProfilePointGpu(Clear);
 DeclareProfilePointGpu(PathTrace);
 DeclareProfilePointGpu(ColorGrade);
 
+DeclareResource(SkyMap);
+DefineResource(PathTrace);
 
 struct GpuInstance
 {
@@ -94,6 +97,7 @@ struct CommonParams
 };
 
 Radiation::Radiation() :
+    GraphicTask("Radiation"),
     _frameIndex(0),
     _lastFrameHash(0)
 {
@@ -143,7 +147,7 @@ bool compileShader(GLuint shaderId, const std::string& name)
     return true;
 }
 
-void _print_programme_info_log(GLuint programId)
+void printProgrammeInfoLog(GLuint programId)
 {
     int max_length = 2048;
     int actual_length = 0;
@@ -167,7 +171,7 @@ bool validateProgram(GLuint programId, const std::string& name)
     printf("program %i GL_VALIDATE_STATUS = %i\n", programId, validationStatus);
     if (GL_TRUE != validationStatus)
     {
-        _print_programme_info_log(programId);
+        printProgrammeInfoLog(programId);
         return false;
     }
 
@@ -220,122 +224,53 @@ bool generateComputeProgram(GLuint& programId, const std::string& computeFileNam
     return true;
 }
 
-GLuint generateImageTexture(const Texture& texture)
+glm::vec3 toLinear(const glm::vec3& sRGB)
 {
-    GLuint textureID = 0;
-    glGenTextures(1, &textureID);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glm::bvec3 cutoff = glm::lessThan(sRGB, glm::vec3(0.04045));
+    glm::vec3 higher = glm::pow((sRGB + glm::vec3(0.055))/glm::vec3(1.055), glm::vec3(2.4));
+    glm::vec3 lower = sRGB/glm::vec3(12.92);
 
-    GLint internalFormat = 0;
-    GLenum type = 0;
-    switch(texture.format)
+    return glm::mix(higher, lower, cutoff);
+}
+
+void Radiation::registerDynamicResources(GraphicContext& context)
+{
+    const Scene& scene = context.scene;
+    ResourceManager& resources = context.resources;
+
+    for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
     {
-    case Texture::UNORM8 :
-        internalFormat = texture.numComponents == 3 ? GL_RGB8 : GL_RGBA8;
-        type = GL_UNSIGNED_BYTE;
-        break;
-    case Texture::Float32:
-        internalFormat = GL_RGBA32F;
-        type = GL_FLOAT;
-        break;
+        _blueNoiseTextureResourceIds[i] = resources.registerResource("Blue Noise Texture 64");
+        _blueNoiseBindlessResourceIds[i] = resources.registerResource("Blue Noise Bindless 64");
     }
 
-    GLenum format = texture.numComponents == 3 ? GL_RGB : GL_RGBA;
 
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0, // mip level
-        internalFormat,
-        texture.width,
-        texture.height,
-        0, // border
-        format,
-        type,
-        texture.data);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    return textureID;
-}
-
-GLuint64 makeImageBindless(const Texture* texture, GLuint texId)
-{
-    GLenum format = GL_RGBA8;
-    if(texture != nullptr)
+    const std::vector<std::shared_ptr<Object>>& objects = scene.objects();
+    _objectsResourceIds.resize(objects.size());
+    for(std::size_t i = 0; i < objects.size(); ++i)
     {
-        switch(texture->format)
-        {
-        case Texture::UNORM8:
-            format = texture->numComponents == 3 ? GL_RGB8 : GL_RGBA8;
-            break;
-        case Texture::Float32:
-            format = texture->numComponents == 3 ? GL_RGB32F : GL_RGBA32F;
-            break;
-        }
+        _objectsResourceIds[i] = {
+            resources.registerResource(objects[i]->name() + "_texture_albedo"),
+            resources.registerResource(objects[i]->name() + "_texture_specular"),
+            resources.registerResource(objects[i]->name() + "_bindless_albedo"),
+            resources.registerResource(objects[i]->name() + "_bindless_specular"),
+        };
     }
-
-    GLuint64 hdl = glGetImageHandleARB(texId, 0, GL_FALSE, 0, format);
-    glMakeImageHandleResidentARB(hdl, GL_READ_ONLY);
-
-    return hdl;
 }
 
-GLuint generateUAV(int width, int height, GLint format)
+bool Radiation::defineResources(GraphicContext& context)
 {
-    GLuint textureID = 0;
-    glGenTextures(1, &textureID);
+    const Scene& scene = context.scene;
+    const Viewport& viewport = context.camera.viewport();
+    ResourceManager& resources = context.resources;
 
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return textureID;
-}
-
-void destroyUAV(GLuint textureID)
-{
-    glDeleteTextures(1, &textureID);
-}
-
-GpuMaterial createGpuMaterial(const std::shared_ptr<Material>& material)
-{
-    GLuint64 alebdoHdl = 0;
-
-    if(material->albedo() != nullptr)
-    {
-        GLuint albedoId = generateImageTexture(*material->albedo());
-        alebdoHdl = makeImageBindless(material->albedo(), albedoId);
-        material->albedo()->handle = albedoId;
-    }
-
-    return {GPUBindlessTexture(alebdoHdl), GPUBindlessTexture(0)};
-}
-
-bool Radiation::initialize(const Scene& scene, const Viewport& viewport)
-{
     const std::vector<std::shared_ptr<Object>>& objects = scene.objects();
 
     bool ok = generateComputeProgram(_computePathTraceId, "shaders/pathtrace.glsl");
     ok = generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag") && ok;
 
     if(!ok)
-        return false;
-
-    std::shared_ptr<Texture> skyTexture = scene.sky()->texture();
-    if(skyTexture)
-    {
-        _backgroundTexId = generateImageTexture(*skyTexture);
-        skyTexture->handle = _backgroundTexId;
-    }
-    else
-    {
-        std::cerr << "Cannot load sky texture. Did you install the texture pack?" << std::endl;
-        _backgroundTexId = generateImageTexture(Texture::BLACK_Float32);
-    }
+        return ok;
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
     {
@@ -345,14 +280,15 @@ bool Radiation::initialize(const Scene& scene, const Viewport& viewport)
 
         if(Texture* texture = Texture::load("textures/bluenoise64/" + blueNoiseName))
         {
-            _blueNoiseTexIds[i] = generateImageTexture(*texture);
-            _blueNoiseTexHdls[i] = makeImageBindless(texture, _blueNoiseTexIds[i]);
+            resources.define<GpuTextureResource>(_blueNoiseTextureResourceIds[i], {*texture});
+            GLuint texId = resources.get<GpuTextureResource>(_blueNoiseTextureResourceIds[i]).texId;
+            resources.define<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i], {texture, texId});
         }
         else
         {
             std::cerr << "Cannot load blue noise texture. Did you install the texture pack?" << std::endl;
-            _blueNoiseTexIds[i] = 0;
-            _blueNoiseTexHdls[i] = 0;
+            _blueNoiseTextureResourceIds[i] = Invalid_ResourceId;
+            _blueNoiseBindlessResourceIds[i] = Invalid_ResourceId;
         }
     }
 
@@ -363,7 +299,20 @@ bool Radiation::initialize(const Scene& scene, const Viewport& viewport)
     {
         if(objects[i]->material().get() != nullptr && objects[i]->material()->albedo())
         {
-            GpuMaterial gpuMat = createGpuMaterial(objects[i]->material());
+            const Material& material = *objects[i]->material();
+
+            GLuint64 alebdoHdl = 0;
+
+            if(material.albedo() != nullptr)
+            {
+                resources.define<GpuTextureResource>(_objectsResourceIds[i].textureAlbedo, {*material.albedo()});
+                GLuint texId = resources.get<GpuTextureResource>(_objectsResourceIds[i].textureAlbedo).texId;
+                resources.define<GpuBindlessResource>(_objectsResourceIds[i].bindlessAlbedo, {material.albedo(), texId});
+                alebdoHdl = resources.get<GpuBindlessResource>(_objectsResourceIds[i].bindlessAlbedo).handle;
+            }
+
+            GpuMaterial gpuMat = {GPUBindlessTexture(alebdoHdl), GPUBindlessTexture(0)};
+
             gpuMaterials.push_back(gpuMat);
             _objectToMat[i] = gpuMaterials.size();
         }
@@ -410,7 +359,8 @@ bool Radiation::initialize(const Scene& scene, const Viewport& viewport)
     glBufferData(GL_SHADER_STORAGE_BUFFER, 0, nullptr, GL_STREAM_DRAW);
 
     _pathTraceFormat = GL_RGBA32F;
-    _pathTraceUAVId = generateUAV(viewport.width, viewport.height, _pathTraceFormat);
+    resources.define<GpuImageResource>(ResourceName(PathTrace), {viewport.width, viewport.height, _pathTraceFormat});
+    _viewport = viewport;
 
     _pathTraceUnit = 0;
     _pathTraceLoc = glGetUniformLocation(_computePathTraceId, "result");
@@ -422,23 +372,24 @@ bool Radiation::initialize(const Scene& scene, const Viewport& viewport)
     return ok;
 }
 
-void Radiation::setViewport(Viewport viewport)
+void Radiation::update(GraphicContext& context)
 {
-    destroyUAV(_pathTraceUAVId);
-    _pathTraceUAVId = generateUAV(viewport.width, viewport.height, _pathTraceFormat);
+
 }
 
-glm::vec3 toLinear(const glm::vec3& sRGB)
+void Radiation::render(GraphicContext& context)
 {
-    glm::bvec3 cutoff = glm::lessThan(sRGB, glm::vec3(0.04045));
-    glm::vec3 higher = glm::pow((sRGB + glm::vec3(0.055))/glm::vec3(1.055), glm::vec3(2.4));
-    glm::vec3 lower = sRGB/glm::vec3(12.92);
+    const Scene& scene = context.scene;
+    const Camera& camera = context.camera;
+    const Viewport& viewport = camera.viewport();
+    ResourceManager& resources = context.resources;
 
-    return glm::mix(higher, lower, cutoff);
-}
+    if(_viewport != viewport)
+    {
+        _viewport = viewport;
+        resources.define<GpuImageResource>(ResourceName(PathTrace), {viewport.width, viewport.height, _pathTraceFormat});
+    }
 
-void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
-{
     ProfileGpu(Radiation);
 
     glm::mat4 view(glm::mat3(camera.view()));
@@ -457,7 +408,7 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
     params.frameIndex = 0; // Must be constant for hasing
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
-        params.blueNoise[i].texture = _blueNoiseTexHdls[i];
+        params.blueNoise[i].texture = resources.get<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i]).handle;
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
         params.halton[i] = _halton[i];
 
@@ -528,6 +479,8 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
     _lastFrameHash = frameHash;
     params.frameIndex = _frameIndex;
 
+    GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTrace)).texId;
+
     {
         ProfileGpu(PathTrace);
 
@@ -552,9 +505,9 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
 
         glUniform1i(_backgroundLoc, _backgroundUnit);
         glActiveTexture(GL_TEXTURE0 + _backgroundUnit);
-        glBindTexture(GL_TEXTURE_2D, _backgroundTexId);
+        glBindTexture(GL_TEXTURE_2D, resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId);
 
-        glBindImageTexture(_pathTraceUnit, _pathTraceUAVId, 0, false, 0, GL_WRITE_ONLY, _pathTraceFormat);
+        glBindImageTexture(_pathTraceUnit, pathTraceTexId, 0, false, 0, GL_WRITE_ONLY, _pathTraceFormat);
 
         glDispatchCompute((camera.viewport().width + 7) / 8, (camera.viewport().width + 3) / 4, 1);
     }
@@ -571,7 +524,7 @@ void Radiation::draw(const Scene& scene, double dt, const Camera &camera)
         glUseProgram(_colorGradingId);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _pathTraceUAVId);
+        glBindTexture(GL_TEXTURE_2D, pathTraceTexId);
 
         glBindVertexArray(_vao);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 3);

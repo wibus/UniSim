@@ -44,6 +44,8 @@ set(EngineFile
     input.cpp
     gravity.h
     gravity.cpp
+    graphic.h
+    graphic.cpp
     radiation.h
     radiation.cpp
     material.h
@@ -64,6 +66,10 @@ set(EngineFile
     project.cpp
     random.h
     random.cpp
+    resource.h
+    resource.cpp
+    sky.h
+    sky.cpp
     ui.h
     ui.cpp
 )

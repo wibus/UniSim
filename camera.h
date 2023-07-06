@@ -19,6 +19,16 @@ struct Viewport
 {
     int width;
     int height;
+
+    bool operator==(const Viewport& viewport) const
+    {
+        return viewport.width == width && viewport.height == height;
+    }
+
+    bool operator!=(const Viewport& viewport) const
+    {
+        return !(viewport == *this);
+    }
 };
 
 

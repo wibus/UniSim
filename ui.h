@@ -7,7 +7,8 @@ namespace unisim
 {
 
 class Scene;
-class CameraMan;
+class Camera;
+class ResourceManager;
 
 
 class Ui
@@ -20,7 +21,7 @@ public:
     void hide();
     bool isShown() const { return _showUi; }
 
-    virtual void render(Scene& scene, CameraMan& cameraMan);
+    virtual void render(const ResourceManager& resources, Scene& scene, Camera &camera);
 
 protected:
     bool _showUi;

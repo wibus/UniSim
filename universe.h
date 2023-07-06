@@ -12,6 +12,7 @@
 #include "radiation.h"
 #include "camera.h"
 #include "input.h"
+#include "graphic.h"
 
 
 class GLFWwindow;
@@ -52,7 +53,7 @@ public:
 
     // Systems
     Gravity _gravity;
-    Radiation _radiation;
+    GraphicTaskGraph _graphic;
 
     // Time
     double _dt;

@@ -191,7 +191,6 @@ void Universe::handleWindowResize(GLFWwindow* window, int width, int height)
 
     _viewport = {width, height};
     _project->cameraMan().setViewport(_viewport);
-    _radiation.setViewport(_viewport);
 }
 
 void Universe::handleKeyboard(const KeyboardEvent& event)
@@ -261,14 +260,14 @@ bool Universe::setup()
 {
     Profiler::GetInstance().initize();
 
+    _project->addView(_viewport);
+
     bool ok = true;
     ok = ok && _gravity.initialize(_project->scene());
-    ok = ok && _radiation.initialize(_project->scene(), _viewport);
+    ok = ok && _graphic.initialize(_project->scene(), _project->cameraMan().camera());
 
     _dt = 0;
     _lastTime = std::chrono::high_resolution_clock::now();
-
-    _project->addView(_viewport);
 
     return ok;
 }
@@ -292,11 +291,14 @@ void Universe::draw()
 {
     Profile(Draw);
 
-    _radiation.draw(_project->scene(), _dt, _project->cameraMan().camera());
+    _graphic.execute(
+        _project->scene(),
+        _project->cameraMan().camera());
 
     _project->ui().render(
+        _graphic.resources(),
         _project->scene(),
-        _project->cameraMan());
+        _project->cameraMan().camera());
 }
 
 }

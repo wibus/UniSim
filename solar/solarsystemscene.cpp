@@ -5,6 +5,7 @@
 #include "../body.h"
 #include "../mesh.h"
 #include "../material.h"
+#include "../sky.h"
 
 
 namespace unisim
@@ -22,7 +23,7 @@ std::shared_ptr<Object> makePlanet(const std::string& name, double radius, doubl
 SolarSystemScene::SolarSystemScene() :
     Scene("Solar System")
 {
-    _sky->setTexture("textures/background.jpg");
+    _sky.reset(new SkySphere("textures/background.jpg"));
     _sky->setQuaternion(quatConjugate(EARTH_BASE_QUAT));
 
     // Sun

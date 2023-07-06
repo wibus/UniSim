@@ -11,31 +11,9 @@
 namespace unisim
 {
 
+class Sky;
 class Object;
 class Texture;
-
-
-class Sky
-{
-public:
-    Sky();
-
-    std::shared_ptr<Texture> texture() const { return _texture; }
-    void setTexture(const std::shared_ptr<Texture>& texture) { _texture = texture; }
-    void setTexture(const std::string& fileName);
-
-    glm::vec4 quaternion() const { return _quaternion; }
-    void setQuaternion(const glm::vec4& quaternion) { _quaternion = quaternion; }
-
-    float exposure() const { return _exposure; }
-    void setExposure(float exposure) { _exposure = exposure; }
-
-private:
-    std::shared_ptr<Texture> _texture;
-    glm::vec4 _quaternion;
-    float _exposure;
-};
-
 
 class DirectionalLight
 {

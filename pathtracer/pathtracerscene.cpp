@@ -4,6 +4,7 @@
 #include "../body.h"
 #include "../mesh.h"
 #include "../material.h"
+#include "../sky.h"
 
 
 namespace unisim
@@ -38,7 +39,7 @@ std::shared_ptr<DirectionalLight> makeDirLight(const std::string& name, const gl
 PathTracerScene::PathTracerScene() :
     Scene("Path Tracer")
 {
-    _sky->setTexture("textures/syferfontein_0d_clear_puresky_4k.exr");
+    _sky.reset(new SkySphere("textures/syferfontein_0d_clear_puresky_4k.exr"));
     _sky->setExposure(glm::pow(2.0f, 10.0f));
 
     auto light = makeObject("Light", 1, {0, 7.5, 9});
