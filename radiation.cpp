@@ -30,7 +30,6 @@ DeclareProfilePointGpu(Clear);
 DeclareProfilePointGpu(PathTrace);
 DeclareProfilePointGpu(ColorGrade);
 
-DeclareResource(SkyMap);
 DefineResource(PathTrace);
 
 struct GpuInstance
@@ -109,121 +108,6 @@ Radiation::Radiation() :
     }
 }
 
-std::string loadSource(const std::string& fileName)
-{
-    std::ifstream t(fileName);
-    std::string str((std::istreambuf_iterator<char>(t)),
-                     std::istreambuf_iterator<char>());
-    return str;
-}
-
-void _print_shader_info_log(GLuint shaderId)
-{
-    int max_length = 2048;
-    int actual_length = 0;
-    char shader_log[2048];
-    glGetShaderInfoLog(shaderId, max_length, &actual_length, shader_log);
-    std::cout << "shader info log for GL index " << shaderId << ":" << std::endl;
-    std::cout << shader_log << std::endl;
-}
-
-bool compileShader(GLuint shaderId, const std::string& name)
-{
-    printf("Compiling shader %s\n" , name.c_str());
-
-    glCompileShader(shaderId);
-
-    // check for compile errors
-    int params = -1;
-    glGetShaderiv(shaderId, GL_COMPILE_STATUS, &params);
-
-    if (GL_TRUE != params)
-    {
-        fprintf(stderr, "ERROR: GL shader index %i did not compile\n", shaderId);
-        _print_shader_info_log(shaderId);
-        return false; // or exit or something
-    }
-
-    return true;
-}
-
-void printProgrammeInfoLog(GLuint programId)
-{
-    int max_length = 2048;
-    int actual_length = 0;
-    char program_log[2048];
-    glGetProgramInfoLog(programId, max_length, &actual_length, program_log);
-    std::cout << "program info log for GL index " << programId << ":" << std::endl;
-    std::cout << program_log << std::endl;
-}
-
-bool validateProgram(GLuint programId, const std::string& name)
-{
-    printf("Validating program %s\n" , name.c_str());
-
-    int linkStatus = -1;
-    glGetProgramiv(programId, GL_LINK_STATUS, &linkStatus);
-
-    glValidateProgram(programId);
-
-    int validationStatus = -1;
-    glGetProgramiv(programId, GL_VALIDATE_STATUS, &validationStatus);
-    printf("program %i GL_VALIDATE_STATUS = %i\n", programId, validationStatus);
-    if (GL_TRUE != validationStatus)
-    {
-        printProgrammeInfoLog(programId);
-        return false;
-    }
-
-    return true;
-}
-
-bool generateGraphicProgram(GLuint& programId, const std::string& vertexFileName, const std::string& fragmentFileName)
-{
-    std::string vertexSrc = loadSource(vertexFileName);
-    const char* vertexSrcChar = vertexSrc.data();
-    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vs, 1, &vertexSrcChar, NULL);
-    if(!compileShader(vs, vertexFileName))
-        return false;
-
-    std::string fragmentSrc = loadSource(fragmentFileName);
-    const char* fragmentSrcChar = fragmentSrc.data();
-    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fs, 1, &fragmentSrcChar, NULL);
-    if(!compileShader(fs, fragmentFileName))
-        return false;
-
-    programId = glCreateProgram();
-    glAttachShader(programId, fs);
-    glAttachShader(programId, vs);
-    glLinkProgram(programId);
-
-    if(!validateProgram(programId, vertexFileName + " - " + fragmentFileName))
-        return false;
-
-    return true;
-}
-
-bool generateComputeProgram(GLuint& programId, const std::string& computeFileName)
-{
-    std::string computeSrc = loadSource(computeFileName);
-    const char* computeSrcChar = computeSrc.data();
-    GLuint cs = glCreateShader(GL_COMPUTE_SHADER);
-    glShaderSource(cs, 1, &computeSrcChar, NULL);
-    if(!compileShader(cs, computeFileName))
-        return false;
-
-    programId = glCreateProgram();
-    glAttachShader(programId, cs);
-    glLinkProgram(programId);
-
-    if(!validateProgram(programId, computeFileName))
-        return false;
-
-    return true;
-}
-
 glm::vec3 toLinear(const glm::vec3& sRGB)
 {
     glm::bvec3 cutoff = glm::lessThan(sRGB, glm::vec3(0.04045));
@@ -266,7 +150,15 @@ bool Radiation::defineResources(GraphicContext& context)
 
     const std::vector<std::shared_ptr<Object>>& objects = scene.objects();
 
-    bool ok = generateComputeProgram(_computePathTraceId, "shaders/pathtrace.glsl");
+    // Gather shaders from sub-systems
+    std::vector<GLuint> shaders = scene.sky()->shaders();
+
+    // Remove duplicated shaders
+    std::sort( shaders.begin(), shaders.end() );
+    shaders.erase( std::unique( shaders.begin(), shaders.end() ), shaders.end());
+
+    // Generate program
+    bool ok = generateComputeProgram(_computePathTraceId, "shaders/pathtrace.glsl", shaders);
     ok = generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag") && ok;
 
     if(!ok)
@@ -365,9 +257,6 @@ bool Radiation::defineResources(GraphicContext& context)
     _pathTraceUnit = 0;
     _pathTraceLoc = glGetUniformLocation(_computePathTraceId, "result");
     glProgramUniform1i(_computePathTraceId, _pathTraceLoc, _pathTraceUnit);
-
-    _backgroundUnit = 0;
-    _backgroundLoc = glGetUniformLocation(_computePathTraceId, "backgroundImg");
 
     return ok;
 }
@@ -486,6 +375,9 @@ void Radiation::render(GraphicContext& context)
 
         glUseProgram(_computePathTraceId);
 
+        // Set uniforms for sub-systems
+        scene.sky()->setProgramResources(context, _computePathTraceId, 0);
+
         glBindBufferBase(GL_UNIFORM_BUFFER, 0, _commonUbo);
         glBufferData(GL_UNIFORM_BUFFER, sizeof(CommonParams), &params, GL_STREAM_DRAW);
 
@@ -503,17 +395,15 @@ void Radiation::render(GraphicContext& context)
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, _materialsSSBO);
 
-        glUniform1i(_backgroundLoc, _backgroundUnit);
-        glActiveTexture(GL_TEXTURE0 + _backgroundUnit);
-        glBindTexture(GL_TEXTURE_2D, resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId);
-
         glBindImageTexture(_pathTraceUnit, pathTraceTexId, 0, false, 0, GL_WRITE_ONLY, _pathTraceFormat);
 
-        glDispatchCompute((camera.viewport().width + 7) / 8, (camera.viewport().width + 3) / 4, 1);
+        glDispatchCompute((_viewport.width + 7) / 8, (_viewport.height + 3) / 4, 1);
     }
 
     {
         ProfileGpu(Clear);
+
+        glViewport(0, 0, _viewport.width, _viewport.height);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }

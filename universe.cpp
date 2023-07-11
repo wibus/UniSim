@@ -82,8 +82,6 @@ void glfwErrorCallback(int error, const char* description)
 Universe::Universe() :
     _timeFactor(0.0)
 {
-    //_project.reset(new SolarSystemProject());
-    _project.reset(new PathTracerProject());
 }
 
 int Universe::launch(int argc, char** argv)
@@ -305,6 +303,9 @@ void Universe::handleMouseScroll(const MouseScrollEvent& event)
 bool Universe::setup()
 {
     Profiler::GetInstance().initize();
+
+    //_project.reset(new SolarSystemProject());
+    _project.reset(new PathTracerProject());
 
     _project->addView(_viewport);
 

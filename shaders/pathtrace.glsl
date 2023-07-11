@@ -81,10 +81,6 @@ layout (std140, binding = 0) uniform CommonParams
 
     layout(rgba8) readonly image2D blueNoise[64];
     vec4 halton[64];
-
-    // Background
-    vec4 backgroundQuat;
-    float backgroundExposure;
 };
 
 layout (std140, binding = 1) buffer Instances
@@ -107,9 +103,7 @@ layout (std140, binding = 4) buffer Materials
     Material materials[];
 };
 
-uniform layout(binding = 0) sampler2D backgroundImg;
-
-uniform layout(binding = 6, rgba32f) image2D result;
+uniform layout(binding = 5, rgba32f) image2D result;
 
 float sqr(float v)
 {
@@ -294,6 +288,22 @@ vec2 sampleUniformDisk(float U1, float U2)
     return vec2(cos(a), sin(a)) * r;
 }
 
+
+// Sky API
+void SampleSkyLuminance(
+        out vec3 skyLuminance,
+        out vec3 transmittance,
+        vec3 cameraPos,
+        vec3 viewDir);
+
+void SampleSkyLuminanceToPoint(
+        out vec3 skyLuminance,
+        out vec3 transmittance,
+        vec3 cameraPos,
+        vec3 pointPos);
+
+
+// Path Tracing
 Ray genRay(uvec2 pixelPos)
 {
     vec4 noise = sampleBlueNoise(0);
@@ -507,9 +517,19 @@ vec3 sampleDirectionalLight(uint lightId, Ray ray, HitInfo hitInfo, vec4 noise)
     shadowRay.origin = hitInfo.position;
     shadowRay.direction = L;
 
+    vec3 skyLuminance;
+    vec3 skyTransmittance;
+    SampleSkyLuminance(
+        skyLuminance,
+        skyTransmittance,
+        shadowRay.origin,
+        shadowRay.direction);
+
     Intersection shadowIntersection = raycast(shadowRay);
     if(shadowIntersection.t == 1 / 0.0)
-        return evaluateBSDF(ray, hitInfo, L, light.emissionSolidAngle.a) * light.emissionSolidAngle.rgb;
+        return evaluateBSDF(ray, hitInfo, L, light.emissionSolidAngle.a)
+                * light.emissionSolidAngle.rgb
+                * skyTransmittance;
     else
         return vec3(0);
 }
@@ -544,10 +564,15 @@ vec3 shadeHit(Ray ray, HitInfo hitInfo)
 
 vec3 shadeSky(in Ray ray)
 {
-    vec2 uv = findUV(backgroundQuat, ray.direction);
-    vec3 skyLuminance = texture2D(backgroundImg, vec2(uv.x, 1 - uv.y)).rgb;
+    vec3 skyLuminance;
+    vec3 skyTransmittance;
+    SampleSkyLuminance(
+        skyLuminance,
+        skyTransmittance,
+        ray.origin,
+        ray.direction);
 
-    vec3 L_in = toLinear(skyLuminance) * backgroundExposure;
+    vec3 L_in = skyLuminance;
 
     for(uint dl = 0; dl < directionalLights.length(); ++dl)
     {
@@ -558,7 +583,7 @@ vec3 shadeSky(in Ray ray)
         {
             float lightAreaPdf = 1 / light.emissionSolidAngle.a;
             float weight = ray.bsdfPdf != DELTA ? misHeuristic(1, ray.bsdfPdf, 1, lightAreaPdf) : 1;
-            L_in += weight * light.emissionSolidAngle.rgb;
+            L_in += weight * light.emissionSolidAngle.rgb * skyTransmittance;
         }
     }
 

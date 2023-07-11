@@ -10,6 +10,16 @@
 #include "graphic.h"
 
 
+namespace atmosphere
+{
+namespace reference
+{
+struct AtmosphereParameters;
+}
+class Model;
+}
+
+
 namespace unisim
 {
 
@@ -35,10 +45,11 @@ public:
     float exposure() const { return _exposure; }
     void setExposure(float exposure) { _exposure = exposure; }
 
-    virtual unsigned int width() const = 0;
-    virtual unsigned int height() const = 0;
+    virtual std::shared_ptr<GraphicTask> graphicTask() = 0;
 
-    virtual std::shared_ptr<GraphicTask> createGraphicTask() = 0;
+    virtual std::vector<GLuint> shaders() const = 0;
+
+    virtual GLuint setProgramResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const = 0;
 
 private:
     Mapping _mapping;
@@ -53,10 +64,12 @@ public:
     SkySphere();
     SkySphere(const std::string& fileName);
 
-    unsigned int width() const override;
-    unsigned int height() const override;
+    std::shared_ptr<GraphicTask> graphicTask() override;
 
-    std::shared_ptr<GraphicTask> createGraphicTask() override;
+    std::vector<GLuint> shaders() const override;
+
+    GLuint setProgramResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const override;
+
 
 private:
     std::shared_ptr<Texture> _texture;
@@ -68,8 +81,53 @@ private:
 
         bool defineResources(GraphicContext& context) override;
 
+        GLuint shader() const { return _shaderId; }
+
+        GLuint texture() const { return _textureId; }
+
     private:
         std::shared_ptr<Texture> _texture;
+        GLuint _shaderId;
+        GLuint _textureId;
+    };
+
+    std::shared_ptr<GraphicTask> _task;
+};
+
+
+class PhysicalSky : public Sky
+{
+public:
+    PhysicalSky();
+    virtual ~PhysicalSky();
+
+    std::shared_ptr<GraphicTask> graphicTask() override;
+
+    std::vector<GLuint> shaders() const override;
+
+    GLuint setProgramResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const override;
+
+
+private:
+    typedef atmosphere::Model Model;
+    typedef atmosphere::reference::AtmosphereParameters Params;
+
+    std::unique_ptr<Model> _model;
+    std::unique_ptr<Params> _params;
+
+    class Task : public GraphicTask
+    {
+    public:
+        Task(Model& model, Params& params);
+
+        bool defineResources(GraphicContext& context) override;
+
+        GLuint shader() const { return _shaderId; }
+
+    private:
+        Model& _model;
+        Params& _params;
+        GLuint _shaderId;
     };
 
     std::shared_ptr<GraphicTask> _task;

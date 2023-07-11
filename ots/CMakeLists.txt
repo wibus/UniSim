@@ -1,3 +1,8 @@
+# bruneton
+add_subdirectory(bruneton)
+set(BRUNETON_INCLUDE_DIRS ots/bruneton)
+set(BRUNETON_LIBRARIES bruneton)
+
 # GLEW
 set(GLEW_INCLUDE_DIRS ots/glew/include)
 set(GLEW_LIBRARIES glew)
@@ -49,6 +54,7 @@ set(TINYEXR_LIBRARIES tinyexr)
 ## OTS ##
 set(OTS_INCLUDE_DIRS
     ots
+    ${BRUNETON_INCLUDE_DIRS}
     ${GLEW_INCLUDE_DIRS}
     ${GLFW_INCLUDE_DIRS}
     ${GLM_INCLUDE_DIRS}
@@ -59,6 +65,7 @@ set(OTS_INCLUDE_DIRS
 )
 
 set(OTS_LIBRARIES
+    ${BRUNETON_LIBRARIES}
     ${OPENGL_LIBRARIES} 
     ${GLEW_LIBRARIES}
     ${GLFW_LIBRARIES}

@@ -58,11 +58,7 @@ private:
     ResourceId _blueNoiseTextureResourceIds[BLUE_NOISE_TEX_COUNT];
     ResourceId _blueNoiseBindlessResourceIds[BLUE_NOISE_TEX_COUNT];
 
-
     glm::vec4 _halton[HALTON_SAMPLE_COUNT];
-
-    GLuint _backgroundLoc;
-    GLint _backgroundUnit;
 
     GLuint _pathTraceLoc;
     GLuint _pathTraceUnit;

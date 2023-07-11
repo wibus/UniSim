@@ -18,8 +18,6 @@
 namespace unisim
 {
 
-DeclareResource(SkyMap);
-
 Ui::Ui(bool showUi) :
     _showUi(showUi)
 {
@@ -163,11 +161,6 @@ void displaySky(const ResourceManager& resources, Scene& scene)
         {
             scene.sky()->setExposure(exposure);
         }
-
-        uint64_t imgHandle = resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId;
-        unsigned int dimensions[2] = {scene.sky()->width(), scene.sky()->height()};
-        ImVec2 size(512, (512.0f / dimensions[0]) * dimensions[1]);
-        ImGui::Image((void*)imgHandle, size);
 
         ImGui::TreePop();
     }

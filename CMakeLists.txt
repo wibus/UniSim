@@ -79,6 +79,8 @@ set(ShaderFiles
     shaders/fullscreen.vert
     shaders/pathtrace.glsl
     shaders/colorgrade.frag
+    shaders/physicalsky.glsl
+    shaders/sphericalsky.glsl
 )
 
 ## Projects ##

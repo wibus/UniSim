@@ -13,6 +13,29 @@ namespace unisim
 class Scene;
 class Camera;
 
+bool generateVertexShader(
+        GLuint& shaderId,
+        const std::string& fileName);
+
+bool generateFragmentShader(
+        GLuint& shaderId,
+        const std::string& fileName);
+
+bool generateComputerShader(
+        GLuint& shaderId,
+        const std::string& fileName);
+
+bool generateGraphicProgram(
+        GLuint& programId,
+        const std::string& vertexFileName,
+        const std::string& fragmentFileName);
+
+bool generateComputeProgram(
+        GLuint& programId,
+        const std::string& computeFileName,
+        const std::vector<GLuint>& shaders = {});
+
+
 struct GraphicContext
 {
     const Scene& scene;
