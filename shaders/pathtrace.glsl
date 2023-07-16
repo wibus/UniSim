@@ -322,14 +322,14 @@ Ray genRay(uvec2 pixelPos)
     vec3 primaryDir = normalize(unprojRay.xyz / unprojRay.w);
     float RoD = dot(primaryDir, lenseDirection.xyz);
     float focusT = focusDistance / RoD;
-    vec3 focusPoint = lensePosition.xyz + primaryDir * focusT;
 
     vec3 T, B, N = lenseDirection.xyz;
     makeOrthBase(N, T, B);
 
     vec2 offset = sampleUniformDisk(noise.z, noise.w) * apertureRadius;
-    vec3 rayOrigin = lensePosition.xyz + T * offset.x + B * offset.y;
-    vec3 rayDirection = normalize(focusPoint - rayOrigin);
+    vec3 offsetPos = T * offset.x + B * offset.y;
+    vec3 rayOrigin = lensePosition.xyz + offsetPos;
+    vec3 rayDirection = normalize(primaryDir * focusT - offsetPos);
 
     Ray ray;
     ray.direction = rayDirection;
