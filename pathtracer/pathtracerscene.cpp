@@ -3,6 +3,7 @@
 #include "../object.h"
 #include "../body.h"
 #include "../mesh.h"
+#include "../camera.h"
 #include "../material.h"
 #include "../sky.h"
 
@@ -24,16 +25,9 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
     return object;
 }
 
-std::shared_ptr<DirectionalLight> makeDirLight(const std::string& name, const glm::dvec3& position, const glm::dvec3& emission, double luminance, double solidAngle)
+void PathTracerScene::initializeCamera(Camera& camera)
 {
-    std::shared_ptr<DirectionalLight> light(new DirectionalLight(name));
-
-    light->setDirection(glm::normalize(position));
-    light->setEmissionColor(emission);
-    light->setEmissionLuminance(luminance);
-    light->setSolidAngle(solidAngle);
-
-    return light;
+    camera.setEV(-2.5);
 }
 
 PathTracerScene::PathTracerScene() :
@@ -45,6 +39,13 @@ PathTracerScene::PathTracerScene() :
     /*/
     _sky.reset(new PhysicalSky());
     //*/
+
+    SkyLocalization& localization = _sky->localization();
+    localization.setLongitude(-73.567);
+    localization.setLatitude(45.509);
+    localization.setTimeOfDay(0.0f);
+    localization.setDayOfYear(81.0f);
+    localization.setDayOfMoon(17.0);
 
     auto light = makeObject("Light", 1, {0, 7.5, 9});
     auto floor = makeObject("Floor", 1000, {0, 0, -1000});
@@ -80,7 +81,7 @@ PathTracerScene::PathTracerScene() :
     ballFront->material()->setDefaultRoughness(0.2);
     ballFront->material()->setDefaultMetalness(1);
 
-    _objects.push_back(light);
+    //_objects.push_back(light);
     _objects.push_back(floor);
     //_objects.push_back(ceiling);
     //_objects.push_back(wallLeft);
@@ -89,9 +90,6 @@ PathTracerScene::PathTracerScene() :
     _objects.push_back(ballLeft);
     _objects.push_back(ballRight);
     _objects.push_back(ballFront);
-
-    auto sun = makeDirLight("Sun", glm::dvec3(2, -1, 1), glm::dvec3(1, 0.9, 0.7), 1.6e9, 60.0e-6);
-    _directionalLights.push_back(sun);
 }
 
 }

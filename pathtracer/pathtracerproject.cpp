@@ -15,7 +15,9 @@ PathTracerProject::PathTracerProject()
 
 int PathTracerProject::addView(Viewport viewport)
 {
-    return addCameraMan(new PathTracerCameraMan(scene(), viewport));
+    int cameraManId = addCameraMan(new PathTracerCameraMan(scene(), viewport));
+    scene().initializeCamera(cameraMan(cameraManId).camera());
+    return cameraManId;
 }
 
 }

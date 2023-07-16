@@ -31,10 +31,16 @@ inline glm::dvec4 quatConjugate(const glm::dvec4& q)
     return glm::dvec4(-q.x, -q.y, -q.z, q.w);
 }
 
-inline glm::vec3 rotatePoint(const glm::dvec4& q, const glm::dvec3& v)
+inline glm::dvec3 rotatePoint(const glm::dvec4& q, const glm::dvec3& v)
 {
     glm::dvec3 qxyz = glm::dvec3(q);
     return v + 2.0 * glm::cross(qxyz, glm::cross(qxyz, v) + q.w * v);
+}
+
+inline void makeOrthBase(const glm::vec3& N, glm::vec3& T, glm::vec3& B)
+{
+    T = glm::normalize(glm::cross(N, glm::abs(N.z) < 0.9 ? glm::vec3(0, 0, 1) : glm::vec3(1, 0, 0)));
+    B = glm::normalize(glm::cross(N, T));
 }
 
 const glm::dvec4 EARTH_BASE_QUAT = quat(glm::dvec3(1, 0, 0), glm::radians(-23.44));

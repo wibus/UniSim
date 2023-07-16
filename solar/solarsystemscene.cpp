@@ -26,6 +26,8 @@ SolarSystemScene::SolarSystemScene() :
     _sky.reset(new SkySphere("textures/background.jpg"));
     _sky->setQuaternion(quatConjugate(EARTH_BASE_QUAT));
 
+    double secondsSinceJan1st2000 = 6834900; // March equinox 2000
+
     // Sun
     std::shared_ptr<Object> sun = makePlanet("Sun", 696.340e6, 1.41f);
     sun->material()->setDefaultAlbedo(glm::dvec3(1.0, 1.0, 0.5));
@@ -42,14 +44,14 @@ SolarSystemScene::SolarSystemScene() :
     std::shared_ptr<Object> uranus    = makePlanet("Uranus",    25.362e6,   1.27f,  &*sun);
     std::shared_ptr<Object> neptune   = makePlanet("Neptune",   24.622e6,   1.64f,  &*sun);
 
-    mercury->body()->setupOrbit(0.387,  0.206,   48.3,  77.46,  252.3,  7.00, &*sun->body());
-    venus->body()->setupOrbit(  0.723,  0.007,   76.7,  131.6,  182.0,  3.39, &*sun->body());
-    earth->body()->setupOrbit(  1.000,  0.017,    0.0,  102.9,  100.5,  0.00, &*sun->body());
-    mars->body()->setupOrbit(   1.524,  0.093,   49.6,  336.1,  355.4,  1.85, &*sun->body());
-    jupiter->body()->setupOrbit(5.203,  0.048,  100.4,   14.3,   34.4,  1.30, &*sun->body());
-    saturn->body()->setupOrbit( 9.555,  0.056,  113.7,   93.1,   50.1,  2.49, &*sun->body());
-    uranus->body()->setupOrbit( 19.22,  0.046,   74.0,  173.0,  314.1,  0.77, &*sun->body());
-    neptune->body()->setupOrbit(30.11,  0.009,  131.8,   48.1,  304.3,  1.77, &*sun->body());
+    mercury->body()->setupOrbit(0.387,  0.206,   48.3,  77.46,  252.3,  7.00, secondsSinceJan1st2000, &*sun->body());
+    venus->body()->setupOrbit(  0.723,  0.007,   76.7,  131.6,  182.0,  3.39, secondsSinceJan1st2000, &*sun->body());
+    earth->body()->setupOrbit(  1.000,  0.017,    0.0,  102.9,  100.5,  0.00, secondsSinceJan1st2000, &*sun->body());
+    mars->body()->setupOrbit(   1.524,  0.093,   49.6,  336.1,  355.4,  1.85, secondsSinceJan1st2000, &*sun->body());
+    jupiter->body()->setupOrbit(5.203,  0.048,  100.4,   14.3,   34.4,  1.30, secondsSinceJan1st2000, &*sun->body());
+    saturn->body()->setupOrbit( 9.555,  0.056,  113.7,   93.1,   50.1,  2.49, secondsSinceJan1st2000, &*sun->body());
+    uranus->body()->setupOrbit( 19.22,  0.046,   74.0,  173.0,  314.1,  0.77, secondsSinceJan1st2000, &*sun->body());
+    neptune->body()->setupOrbit(30.11,  0.009,  131.8,   48.1,  304.3,  1.77, secondsSinceJan1st2000, &*sun->body());
 
     sun->body()->setupRotation(    25.38, 0.0,  286.13,  63.87);
     mercury->body()->setupRotation( 58.6, 0.0,  281.01,  61.42);
@@ -98,7 +100,7 @@ SolarSystemScene::SolarSystemScene() :
     // Moons
     std::shared_ptr<Object> moon = makePlanet("Moon", 1.738e6, 3.344, &*earth);
 
-    moon->body()->setupOrbit(0.00257, 0.0554, 125.08, 83.23, 135.27, 5.16, &*earth->body());
+    moon->body()->setupOrbit(0.00257, 0.0554, 125.08, 83.23, 135.27, 5.16, secondsSinceJan1st2000, &*earth->body());
 
     moon->body()->setupRotation(27.322, -45.0, 148.5, 73.0);
 

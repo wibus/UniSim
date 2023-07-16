@@ -162,6 +162,27 @@ void displaySky(const ResourceManager& resources, Scene& scene)
             scene.sky()->setExposure(exposure);
         }
 
+        SkyLocalization& local = scene.sky()->localization();
+
+        glm::vec2 geom(local.longitude(), local.latitude());
+        if(ImGui::InputFloat2("Long/Lat", &geom[0]))
+        {
+            local.setLongitude(geom[0]);
+            local.setLatitude(geom[1]);
+        }
+
+        float timeOfDay = local.timeOfDay();
+        if(ImGui::SliderFloat("Time of Day", &timeOfDay, 0, SkyLocalization::MAX_TIME_OF_DAY))
+            local.setTimeOfDay(timeOfDay);
+
+        float dayOfYear = local.dayOfYear();
+        if(ImGui::SliderFloat("Day of Year", &dayOfYear, 0, SkyLocalization::MAX_DAY_OF_YEAR))
+            local.setDayOfYear(dayOfYear);
+
+        float dayOfMoon = local.dayOfMoon();
+        if(ImGui::SliderFloat("Day of Moon", &dayOfMoon, 0, SkyLocalization::MAX_DAY_OF_MOON))
+            local.setDayOfMoon(dayOfMoon);
+
         ImGui::TreePop();
     }
 }
@@ -170,7 +191,7 @@ void displayDirectionalLights(Scene& scene)
 {
     if(ImGui::TreeNode("Directional Lights"))
     {
-        for(const auto& light : scene.directionalLights())
+        for(const auto& light : scene.sky()->directionalLights())
         {
             if(ImGui::TreeNode(light->name().c_str()))
             {

@@ -84,6 +84,7 @@ void Body::setupOrbit(
         double PI,
         double L_meanLongitude,
         double i_inclination,
+        double secondsSinceJan1st2000,
         Body* parent)
 {
     // AU to m
@@ -109,28 +110,29 @@ void Body::setupOrbit(
     double P = 2 * glm::pi<double>() * glm::sqrt(aCube / (G * (_mass + parent->mass())));
 
     // Anomaly
-    double M = L_meanLongitude - PI;
-    double T = - (M / (2 * glm::pi<double>())) * P;
+    double T_0 = 0; // 1st Jan 2000 at midnight
+    double M_0 = L_meanLongitude - PI;
+    double T = T_0 - (M_0) / (2 * glm::pi<double>()) * P;
 
-    double T_0 = T + 6834900;//; // March equinox 2000
-    double M_0 = 2 * glm::pi<double>() * (T_0 - T) / P;
-    double E_0 = solveEccentricAnomaly(e_eccentricity, M_0);
-
-    // Angular speed
-    double T_1 = T_0 + 60*60; // 1h
+    double T_1 = T_0 + secondsSinceJan1st2000;
     double M_1 = 2 * glm::pi<double>() * (T_1 - T) / P;
     double E_1 = solveEccentricAnomaly(e_eccentricity, M_1);
 
-    // Coordinates
-    double x_0 = a_semiMajorAxis * glm::cos(E_0) - f;
-    double y_0 = b * glm::sin(E_0);
+    // Angular speed
+    double T_2 = T_1 + 60*60; // +1h
+    double M_2 = 2 * glm::pi<double>() * (T_2 - T) / P;
+    double E_2 = solveEccentricAnomaly(e_eccentricity, M_2);
 
-    // Velocity
+    // Coordinates
     double x_1 = a_semiMajorAxis * glm::cos(E_1) - f;
     double y_1 = b * glm::sin(E_1);
 
+    // Velocity
+    double x_2 = a_semiMajorAxis * glm::cos(E_2) - f;
+    double y_2 = b * glm::sin(E_2);
+
     _position = x_1 * u + y_1 * v;
-    _linearVelocity = ((x_1 * u + y_1 * v) - (x_0 * u + y_0 * v)) / (T_1 - T_0);
+    _linearVelocity = ((x_2 * u + y_2 * v) - (x_1 * u + y_1 * v)) / (T_2 - T_1);
 
     if(parent)
     {
@@ -148,7 +150,7 @@ void Body::setupRotation(
     _angularSpeed = 2 * glm::pi<double>() / ED(rotationPeriod);
 
     glm::dvec4 rightAscensionQuat = quat(glm::dvec3(0, 0, 1), glm::radians(rightAscension));
-    glm::dvec4 declinationQuat    = quat(glm::dvec3(0, 1, 0), glm::radians(90 -declination));
+    glm::dvec4 declinationQuat    = quat(glm::dvec3(1, 0, 0), glm::radians(90 - declination));
     glm::dvec4 phaseQuat          = quat(glm::dvec3(0, 0, 1), glm::radians(phase));
 
     _quaternion = quatMul(EARTH_BASE_QUAT, quatMul(rightAscensionQuat, quatMul(declinationQuat, phaseQuat)));

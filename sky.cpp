@@ -1,8 +1,14 @@
 #include "sky.h"
 
+#include <GLM/gtc/constants.hpp>
+#include <GLM/gtx/transform.hpp>
+
 #include "camera.h"
 #include "material.h"
 #include "scene.h"
+#include "body.h"
+#include "units.h"
+#include "profiler.h"
 
 #include <bruneton/model.h>
 #include <bruneton/definitions.h>
@@ -12,10 +18,105 @@ using namespace atmosphere::reference;
 namespace unisim
 {
 
-DefineResource(SkyMap);
+DeclareProfilePoint(PhysicalSky);
+DeclareProfilePointGpu(PhysicalSky);
 
-Sky::Sky(Mapping mapping) :
-    _mapping(mapping),
+DefineResource(SkyMap);
+DefineResource(MoonAlbedo);
+DefineResource(MoonLighting);
+
+
+DirectionalLight::DirectionalLight(const std::string& name) :
+    _name(name),
+    _emissionColor(1, 1, 1),
+    _emissionLuminance(1)
+{
+
+}
+
+DirectionalLight::~DirectionalLight()
+{
+
+}
+
+std::shared_ptr<DirectionalLight> makeDirLight(const std::string& name, const glm::dvec3& position, const glm::dvec3& emission, double luminance, double solidAngle)
+{
+    std::shared_ptr<DirectionalLight> light(new DirectionalLight(name));
+
+    light->setDirection(glm::normalize(position));
+    light->setEmissionColor(emission);
+    light->setEmissionLuminance(luminance);
+    light->setSolidAngle(solidAngle);
+
+    return light;
+}
+
+SkyLocalization::SkyLocalization() :
+    _longitude(-73.5674f),
+    _latitude(45.508888f),
+    _timeOfDay(8.0f),
+    _dayOfYear(81),
+    _dayOfMoon(20)
+{
+    _sun.reset(new Body(  696.340e6, 1.41f));
+    _earth.reset(new Body(6.371e6,   5.51f));
+    _moon.reset(new Body( 1.738e6,   3.344));
+}
+
+void SkyLocalization::computeSunAndMoon(
+        glm::vec3& sunDirection,
+        glm::vec3& moonDirection,
+        glm::vec3& moonUp) const
+{
+    double secSinceBeginningOfYear = _dayOfYear * 24 * 60 * 60;
+    _earth->setupOrbit(1.000,  0.017, 0.0, 102.9, 100.5, 0.00, secSinceBeginningOfYear, _sun.get());
+    double sunPhase = glm::atan(_earth->position().y, _earth->position().x);
+
+    double earthRotRadians = 360 * _timeOfDay / MAX_TIME_OF_DAY - _longitude + glm::degrees(sunPhase);
+    _earth->setupRotation(0.99, earthRotRadians, 000.00, 90.00);
+
+    double moonSecSinceAlignSun = _dayOfMoon * 24 * 60 * 60;
+    double moonMeanLongitude = 180 + 0 + glm::degrees(sunPhase);
+    _moon->setupOrbit( 0.00257, 0.0554, 125.08, 83.23, moonMeanLongitude, 5.16, moonSecSinceAlignSun, _earth.get());
+
+    glm::dvec4 geoQuat = quatMul(
+                quat(glm::dvec3(0, 0, 1), glm::radians(_longitude)),
+                quat(glm::dvec3(0, -1, 0), glm::radians(_latitude)));
+    glm::dvec4 spaceQuat = quatMul(
+                _earth->quaternion(),
+                geoQuat);
+
+    glm::dvec3 zenithInSpace = rotatePoint(spaceQuat, glm::dvec3(1, 0, 0));
+    glm::dvec3 eastInSpace = rotatePoint(spaceQuat, glm::dvec3(0, 1, 0));
+    glm::dvec3 northInSpace = rotatePoint(spaceQuat, glm::dvec3(0, 0, 1));
+
+    glm::dvec3 positionInSpace = _earth->position() + zenithInSpace * _earth->radius();
+    glm::dvec3 sunDir(
+        glm::dot(-positionInSpace, eastInSpace),
+        glm::dot(-positionInSpace, northInSpace),
+        glm::dot(-positionInSpace, zenithInSpace));
+
+    sunDirection = glm::normalize(sunDir);
+
+    glm::dvec3 moonRelativePosition = _moon->position() - positionInSpace;
+    glm::dvec3 moonDir(
+        glm::dot(moonRelativePosition, eastInSpace),
+        glm::dot(moonRelativePosition, northInSpace),
+        glm::dot(moonRelativePosition, zenithInSpace));
+
+    moonDirection = glm::normalize(moonDir);
+
+    glm::dvec3 moonUpSpace = glm::normalize(glm::cross(-positionInSpace, moonRelativePosition));
+    if(glm::dot(glm::dvec3(0, 0, 1), moonUpSpace) < 0)
+        moonUpSpace = -moonUpSpace;
+
+    moonUp = glm::normalize(glm::vec3(
+        glm::dot(moonUpSpace, eastInSpace),
+        glm::dot(moonUpSpace, northInSpace),
+        glm::dot(moonUpSpace, zenithInSpace)));
+}
+
+Sky::Sky() :
     _quaternion(0, 0, 0, 1),
     _exposure(1)
 {
@@ -28,14 +129,14 @@ Sky::~Sky()
 }
 
 SkySphere::SkySphere() :
-    Sky(Mapping::Sphere)
+    Sky()
 {
     _texture.reset(new Texture(Texture::BLACK_Float32));
     _task = std::make_shared<SkySphere::Task>(_texture);
 }
 
 SkySphere::SkySphere(const std::string& fileName) :
-    Sky(Mapping::Sphere)
+    Sky()
 {
     _texture.reset(Texture::load(fileName));
     _task = std::make_shared<SkySphere::Task>(_texture);
@@ -103,7 +204,7 @@ constexpr Wavelength kLambdaB = atmosphere::Model::kLambdaB * nm;
 */
 
 PhysicalSky::PhysicalSky() :
-    Sky(Mapping::Sphere)
+    Sky()
 {
     bool half_precision = false;
     bool combine_textures = false;
@@ -248,7 +349,24 @@ PhysicalSky::PhysicalSky() :
 
     _model->Init();
 
-    _task = std::make_shared<PhysicalSky::Task>(*_model, *_params);
+    glm::dvec3 sunIrradiance;
+    Model::ConvertSpectrumToLinearSrgb(wavelengths,
+        atmosphere_parameters_.solar_irradiance.to(watt_per_square_meter_per_nm),
+        &sunIrradiance[0], &sunIrradiance[1], &sunIrradiance[2]);
+    _sunIrradiance = sunIrradiance;
+
+    float sunSolidAngle = 2 * glm::pi<float>() *(1 - glm::cos(atmosphere_parameters_.sun_angular_radius.to(rad)));
+    float maxComp = glm::max(glm::max(_sunIrradiance[0], _sunIrradiance[1]), _sunIrradiance[2]);
+    _sunIrradiance /= maxComp;
+    float luminance = maxComp / sunSolidAngle;
+
+    _sun = makeDirLight("Sun", glm::vec3(0, 0, 1), _sunIrradiance, luminance, sunSolidAngle);
+    directionalLights().push_back(_sun);
+
+    _moon = makeDirLight("Moon", glm::vec3(0, 0, 1), _sunIrradiance, 0.0f, sunSolidAngle);
+    directionalLights().push_back(_moon);
+
+    _task = std::make_shared<PhysicalSky::Task>(*_model, *_params, *_sun, *_moon);
 }
 
 PhysicalSky::~PhysicalSky()
@@ -275,38 +393,175 @@ GLuint PhysicalSky::setProgramResources(GraphicContext& context, GLuint programI
         textureUnitStart++,
     };
 
-    _model->SetProgramUniforms(programId, textureUnits[0], textureUnits[1], textureUnits[2], textureUnits[3]);
+   _model->SetProgramUniforms(programId, textureUnits[0], textureUnits[1], textureUnits[2], textureUnits[3]);
 
-    glm::vec3 sunDirection(0, 0, 1);
-    if(context.scene.directionalLights().size() > 0)
-    {
-        sunDirection = context.scene.directionalLights()[0]->direction();
-    }
+    glm::vec3 sunDirection = _sun->direction();
+    glm::vec3 moonDirection = _moon->direction();
+    float sunToMoonRatio = _moon->emissionLuminance() / _sun->emissionLuminance();
 
     glUniform3f(glGetUniformLocation(programId, "sunDirection"),
                 sunDirection[0], sunDirection[1], sunDirection[2]);
 
+    glUniform3f(glGetUniformLocation(programId, "moonDirection"),
+                moonDirection[0], moonDirection[1], moonDirection[2]);
+
+    glUniform1f(glGetUniformLocation(programId, "sunToMoonRatio"),
+                sunToMoonRatio);
+
     glUniform1f(glGetUniformLocation(programId, "groundHeightKM"),
                 _params->bottom_radius.to(km));
+
+    GLuint moonLightingUnit = textureUnitStart++;
+    glActiveTexture(GL_TEXTURE0 + moonLightingUnit);
+    glBindTexture(GL_TEXTURE_2D, context.resources.get<GpuImageResource>(ResourceName(MoonLighting)).texId);
+    glUniform1i(glGetUniformLocation(programId, "moonLighting"), moonLightingUnit);
+
+    glm::mat4 moonInvTransform = _task->moonInvTransform();
+    glUniformMatrix4fv(glGetUniformLocation(programId, "moonInvTransform"),
+                1, false, &moonInvTransform[0][0]);
 
     return textureUnitStart;
 }
 
-PhysicalSky::Task::Task(Model& model, Params& params) :
+struct PhysicalSkyCommonParams
+{
+    glm::mat4 transform;
+    glm::vec4 sunDirection;
+    glm::vec4 moonDirection;
+    glm::vec4 sunLi;
+};
+
+PhysicalSky::Task::Task(Model& model, Params& params, DirectionalLight &sun, DirectionalLight &moon) :
     GraphicTask("PhysicalSphere"),
     _model(model),
     _params(params),
-    _shaderId(0)
+    _sun(sun),
+    _moon(moon),
+    _shaderId(0),
+    _lightingProgramId(0),
+    _moonLightingDimensions(1024)
 {
 
 }
 
 bool PhysicalSky::Task::defineResources(GraphicContext& context)
 {
+    ResourceManager& resources = context.resources;
+
     if(!generateComputerShader(_shaderId, "shaders/physicalsky.glsl"))
         return false;
 
+    if(!generateComputeProgram(_lightingProgramId, "shaders/moonlight.glsl"))
+        return false;
+
+    _moonAlbedo.reset(Texture::load("textures/moonAlbedo2d.png"));
+    resources.define<GpuTextureResource>(ResourceName(MoonAlbedo), {*_moonAlbedo});
+
+    _lightingFormat = GL_RGBA32F;
+    resources.define<GpuImageResource>(ResourceName(MoonLighting),
+        {_moonLightingDimensions, _moonLightingDimensions, _lightingFormat});
+
+    _albedoLoc = glGetUniformLocation(_lightingProgramId, "albedo");
+    _lightingLoc = glGetUniformLocation(_lightingProgramId, "lighting");
+
+    _albedoUnit = 0;
+    _lightingUnit = 0;
+
+    glProgramUniform1i(_lightingProgramId, _albedoLoc, _albedoUnit);
+    glProgramUniform1i(_lightingProgramId, _lightingLoc, _lightingUnit);
+
+    glGenBuffers(1, &_paramsUbo);
+    glBindBuffer(GL_UNIFORM_BUFFER, _paramsUbo);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(PhysicalSkyCommonParams), nullptr, GL_STREAM_DRAW);
+
     return true;
+}
+
+void PhysicalSky::Task::update(GraphicContext& context)
+{
+    Profile(PhysicalSky);
+
+    glm::vec3 sunDirection, moonDirection, moonUp;
+    context.scene.sky()->localization().computeSunAndMoon(sunDirection, moonDirection, moonUp);
+    _sun.setDirection(sunDirection);
+    _moon.setDirection(moonDirection);
+
+    // Moon transform
+    glm::vec3 moonSide = glm::normalize(glm::cross(moonDirection, moonUp));
+    _moonTransform =
+        glm::mat4(
+            glm::vec4(moonSide, 0),
+            glm::vec4(moonUp, 0),
+            glm::vec4(-moonDirection, 0),
+            glm::vec4(0, 0, 0, 1)
+        );
+
+    _moonInvTransform = glm::inverse(_moonTransform);
+
+    // Moon luminance approximation (hexa-web sampling)
+    float maxMoonAlbedo = 0.14;
+    float L_i = _sun.emissionLuminance() * _sun.solidAngle() / glm::pi<float>();
+
+    glm::vec2 luminanceAvg(0, 0);
+    int RADIUS_SAMP_COUNT = 16;
+    for(int r_i = 0; r_i < RADIUS_SAMP_COUNT; ++r_i)
+    {
+        float r = float(r_i + 1) / RADIUS_SAMP_COUNT;
+
+        int phi_samp_count = (r_i + 1) * 6;
+        for(int p_i = 0; p_i < phi_samp_count; ++p_i)
+        {
+            float phi = 2 * glm::pi<float>() * float(p_i) / phi_samp_count;
+            glm::vec2 pos = glm::vec2();
+
+            // Orthographic mapping
+            float dir_z = glm::sqrt(1 - r*r);
+            glm::vec3 dir_orth(glm::cos(phi)*r, glm::sin(phi)*r, dir_z);
+            glm::vec3 dir_earth = glm::vec3(_moonTransform * glm::vec4(dir_orth, 0));
+
+            float backScattering = 2 + glm::dot(-moonDirection, sunDirection) / 3.0f;
+            float L_o = maxMoonAlbedo * L_i * glm::max(0.0f, glm::dot(dir_earth, sunDirection)) * backScattering;
+             luminanceAvg += glm::vec2(L_o, 1.0f);
+        }
+    }
+
+    float moonLuminance = luminanceAvg.x / glm::max(1e-5f, luminanceAvg.y);
+    _moon.setEmissionLuminance(moonLuminance);
+}
+
+void PhysicalSky::Task::render(GraphicContext& context)
+{
+    const Scene& scene = context.scene;
+    const Camera& camera = context.camera;
+    const Viewport& viewport = camera.viewport();
+    ResourceManager& resources = context.resources;
+
+    ProfileGpu(PhysicalSky);
+
+    PhysicalSkyCommonParams params;
+    params.transform = _moonTransform;
+    params.sunDirection = glm::vec4(_sun.direction(), 0);
+    params.moonDirection = glm::vec4(_moon.direction(), 0);
+    params.sunLi = glm::vec4(_sun.emissionColor() * _sun.emissionLuminance() * _sun.solidAngle() / glm::pi<float>(), 0);
+
+    std::size_t frameHash = std::hash<std::string_view>()(std::string_view((char*)&params, sizeof (PhysicalSkyCommonParams)));
+
+    if(frameHash == _lastFrameHash)
+        return;
+
+    _lastFrameHash = frameHash;
+
+    glUseProgram(_lightingProgramId);
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, _paramsUbo);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(PhysicalSkyCommonParams), &params, GL_STREAM_DRAW);
+
+    glActiveTexture(GL_TEXTURE0 + _albedoUnit);
+    glBindTexture(GL_TEXTURE_2D, resources.get<GpuTextureResource>(ResourceName(MoonAlbedo)).texId);
+
+    glBindImageTexture(_lightingUnit, resources.get<GpuImageResource>(ResourceName(MoonLighting)).texId, 0, false, 0, GL_WRITE_ONLY, _lightingFormat);
+
+    glDispatchCompute((_moonLightingDimensions) / 8, _moonLightingDimensions / 8, 1);
 }
 
 }

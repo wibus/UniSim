@@ -11,6 +11,8 @@ class PathTracerScene : public Scene
 {
 public:
     PathTracerScene();
+
+    void initializeCamera(Camera& camera) override;
 };
 
 

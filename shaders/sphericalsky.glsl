@@ -38,3 +38,8 @@ void SampleSkyLuminanceToPoint(
     skyLuminance = vec3(0, 0, 0);
     transmittance = vec3(1, 1, 1);
 }
+
+vec3 SampleDirectionalLight(vec3 viewDir, uint lightId)
+{
+    return vec3(0.0);
+}

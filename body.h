@@ -47,6 +47,7 @@ public:
             double PI,
             double L_meanLongitude,
             double i_inclination,
+            double secondsSinceJan1st2000,
             Body* parent);
 
     void setupRotation(

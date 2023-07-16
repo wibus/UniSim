@@ -8,6 +8,7 @@
 #define IS_UNBIASED 0
 const uint PATH_LENGTH = 4;
 
+
 struct Instance
 {
     vec4 albedo;
@@ -302,6 +303,10 @@ void SampleSkyLuminanceToPoint(
         vec3 cameraPos,
         vec3 pointPos);
 
+vec3 SampleDirectionalLight(
+        vec3 viewDir,
+        uint lightId);
+
 
 // Path Tracing
 Ray genRay(uvec2 pixelPos)
@@ -525,10 +530,12 @@ vec3 sampleDirectionalLight(uint lightId, Ray ray, HitInfo hitInfo, vec4 noise)
         shadowRay.origin,
         shadowRay.direction);
 
+    vec3 emission = SampleDirectionalLight(shadowRay.direction, lightId);
+
     Intersection shadowIntersection = raycast(shadowRay);
     if(shadowIntersection.t == 1 / 0.0)
         return evaluateBSDF(ray, hitInfo, L, light.emissionSolidAngle.a)
-                * light.emissionSolidAngle.rgb
+                * emission
                 * skyTransmittance;
     else
         return vec3(0);
@@ -581,9 +588,10 @@ vec3 shadeSky(in Ray ray)
 
         if(cosTheta >= light.directionCosThetaMax.w)
         {
+            vec3 emission = SampleDirectionalLight(ray.direction, dl);
             float lightAreaPdf = 1 / light.emissionSolidAngle.a;
             float weight = ray.bsdfPdf != DELTA ? misHeuristic(1, ray.bsdfPdf, 1, lightAreaPdf) : 1;
-            L_in += weight * light.emissionSolidAngle.rgb * skyTransmittance;
+            L_in += weight * emission * skyTransmittance;
         }
     }
 

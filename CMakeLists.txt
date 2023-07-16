@@ -81,6 +81,7 @@ set(ShaderFiles
     shaders/colorgrade.frag
     shaders/physicalsky.glsl
     shaders/sphericalsky.glsl
+    shaders/moonlight.glsl
 )
 
 ## Projects ##

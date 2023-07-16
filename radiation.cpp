@@ -31,6 +31,7 @@ DeclareProfilePointGpu(PathTrace);
 DeclareProfilePointGpu(ColorGrade);
 
 DefineResource(PathTrace);
+DeclareResource(MoonLighting);
 
 struct GpuInstance
 {
@@ -336,21 +337,24 @@ void Radiation::render(GraphicContext& context)
         }
     }
 
-
-    const std::vector<std::shared_ptr<DirectionalLight>>& directionalLights = scene.directionalLights();
     std::vector<GpuDirectionalLight> gpuDirectionalLights;
-    gpuDirectionalLights.reserve(directionalLights.size());
-    for(std::size_t i = 0; i < directionalLights.size(); ++i)
+    gpuDirectionalLights.reserve(scene.sky()->directionalLights().size());
+    auto addGpuDirectionalLights = [&](const std::vector<std::shared_ptr<DirectionalLight>>& lights)
     {
-        std::shared_ptr<DirectionalLight> directionalLight = directionalLights[i];
-        GpuDirectionalLight& gpuDirectionalLight = gpuDirectionalLights.emplace_back();
-        gpuDirectionalLight.directionCosThetaMax = glm::vec4(
-                    directionalLight->direction(),
-                    1 - directionalLight->solidAngle() / (2 * glm::pi<float>()));
-        gpuDirectionalLight.emissionSolidAngle = glm::vec4(
-                    directionalLight->emissionColor() * directionalLight->emissionLuminance(),
-                    directionalLight->solidAngle());
-    }
+        for(std::size_t i = 0; i < lights.size(); ++i)
+        {
+            const std::shared_ptr<DirectionalLight>& directionalLight = lights[i];
+            GpuDirectionalLight& gpuDirectionalLight = gpuDirectionalLights.emplace_back();
+            gpuDirectionalLight.directionCosThetaMax = glm::vec4(
+                        directionalLight->direction(),
+                        1 - directionalLight->solidAngle() / (2 * glm::pi<float>()));
+            gpuDirectionalLight.emissionSolidAngle = glm::vec4(
+                        directionalLight->emissionColor() * directionalLight->emissionLuminance(),
+                        directionalLight->solidAngle());
+        }
+    };
+
+    addGpuDirectionalLights(scene.sky()->directionalLights());
 
 
     std::size_t frameHash = std::hash<std::string_view>()(std::string_view((char*)&params, sizeof (CommonParams)));
