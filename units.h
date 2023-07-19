@@ -1,7 +1,9 @@
 #ifndef UNITS_H
 #define UNITS_H
 
-#include "GLM/glm.hpp"
+#include <GLM/glm.hpp>
+#include <GLM/gtx/quaternion.hpp>
+
 
 inline double AU(double au) { return au * 1.495978707e11; }
 inline double ED(double ed) { return ed * 24 * 60 * 60;   }
@@ -31,10 +33,27 @@ inline glm::dvec4 quatConjugate(const glm::dvec4& q)
     return glm::dvec4(-q.x, -q.y, -q.z, q.w);
 }
 
+inline glm::dvec4 quatInverse(const glm::dvec4& q)
+{
+    glm::dvec4 conjugate = quatConjugate(q);
+    return conjugate / glm::length(conjugate);
+}
+
 inline glm::dvec3 rotatePoint(const glm::dvec4& q, const glm::dvec3& v)
 {
     glm::dvec3 qxyz = glm::dvec3(q);
     return v + 2.0 * glm::cross(qxyz, glm::cross(qxyz, v) + q.w * v);
+}
+
+inline glm::mat3 quatMat3(const glm::dvec4& q)
+{
+
+    return glm::toMat3(glm::quat(q.w, q.x, q.y, q.z));
+}
+
+inline glm::mat4 quatMat4(const glm::dvec4& q)
+{
+    return glm::toMat4(glm::quat(q.w, q.x, q.y, q.z));
 }
 
 inline void makeOrthBase(const glm::vec3& N, glm::vec3& T, glm::vec3& B)

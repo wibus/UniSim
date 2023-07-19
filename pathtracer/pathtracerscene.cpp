@@ -27,23 +27,18 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
 
 void PathTracerScene::initializeCamera(Camera& camera)
 {
-    camera.setEV(-2.5);
+    camera.setEV(-0.4);
 }
 
 PathTracerScene::PathTracerScene() :
     Scene("Path Tracer")
 {
-    /*
-    _sky.reset(new SkySphere("textures/syferfontein_0d_clear_puresky_4k.exr"));
-    _sky->setExposure(glm::pow(2.0f, 10.0f));
-    /*/
     _sky.reset(new PhysicalSky());
-    //*/
 
     SkyLocalization& localization = _sky->localization();
     localization.setLongitude(-73.567);
     localization.setLatitude(45.509);
-    localization.setTimeOfDay(0.0f);
+    localization.setTimeOfDay(5.12f);
     localization.setDayOfYear(81.0f);
     localization.setDayOfMoon(17.0);
 

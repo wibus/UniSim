@@ -23,7 +23,7 @@ std::shared_ptr<Object> makePlanet(const std::string& name, double radius, doubl
 SolarSystemScene::SolarSystemScene() :
     Scene("Solar System")
 {
-    _sky.reset(new SkySphere("textures/background.jpg"));
+    _sky.reset(new SkySphere("textures/starmap_2020_4k.exr"));
     _sky->setQuaternion(quatConjugate(EARTH_BASE_QUAT));
 
     double secondsSinceJan1st2000 = 6834900; // March equinox 2000

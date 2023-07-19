@@ -277,7 +277,7 @@ Texture* Texture::loadExr(const std::string& fileName)
         texture->format = Texture::Float32;
         texture->numComponents = 4;
 
-        int byteCount = sizeof(float) * texture->width * texture->height * texture->numComponents;
+        unsigned int byteCount = sizeof(float) * (unsigned int)(texture->width * texture->height * texture->numComponents);
 
         texture->data.resize(byteCount);
         memcpy(&texture->data.at(0), out, byteCount);

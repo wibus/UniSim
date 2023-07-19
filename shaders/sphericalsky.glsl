@@ -21,7 +21,7 @@ void SampleSkyLuminance(
         vec3 viewDir)
 {
     vec2 uv = findUV(skyQuaternion, viewDir);
-    vec3 color = texture2D(skyMap, vec2(uv.x, 1 - uv.y)).rgb;
+    vec3 color = texture2D(skyMap, vec2(1 - uv.x, 1 - uv.y)).rgb;
 
     skyLuminance = color * skyExposure;
 

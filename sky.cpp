@@ -2,6 +2,7 @@
 
 #include <GLM/gtc/constants.hpp>
 #include <GLM/gtx/transform.hpp>
+#include <GLM/gtx/quaternion.hpp>
 
 #include "camera.h"
 #include "material.h"
@@ -66,7 +67,8 @@ SkyLocalization::SkyLocalization() :
 void SkyLocalization::computeSunAndMoon(
         glm::vec3& sunDirection,
         glm::vec3& moonDirection,
-        glm::vec3& moonUp) const
+        glm::vec3& moonUp,
+        glm::vec4& starsQuaternion) const
 {
     double secSinceBeginningOfYear = _dayOfYear * 24 * 60 * 60;
     _earth->setupOrbit(1.000,  0.017, 0.0, 102.9, 100.5, 0.00, secSinceBeginningOfYear, _sun.get());
@@ -114,6 +116,13 @@ void SkyLocalization::computeSunAndMoon(
         glm::dot(moonUpSpace, eastInSpace),
         glm::dot(moonUpSpace, northInSpace),
         glm::dot(moonUpSpace, zenithInSpace)));
+
+    glm::dvec4 earthToSpaceAxisTransform =
+        quatMul(quat(glm::dvec3(0, 0, 1), glm::radians(90.0f)),
+                quat(glm::dvec3(1, 0, 0), glm::radians(90.0f)));
+
+    starsQuaternion = quatMul(quatConjugate(EARTH_BASE_QUAT),
+                quatMul(spaceQuat, earthToSpaceAxisTransform));
 }
 
 Sky::Sky() :
@@ -366,7 +375,9 @@ PhysicalSky::PhysicalSky() :
     _moon = makeDirLight("Moon", glm::vec3(0, 0, 1), _sunIrradiance, 0.0f, sunSolidAngle);
     directionalLights().push_back(_moon);
 
-    _task = std::make_shared<PhysicalSky::Task>(*_model, *_params, *_sun, *_moon);
+    _starsTexture.reset(Texture::load("textures/starmap_2020_4k.exr"));
+
+    _task = std::make_shared<PhysicalSky::Task>(*_model, *_params, *_sun, *_moon, _starsTexture);
 }
 
 PhysicalSky::~PhysicalSky()
@@ -420,6 +431,16 @@ GLuint PhysicalSky::setProgramResources(GraphicContext& context, GLuint programI
     glUniformMatrix4fv(glGetUniformLocation(programId, "moonInvTransform"),
                 1, false, &moonInvTransform[0][0]);
 
+    GLuint starsUnit = textureUnitStart++;
+    glActiveTexture(GL_TEXTURE0 + starsUnit);
+    glBindTexture(GL_TEXTURE_2D, context.resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId);
+    glUniform1i(glGetUniformLocation(programId, "stars"), starsUnit);
+
+    glUniform4f(glGetUniformLocation(programId, "starsQuaternion"),
+                quaternion()[0], quaternion()[1], quaternion()[2], quaternion()[3]);
+
+    glUniform1f(glGetUniformLocation(programId, "starsExposure"), exposure());
+
     return textureUnitStart;
 }
 
@@ -431,7 +452,12 @@ struct PhysicalSkyCommonParams
     glm::vec4 sunLi;
 };
 
-PhysicalSky::Task::Task(Model& model, Params& params, DirectionalLight &sun, DirectionalLight &moon) :
+PhysicalSky::Task::Task(
+        Model& model,
+        Params& params,
+        DirectionalLight& sun,
+        DirectionalLight& moon,
+        const std::shared_ptr<Texture>& stars) :
     GraphicTask("PhysicalSphere"),
     _model(model),
     _params(params),
@@ -439,7 +465,8 @@ PhysicalSky::Task::Task(Model& model, Params& params, DirectionalLight &sun, Dir
     _moon(moon),
     _shaderId(0),
     _lightingProgramId(0),
-    _moonLightingDimensions(1024)
+    _moonLightingDimensions(1024),
+    _starsTexture(stars)
 {
 
 }
@@ -474,6 +501,8 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
     glBindBuffer(GL_UNIFORM_BUFFER, _paramsUbo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(PhysicalSkyCommonParams), nullptr, GL_STREAM_DRAW);
 
+    resources.define<GpuTextureResource>(ResourceName(SkyMap), {*_starsTexture});
+
     return true;
 }
 
@@ -481,8 +510,9 @@ void PhysicalSky::Task::update(GraphicContext& context)
 {
     Profile(PhysicalSky);
 
+    glm::vec4 starsQuaternion;
     glm::vec3 sunDirection, moonDirection, moonUp;
-    context.scene.sky()->localization().computeSunAndMoon(sunDirection, moonDirection, moonUp);
+    context.scene.sky()->localization().computeSunAndMoon(sunDirection, moonDirection, moonUp, starsQuaternion);
     _sun.setDirection(sunDirection);
     _moon.setDirection(moonDirection);
 
@@ -527,6 +557,8 @@ void PhysicalSky::Task::update(GraphicContext& context)
 
     float moonLuminance = luminanceAvg.x / glm::max(1e-5f, luminanceAvg.y);
     _moon.setEmissionLuminance(moonLuminance);
+
+    context.scene.sky()->setQuaternion(starsQuaternion);
 }
 
 void PhysicalSky::Task::render(GraphicContext& context)

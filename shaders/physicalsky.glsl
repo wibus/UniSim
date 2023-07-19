@@ -11,6 +11,9 @@ uniform float groundHeightKM;
 uniform sampler2D moonLighting;
 uniform mat4 moonInvTransform;
 
+uniform sampler2D stars;
+uniform vec4 starsQuaternion;
+uniform float starsExposure;
 
 struct DirectionalLight
 {
@@ -22,6 +25,9 @@ layout (std140, binding = 2) buffer DirectionalLights
 {
     DirectionalLight directionalLights[];
 };
+
+vec3 rotate(vec4 q, vec3 v);
+vec2 findUV(vec4 quat, vec3 N);
 
 // Returns the luminance of the Sun, outside the atmosphere.
 vec3 GetSolarLuminance();
@@ -77,6 +83,10 @@ void SampleSkyLuminance(
         0,                // shadow_length
         moonDirection,
         transmittance);
+
+    vec2 starsUv = findUV(starsQuaternion, viewDir);
+    vec3 starsLuminance = texture2D(stars, vec2(1 - starsUv.x, 1 - starsUv.y)).rgb;
+    skyLuminance += transmittance * starsLuminance * starsExposure;
 }
 
 

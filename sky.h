@@ -86,7 +86,8 @@ public:
     void computeSunAndMoon(
             glm::vec3& sunDirection,
             glm::vec3& moonDirection,
-            glm::vec3& moonUp) const;
+            glm::vec3& moonUp,
+            glm::vec4& starsQuaternion) const;
 
 private:
     float _longitude;
@@ -191,7 +192,12 @@ private:
     class Task : public GraphicTask
     {
     public:
-        Task(Model& model, Params& params, DirectionalLight& sun, DirectionalLight& moon);
+        Task(
+                Model& model,
+                Params& params,
+                DirectionalLight& sun,
+                DirectionalLight& moon,
+                const std::shared_ptr<Texture>& stars);
 
         bool defineResources(GraphicContext& context) override;
 
@@ -226,6 +232,8 @@ private:
         int _moonLightingDimensions;
 
         std::size_t _lastFrameHash;
+
+        std::shared_ptr<Texture> _starsTexture;
     };
 
     std::unique_ptr<Model> _model;
@@ -234,6 +242,8 @@ private:
     glm::vec3 _sunIrradiance;
     std::shared_ptr<DirectionalLight> _sun;
     std::shared_ptr<DirectionalLight> _moon;
+
+    std::shared_ptr<Texture> _starsTexture;
 
     std::shared_ptr<Task> _task;
 };
