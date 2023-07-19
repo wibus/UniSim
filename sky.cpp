@@ -67,7 +67,7 @@ SkyLocalization::SkyLocalization() :
 void SkyLocalization::computeSunAndMoon(
         glm::vec3& sunDirection,
         glm::vec3& moonDirection,
-        glm::vec3& moonUp,
+        glm::vec4& moonQuaternion,
         glm::vec4& starsQuaternion) const
 {
     double secSinceBeginningOfYear = _dayOfYear * 24 * 60 * 60;
@@ -108,18 +108,20 @@ void SkyLocalization::computeSunAndMoon(
 
     moonDirection = glm::normalize(moonDir);
 
-    glm::dvec3 moonUpSpace = glm::normalize(glm::cross(-positionInSpace, moonRelativePosition));
-    if(glm::dot(glm::dvec3(0, 0, 1), moonUpSpace) < 0)
-        moonUpSpace = -moonUpSpace;
-
-    moonUp = glm::normalize(glm::vec3(
-        glm::dot(moonUpSpace, eastInSpace),
-        glm::dot(moonUpSpace, northInSpace),
-        glm::dot(moonUpSpace, zenithInSpace)));
-
     glm::dvec4 earthToSpaceAxisTransform =
         quatMul(quat(glm::dvec3(0, 0, 1), glm::radians(90.0f)),
                 quat(glm::dvec3(1, 0, 0), glm::radians(90.0f)));
+
+    glm::vec3 moonRelativeDirection = glm::normalize(moonRelativePosition);
+    float moonEclipticLongitude = glm::atan(moonRelativeDirection.y, moonRelativeDirection.x);
+    float moonEclipticLatitude = glm::asin(moonRelativeDirection.z);
+
+    moonQuaternion = quatMul(quatMul(quatMul(quatMul(quatMul(
+                quat(glm::dvec3(0, 0, 1), glm::radians(145.0f)),
+                quat(glm::dvec3(0, 1, 0), glm::radians(90.0f))),
+                quat(glm::dvec3(0, 1, 0), moonEclipticLatitude)),
+                quat(glm::dvec3(0, 0, 1), -moonEclipticLongitude)),
+                spaceQuat), earthToSpaceAxisTransform);
 
     starsQuaternion = quatMul(quatConjugate(EARTH_BASE_QUAT),
                 quatMul(spaceQuat, earthToSpaceAxisTransform));
@@ -425,19 +427,17 @@ GLuint PhysicalSky::setProgramResources(GraphicContext& context, GLuint programI
     GLuint moonLightingUnit = textureUnitStart++;
     glActiveTexture(GL_TEXTURE0 + moonLightingUnit);
     glBindTexture(GL_TEXTURE_2D, context.resources.get<GpuImageResource>(ResourceName(MoonLighting)).texId);
-    glUniform1i(glGetUniformLocation(programId, "moonLighting"), moonLightingUnit);
+    glUniform1i(glGetUniformLocation(programId, "moon"), moonLightingUnit);
 
-    glm::mat4 moonInvTransform = _task->moonInvTransform();
-    glUniformMatrix4fv(glGetUniformLocation(programId, "moonInvTransform"),
-                1, false, &moonInvTransform[0][0]);
+    glm::vec4 moonQuaternion = _task->moonQuaternion();
+    glUniform4fv(glGetUniformLocation(programId, "moonQuaternion"), 1, &moonQuaternion[0]);
 
     GLuint starsUnit = textureUnitStart++;
     glActiveTexture(GL_TEXTURE0 + starsUnit);
     glBindTexture(GL_TEXTURE_2D, context.resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId);
     glUniform1i(glGetUniformLocation(programId, "stars"), starsUnit);
 
-    glUniform4f(glGetUniformLocation(programId, "starsQuaternion"),
-                quaternion()[0], quaternion()[1], quaternion()[2], quaternion()[3]);
+    glUniform4fv(glGetUniformLocation(programId, "starsQuaternion"), 1, &quaternion()[0]);
 
     glUniform1f(glGetUniformLocation(programId, "starsExposure"), exposure());
 
@@ -512,21 +512,14 @@ void PhysicalSky::Task::update(GraphicContext& context)
 
     glm::vec4 starsQuaternion;
     glm::vec3 sunDirection, moonDirection, moonUp;
-    context.scene.sky()->localization().computeSunAndMoon(sunDirection, moonDirection, moonUp, starsQuaternion);
+    context.scene.sky()->localization().computeSunAndMoon(sunDirection, moonDirection, _moonQuaternion, starsQuaternion);
+
     _sun.setDirection(sunDirection);
     _moon.setDirection(moonDirection);
+    context.scene.sky()->setQuaternion(starsQuaternion);
 
     // Moon transform
-    glm::vec3 moonSide = glm::normalize(glm::cross(moonDirection, moonUp));
-    _moonTransform =
-        glm::mat4(
-            glm::vec4(moonSide, 0),
-            glm::vec4(moonUp, 0),
-            glm::vec4(-moonDirection, 0),
-            glm::vec4(0, 0, 0, 1)
-        );
-
-    _moonInvTransform = glm::inverse(_moonTransform);
+    _moonTransform = quatMat4(quatConjugate(_moonQuaternion));
 
     // Moon luminance approximation (hexa-web sampling)
     float maxMoonAlbedo = 0.14;
@@ -557,8 +550,6 @@ void PhysicalSky::Task::update(GraphicContext& context)
 
     float moonLuminance = luminanceAvg.x / glm::max(1e-5f, luminanceAvg.y);
     _moon.setEmissionLuminance(moonLuminance);
-
-    context.scene.sky()->setQuaternion(starsQuaternion);
 }
 
 void PhysicalSky::Task::render(GraphicContext& context)

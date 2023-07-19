@@ -8,8 +8,8 @@ uniform float sunToMoonRatio;
 
 uniform float groundHeightKM;
 
-uniform sampler2D moonLighting;
-uniform mat4 moonInvTransform;
+uniform sampler2D moon;
+uniform vec4 moonQuaternion;
 
 uniform sampler2D stars;
 uniform vec4 starsQuaternion;
@@ -117,14 +117,16 @@ void SampleSkyLuminanceToPoint(
 vec3 SampleDirectionalLight(vec3 viewDir, uint lightId)
 {
     if(lightId == 0)
+    {
         return directionalLights[lightId].emissionSolidAngle.rgb;
+    }
     else if(lightId == 1)
     {
-        vec3 offset = (moonInvTransform * vec4(viewDir, 0)).xyz;
+        vec3 offset = rotate(moonQuaternion, viewDir);
         double maxCos = 1 - directionalLights[lightId].emissionSolidAngle.a / (2 * PI);
         double maxSin = sqrt(1 - maxCos * maxCos);
         vec2 uv = (offset.xy / float(maxSin)) * 0.5 + 0.5;
-        return texture(moonLighting, uv).rgb;
+        return texture(moon, uv).rgb;
     }
 
     return vec3(0, 0, 0);

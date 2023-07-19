@@ -86,7 +86,7 @@ public:
     void computeSunAndMoon(
             glm::vec3& sunDirection,
             glm::vec3& moonDirection,
-            glm::vec3& moonUp,
+            glm::vec4& moonQuaternion,
             glm::vec4& starsQuaternion) const;
 
 private:
@@ -206,7 +206,7 @@ private:
 
         GLuint shader() const { return _shaderId; }
 
-        glm::mat4 moonInvTransform() const { return _moonInvTransform; }
+        glm::vec4 moonQuaternion() const { return _moonQuaternion; }
 
     private:
         Model& _model;
@@ -214,7 +214,7 @@ private:
         DirectionalLight& _sun;
         DirectionalLight& _moon;
         glm::mat4 _moonTransform;
-        glm::mat4 _moonInvTransform;
+        glm::vec4 _moonQuaternion;
 
         GLuint _shaderId;
         GLuint _lightingProgramId;

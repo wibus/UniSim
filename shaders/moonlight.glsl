@@ -22,7 +22,7 @@ void main()
     vec3 dirMoon = normalize(vec3(clipPos.x, clipPos.y, sqrt(1 - dot(clipPos, clipPos))));
     vec3 dirEarth = (transform * vec4(dirMoon, 0)).xyz;
 
-    vec3 moonAlbedo = texture(albedo, uv).rgb;
+    vec3 moonAlbedo = texture(albedo, vec2(uv.x, 1 - uv.y)).rgb;
 
     float backScattering = 2.0f + dot(-moonDirection.xyz, sunDirection.xyz) / 3.0f;
     vec3 L_o = moonAlbedo * sunLi.rgb * max(0, dot(dirEarth, sunDirection.xyz)) * backScattering;
