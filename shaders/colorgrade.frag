@@ -1,6 +1,3 @@
-#version 440
-
-
 layout (binding = 0) uniform sampler2D input;
 
 out vec4 frag_colour;

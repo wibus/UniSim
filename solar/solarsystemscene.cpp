@@ -14,7 +14,7 @@ namespace unisim
 std::shared_ptr<Object> makePlanet(const std::string& name, double radius, double density, Object* parent = nullptr)
 {
     std::shared_ptr<Body> body(new Body(radius, density));
-    std::shared_ptr<Mesh> mesh(new Mesh(true, radius));
+    std::shared_ptr<Mesh> mesh(new Mesh(PrimitiveType::Sphere, radius));
     std::shared_ptr<Material> material(new Material(name));
     std::shared_ptr<Object> object(new Object(name, body, mesh, material, parent));
     return object;

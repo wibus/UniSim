@@ -123,9 +123,9 @@ public:
 
     virtual std::shared_ptr<GraphicTask> graphicTask() = 0;
 
-    virtual std::vector<GLuint> shaders() const = 0;
+    virtual std::vector<GLuint> pathTracerShaders() const = 0;
 
-    virtual GLuint setProgramResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const = 0;
+    virtual GLuint setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const = 0;
 
 private:
     SkyLocalization _localization;
@@ -144,9 +144,9 @@ public:
 
     std::shared_ptr<GraphicTask> graphicTask() override;
 
-    std::vector<GLuint> shaders() const override;
+    std::vector<GLuint> pathTracerShaders() const override;
 
-    GLuint setProgramResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const override;
+    GLuint setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const override;
 
 
 private:
@@ -181,9 +181,9 @@ public:
 
     std::shared_ptr<GraphicTask> graphicTask() override;
 
-    std::vector<GLuint> shaders() const override;
+    std::vector<GLuint> pathTracerShaders() const override;
 
-    GLuint setProgramResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const override;
+    GLuint setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const override;
 
 private:
     typedef atmosphere::Model Model;

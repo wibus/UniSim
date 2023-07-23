@@ -13,34 +13,51 @@ namespace unisim
 class Scene;
 class Camera;
 
+std::string loadSource(const std::string& fileName);
+
 bool generateVertexShader(
         GLuint& shaderId,
-        const std::string& fileName);
+        const std::string& fileName,
+        const std::vector<std::string>& defines = {});
 
 bool generateFragmentShader(
         GLuint& shaderId,
-        const std::string& fileName);
+        const std::string& fileName,
+        const std::vector<std::string>& defines = {});
 
 bool generateComputerShader(
         GLuint& shaderId,
-        const std::string& fileName);
+        const std::string& fileName,
+        const std::vector<std::string>& defines = {});
 
 bool generateGraphicProgram(
         GLuint& programId,
         const std::string& vertexFileName,
-        const std::string& fragmentFileName);
+        const std::string& fragmentFileName,
+        const std::vector<std::string>& defines = {});
 
 bool generateComputeProgram(
         GLuint& programId,
         const std::string& computeFileName,
-        const std::vector<GLuint>& shaders = {});
+        const std::vector<std::string>& defines = {});
 
+bool generateComputeProgram(
+        GLuint& programId,
+        const std::string programName,
+        const std::vector<GLuint>& shaders);
+
+
+struct GraphicSettings
+{
+    bool unbiased;
+};
 
 struct GraphicContext
 {
     const Scene& scene;
     const Camera& camera;
     ResourceManager& resources;
+    const GraphicSettings& settings;
 };
 
 
@@ -57,6 +74,12 @@ public:
 
     virtual void update(GraphicContext& context) {}
     virtual void render(GraphicContext& context) {}
+
+    bool generatePathTracerModule(
+            GLuint& shaderId,
+            const GraphicSettings& settings,
+            const std::string& computeFileName,
+            const std::vector<std::string>& defines = {});
 
 private:
     std::string _name;
@@ -78,6 +101,7 @@ private:
     void createTaskGraph(const Scene& scene, const Camera& camera);
     void addTask(const std::shared_ptr<GraphicTask>& task);
 
+    GraphicSettings _settings;
     ResourceManager _resources;
     std::vector<std::shared_ptr<GraphicTask>> _tasks;
 };

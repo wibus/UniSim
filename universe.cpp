@@ -16,6 +16,7 @@
 #include "project.h"
 #include "ui.h"
 #include "profiler.h"
+#include "terrain.h"
 
 #include "solar/solarsystemproject.h"
 #include "pathtracer/pathtracerproject.h"
@@ -308,6 +309,12 @@ bool Universe::setup()
     _project.reset(new PathTracerProject());
 
     _project->addView(_viewport);
+
+    auto& objects = _project->scene().objects();
+    auto addObjects = [&](const std::vector<std::shared_ptr<Object>>& o)
+        {objects.insert(objects.end(), o.begin(), o.end());};
+    _project->scene().terrain()->setObjectOffset(objects.size());
+    addObjects(_project->scene().terrain()->objects());
 
     bool ok = true;
     ok = ok && _gravity.initialize(_project->scene());

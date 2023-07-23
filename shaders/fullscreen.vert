@@ -1,5 +1,3 @@
-#version 420
-
 in vec3 vp;
 
 void main()

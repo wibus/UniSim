@@ -5,15 +5,29 @@
 #include "radiation.h"
 #include "scene.h"
 #include "sky.h"
+#include "terrain.h"
 
 
 namespace unisim
 {
 
+const std::string GLSL_VERSION__HEADER = "#version 440\n";
+
+std::string g_GlslExtensions;
+
+std::vector<std::string> g_PathTracerCommonSrcs;
+
 
 std::string loadSource(const std::string& fileName)
 {
     std::ifstream t(fileName);
+
+    if(!t)
+    {
+        std::cerr << "Source file not found: " << fileName << std::endl;
+        return std::string();
+    }
+
     std::string str((std::istreambuf_iterator<char>(t)),
                      std::istreambuf_iterator<char>());
     return str;
@@ -86,50 +100,96 @@ bool validateProgram(GLuint programId, const std::string& name)
     return true;
 }
 
-bool generateVertexShader(GLuint& shaderId, const std::string& fileName)
+const char* defineLine(std::vector<std::string>& directives, int lineId)
 {
-    std::string vertexSrc = loadSource(fileName);
-    const char* vertexSrcChar = vertexSrc.data();
-    shaderId = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(shaderId, 1, &vertexSrcChar, NULL);
-    if(!compileShader(shaderId, fileName))
+    int sourceId = int(directives.size()) + 1;
+    directives.push_back("#line " + std::to_string(lineId) + " " + std::to_string(sourceId) + "\n");
+    return directives.back().c_str();
+}
+
+bool generateShader(
+        GLuint& shaderId,
+        GLenum shaderType,
+        const std::string& shaderName,
+        const std::vector<std::string>& srcs,
+        const std::vector<std::string>& defines)
+{
+    std::vector<std::string> srcUris;
+
+    std::vector<std::string> lineDirectives;
+    lineDirectives.reserve(1 + srcs.size());
+
+    std::vector<const GLchar*> shaderSrc;
+    shaderSrc.push_back(GLSL_VERSION__HEADER.c_str());
+    shaderSrc.push_back(g_GlslExtensions.c_str());
+
+    std::string definitionBloc;
+    if(!defines.empty())
+    {
+        for(const auto& define : defines)
+            definitionBloc += "#define " + define + "\n";
+        srcUris.push_back("DEFINES");
+        shaderSrc.push_back(defineLine(lineDirectives, 1));
+        shaderSrc.push_back(definitionBloc.c_str());
+    }
+
+    const char* LINE_RETURN = "\n";
+    for(std::size_t s = 0; s < srcs.size(); ++s)
+    {
+        const std::string& src = srcs[s];
+        srcUris.push_back("srcs " + std::to_string(s));
+        shaderSrc.push_back(defineLine(lineDirectives, 1));
+        shaderSrc.push_back(src.c_str());
+        shaderSrc.push_back(LINE_RETURN);
+    }
+
+    shaderId = glCreateShader(shaderType);
+    glShaderSource(shaderId, shaderSrc.size(), &shaderSrc[0], NULL);
+    if(!compileShader(shaderId, shaderName))
         return false;
     else
         return true;
 }
 
-bool generateFragmentShader(GLuint& shaderId, const std::string& fileName)
+bool generateVertexShader(
+        GLuint& shaderId,
+        const std::string& fileName,
+        const std::vector<std::string>& defines)
 {
-    std::string fragmentSrc = loadSource(fileName);
-    const char* fragmentSrcChar = fragmentSrc.data();
-    shaderId = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(shaderId, 1, &fragmentSrcChar, NULL);
-    if(!compileShader(shaderId, fileName))
-        return false;
-    else
-        return true;
+    std::string src = loadSource(fileName);
+    return generateShader(shaderId, GL_VERTEX_SHADER, fileName, {src}, defines);
 }
 
-bool generateComputerShader(GLuint& shaderId, const std::string& fileName)
+bool generateFragmentShader(
+        GLuint& shaderId,
+        const std::string& fileName,
+        const std::vector<std::string>& defines)
 {
-    std::string computeSrc = loadSource(fileName);
-    const char* computeSrcChar = computeSrc.data();
-    shaderId = glCreateShader(GL_COMPUTE_SHADER);
-    glShaderSource(shaderId, 1, &computeSrcChar, NULL);
-    if(!compileShader(shaderId, fileName))
-        return false;
-    else
-        return true;
+    std::string src = loadSource(fileName);
+    return generateShader(shaderId, GL_FRAGMENT_SHADER, fileName, {src}, defines);
 }
 
-bool generateGraphicProgram(GLuint& programId, const std::string& vertexFileName, const std::string& fragmentFileName)
+bool generateComputerShader(
+        GLuint& shaderId,
+        const std::string& fileName,
+        const std::vector<std::string>& defines)
+{
+    std::string src = loadSource(fileName);
+    return generateShader(shaderId, GL_COMPUTE_SHADER, fileName, {src}, defines);
+}
+
+bool generateGraphicProgram(
+        GLuint& programId,
+        const std::string& vertexFileName,
+        const std::string& fragmentFileName,
+        const std::vector<std::string>& defines)
 {
     GLuint vs = 0;
-    if(!generateVertexShader(vs, vertexFileName))
+    if(!generateVertexShader(vs, vertexFileName, defines))
         return false;
 
     GLuint fs = 0;
-    if(!generateFragmentShader(fs, fragmentFileName))
+    if(!generateFragmentShader(fs, fragmentFileName, defines))
         return false;
 
     programId = glCreateProgram();
@@ -143,21 +203,39 @@ bool generateGraphicProgram(GLuint& programId, const std::string& vertexFileName
     return true;
 }
 
-bool generateComputeProgram(GLuint& programId, const std::string& computeFileName, const std::vector<GLuint>& shaders)
+bool generateComputeProgram(
+        GLuint& programId,
+        const std::string& computeFileName,
+        const std::vector<std::string>& defines)
 {
     GLuint cs = 0;
-    if(!generateComputerShader(cs, computeFileName))
+    if(!generateComputerShader(cs, computeFileName, defines))
         return false;
 
     programId = glCreateProgram();
 
     glAttachShader(programId, cs);
+    glLinkProgram(programId);
+
+    if(!validateProgram(programId, computeFileName))
+        return false;
+
+    return true;
+}
+
+bool generateComputeProgram(
+        GLuint& programId,
+        const std::string programName,
+        const std::vector<GLuint>& shaders)
+{
+    programId = glCreateProgram();
+
     for(GLuint shader : shaders)
         glAttachShader(programId, shader);
 
     glLinkProgram(programId);
 
-    if(!validateProgram(programId, computeFileName))
+    if(!validateProgram(programId, programName))
         return false;
 
     return true;
@@ -174,17 +252,37 @@ GraphicTask::~GraphicTask()
 
 }
 
+bool GraphicTask::generatePathTracerModule(
+        GLuint& shaderId,
+        const GraphicSettings& settings,
+        const std::string& computeFileName,
+        const std::vector<std::string>& defines)
+{
+    std::vector<std::string> allDefines = defines;
+
+    if(settings.unbiased)
+        allDefines.push_back("UNBIASED");
+
+    allDefines.push_back("PRIMITIVE_TYPE_SPHERE  0");
+    allDefines.push_back("PRIMITIVE_TYPE_TERRAIN 1");
+
+    std::vector<std::string> allSrcs = g_PathTracerCommonSrcs;
+    allSrcs.push_back(loadSource(computeFileName));
+
+    return generateShader(shaderId, GL_COMPUTE_SHADER, computeFileName, allSrcs, allDefines);
+}
+
 
 GraphicTaskGraph::GraphicTaskGraph()
 {
-
+    _settings.unbiased = false;
 }
 
 bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 {
     createTaskGraph(scene, camera);
 
-    GraphicContext context = {scene, camera, _resources};
+    GraphicContext context = {scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -192,6 +290,13 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
     }
 
     _resources.initialize();
+
+    g_GlslExtensions += "#extension GL_ARB_bindless_texture : require\n";
+
+    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/constants.glsl"));
+    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/data.glsl"));
+    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
+    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
 
     for(const auto& task : _tasks)
     {
@@ -208,7 +313,7 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 
 void GraphicTaskGraph::execute(const Scene& scene, const Camera& camera)
 {
-    GraphicContext context = {scene, camera, _resources};
+    GraphicContext context = {scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -224,6 +329,7 @@ void GraphicTaskGraph::execute(const Scene& scene, const Camera& camera)
 void GraphicTaskGraph::createTaskGraph(const Scene& scene, const Camera& camera)
 {
     addTask(scene.sky()->graphicTask());
+    addTask(scene.terrain()->graphicTask());
     addTask(std::make_shared<Radiation>());
 }
 

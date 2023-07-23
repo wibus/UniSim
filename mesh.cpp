@@ -3,8 +3,13 @@
 namespace unisim
 {
 
-Mesh::Mesh(bool isSphere, float radius) :
-    _isSphere(isSphere),
+const char* PrimitiveType_Names[PrimitiveType::Count] = {
+    "Sphere",
+    "Terrain"
+};
+
+Mesh::Mesh(PrimitiveType primitiveType, float radius) :
+    _primitiveType(primitiveType),
     _radius(radius)
 {
 

@@ -1,5 +1,3 @@
-#version 440
-
 uniform sampler2D albedo;
 
 uniform layout(binding = 0, rgba32f) image2D lighting;

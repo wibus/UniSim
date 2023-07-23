@@ -6,6 +6,7 @@
 #include "../camera.h"
 #include "../material.h"
 #include "../sky.h"
+#include "../terrain.h"
 
 
 namespace unisim
@@ -16,7 +17,7 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
     std::shared_ptr<Body> body(new Body(radius, 1, true));
     body->setPosition(position);
 
-    std::shared_ptr<Mesh> mesh(new Mesh(true, radius));
+    std::shared_ptr<Mesh> mesh(new Mesh(PrimitiveType::Sphere, radius));
 
     std::shared_ptr<Material> material(new Material(name));
 
@@ -34,6 +35,7 @@ PathTracerScene::PathTracerScene() :
     Scene("Path Tracer")
 {
     _sky.reset(new PhysicalSky());
+    _terrain.reset(new FlatTerrain());
 
     SkyLocalization& localization = _sky->localization();
     localization.setLongitude(-73.567);
@@ -43,47 +45,28 @@ PathTracerScene::PathTracerScene() :
     localization.setDayOfMoon(17.0);
 
     auto light = makeObject("Light", 1, {0, 7.5, 9});
-    auto floor = makeObject("Floor", 1000, {0, 0, -1000});
-    auto ceiling = makeObject("Ceiling", 1000, {0, 0, 1015});
-    auto wallLeft = makeObject("Wall Left", 1000, {-1015, 0, 0});
-    auto wallRight = makeObject("Wall Right", 1000, {1015, 0, 0});
-    auto wallFront = makeObject("Wall Front", 1000, {0, -1030, 0});
-    auto ballLeft = makeObject("Ball Left", 2, {-3, 12, 2});
-    auto ballRight = makeObject("Ball Right", 2, {3, 12, 2});
-    auto ballFront = makeObject("Ball Front", 1, {0, 10, 1});
-
+    light->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
     light->material()->setDefaultEmissionColor({1, 1, 1});
     light->material()->setDefaultEmissionLuminance(25);
+    _objects.push_back(light);
 
-    light->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
-    floor->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
-    ceiling->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
-    wallLeft->material()->setDefaultAlbedo({0.8, 0.2, 0.2});
-    wallRight->material()->setDefaultAlbedo({0.2, 0.8, 0.2});
-    wallFront->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
+    auto ballLeft = makeObject("Ball Left", 2, {-3, 12, 2});
     ballLeft->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
-    ballRight->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
-    ballFront->material()->setDefaultAlbedo({1.0, 0.85, 0.03});
-
     ballLeft->material()->loadAlbedo("textures/mars_albedo.jpg");
-
     ballLeft->material()->setDefaultRoughness(2);
+    _objects.push_back(ballLeft);
 
+    auto ballRight = makeObject("Ball Right", 2, {3, 12, 2});
+    ballRight->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
     ballRight->material()->setDefaultMetalness(0);
     ballRight->material()->setDefaultRoughness(0.0);
     ballRight->material()->setDefaultReflectance(0.04);
+    _objects.push_back(ballRight);
 
+    auto ballFront = makeObject("Ball Front", 1, {0, 10, 1});
+    ballFront->material()->setDefaultAlbedo({1.0, 0.85, 0.03});
     ballFront->material()->setDefaultRoughness(0.2);
     ballFront->material()->setDefaultMetalness(1);
-
-    //_objects.push_back(light);
-    _objects.push_back(floor);
-    //_objects.push_back(ceiling);
-    //_objects.push_back(wallLeft);
-    //_objects.push_back(wallRight);
-    //_objects.push_back(wallFront);
-    _objects.push_back(ballLeft);
-    _objects.push_back(ballRight);
     _objects.push_back(ballFront);
 }
 

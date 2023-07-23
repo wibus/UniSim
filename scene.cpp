@@ -4,6 +4,7 @@
 #include "material.h"
 #include "body.h"
 #include "sky.h"
+#include "terrain.h"
 
 
 namespace unisim
@@ -12,7 +13,8 @@ namespace unisim
 
 Scene::Scene(const std::string& name) :
     _name(name),
-    _sky(new SkySphere())
+    _sky(new SkySphere()),
+    _terrain(new NoTerrain())
 {
 
 }

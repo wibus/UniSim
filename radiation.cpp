@@ -20,6 +20,7 @@
 #include "random.h"
 #include "profiler.h"
 #include "sky.h"
+#include "terrain.h"
 
 
 namespace unisim
@@ -45,8 +46,7 @@ struct GpuInstance
     float mass;
 
     uint materialId;
-
-    float pad1;
+    uint primitiveType;
 };
 
 struct GpuDirectionalLight
@@ -151,16 +151,28 @@ bool Radiation::defineResources(GraphicContext& context)
 
     const std::vector<std::shared_ptr<Object>>& objects = scene.objects();
 
+    bool ok = generatePathTracerModule(_computePathTraceShaderId, context.settings, "shaders/pathtrace.glsl");
+    ok = ok && generatePathTracerModule(_pathTraceUtilsShaderId, context.settings, "shaders/common/utils.glsl");
+
     // Gather shaders from sub-systems
-    std::vector<GLuint> shaders = scene.sky()->shaders();
+    std::vector<GLuint> shaders;
+    auto appendShaders = [&](const std::vector<GLuint>& s)
+    {
+        shaders.insert(shaders.end(), s.begin(), s.end());
+    };
+
+    appendShaders(scene.sky()->pathTracerShaders());
+    appendShaders(scene.terrain()->pathTracerShaders());
+    shaders.push_back(_computePathTraceShaderId);
+    shaders.push_back(_pathTraceUtilsShaderId);
 
     // Remove duplicated shaders
     std::sort( shaders.begin(), shaders.end() );
     shaders.erase( std::unique( shaders.begin(), shaders.end() ), shaders.end());
 
-    // Generate program
-    bool ok = generateComputeProgram(_computePathTraceId, "shaders/pathtrace.glsl", shaders);
-    ok = generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag") && ok;
+    // Generate programs
+    ok = ok && generateComputeProgram(_computePathTraceProgramId, "pathtracer", shaders);
+    ok = ok && generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag") && ok;
 
     if(!ok)
         return ok;
@@ -256,8 +268,8 @@ bool Radiation::defineResources(GraphicContext& context)
     _viewport = viewport;
 
     _pathTraceUnit = 0;
-    _pathTraceLoc = glGetUniformLocation(_computePathTraceId, "result");
-    glProgramUniform1i(_computePathTraceId, _pathTraceLoc, _pathTraceUnit);
+    _pathTraceLoc = glGetUniformLocation(_computePathTraceProgramId, "result");
+    glProgramUniform1i(_computePathTraceProgramId, _pathTraceLoc, _pathTraceUnit);
 
     return ok;
 }
@@ -325,11 +337,21 @@ void Radiation::render(GraphicContext& context)
                     object->material()->defaultMetalness(),
                     object->material()->defaultReflectance(),
                     0);
-        gpuInstance.position = glm::dvec4(object->body()->position(), 1);
-        gpuInstance.quaternion = glm::vec4(quatConjugate(object->body()->quaternion()));
         gpuInstance.radius = object->mesh()->radius();
-        gpuInstance.mass = object->body()->mass();
         gpuInstance.materialId = _objectToMat[i];
+        gpuInstance.primitiveType = object->mesh()->primitiveType();
+        if(object->body().get() != nullptr)
+        {
+            gpuInstance.mass = object->body()->mass();
+            gpuInstance.position = glm::dvec4(glm::vec3(object->body()->position()), 1);
+            gpuInstance.quaternion = glm::vec4(quatConjugate(object->body()->quaternion()));
+        }
+        else
+        {
+            gpuInstance.mass = 0.0f;
+            gpuInstance.position = glm::dvec4(0, 0, 0, 1);
+            gpuInstance.quaternion = glm::vec4(0, 0, 1, 0);
+        }
 
         if(glm::any(glm::greaterThan(object->material()->defaultEmissionColor(), glm::vec3())))
         {
@@ -377,10 +399,12 @@ void Radiation::render(GraphicContext& context)
     {
         ProfileGpu(PathTrace);
 
-        glUseProgram(_computePathTraceId);
+        glUseProgram(_computePathTraceProgramId);
 
         // Set uniforms for sub-systems
-        scene.sky()->setProgramResources(context, _computePathTraceId, 0);
+        GLuint textureUnitStart = 0;
+        textureUnitStart = scene.sky()->setPathTracerResources(context, _computePathTraceProgramId, textureUnitStart);
+        textureUnitStart = scene.terrain()->setPathTracerResources(context, _computePathTraceProgramId, textureUnitStart);
 
         glBindBufferBase(GL_UNIFORM_BUFFER, 0, _commonUbo);
         glBufferData(GL_UNIFORM_BUFFER, sizeof(CommonParams), &params, GL_STREAM_DRAW);

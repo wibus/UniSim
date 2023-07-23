@@ -28,10 +28,16 @@ void Gravity::update(Scene& scene, double dt)
 
     for(std::size_t i = 0; i < objects.size()-1; ++i)
     {
+        if(objects[i]->body().get() == nullptr)
+            continue;
+
         Body& bodyA = *objects[i]->body();
 
         for(std::size_t j = i+1; j < objects.size(); ++j)
         {
+            if(objects[j]->body().get() == nullptr)
+                continue;
+
             Body& bodyB = *objects[j]->body();
 
             glm::dvec3 dist = bodyB.position() - bodyA.position();
@@ -50,6 +56,9 @@ void Gravity::update(Scene& scene, double dt)
 
     for(std::size_t i = 0; i < objects.size(); ++i)
     {
+        if(objects[i]->body().get() == nullptr)
+            continue;
+
         Body& body = *objects[i]->body();
 
         if(body.isStatic())

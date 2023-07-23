@@ -6,19 +6,29 @@
 namespace unisim
 {
 
+enum PrimitiveType
+{
+    Sphere = 0,
+    Terrain = 1,
+    Count = 2
+};
+
+extern const char* PrimitiveType_Names[PrimitiveType::Count];
+
+
 class Mesh
 {
 public:
-    Mesh(bool isSphere, float radius);
+    Mesh(PrimitiveType primitiveType, float radius);
     virtual ~Mesh();
 
-    bool isSphere() const { return _isSphere; }
+    PrimitiveType primitiveType() const { return _primitiveType; }
 
     float radius() const { return _radius; }
     void setRadius(float radius) { _radius = radius; }
 
 private:
-    bool _isSphere;
+    PrimitiveType _primitiveType;
     float _radius;
 };
 

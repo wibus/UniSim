@@ -242,7 +242,7 @@ void displayObjects(Scene& scene)
                     {
                         radius = glm::max(1e-6, radius);
                         body->setRadius(radius);
-                        if(mesh && mesh->isSphere())
+                        if(mesh && mesh->primitiveType() == PrimitiveType::Sphere)
                             mesh->setRadius(radius);
                     }
 
@@ -278,11 +278,19 @@ void displayObjects(Scene& scene)
 
                 if(mesh && ImGui::TreeNode("Mesh"))
                 {
-                    bool isSphere = mesh->isSphere();
-                    ImGui::Checkbox("Is Sphere", &isSphere);
+                    PrimitiveType primitiveType = mesh->primitiveType();
+                    if(ImGui::BeginCombo("Primitive Type", PrimitiveType_Names[primitiveType]))
+                    {
+                        for(int i = 0; i < PrimitiveType::Count; ++i)
+                        {
+                            if(ImGui::Selectable(PrimitiveType_Names[i], primitiveType == i))
+                                primitiveType = (PrimitiveType)i;
+                        }
+                        ImGui::EndCombo();
+                    }
 
                     float radius = mesh->radius();
-                    if(mesh->isSphere() && ImGui::InputFloat("Radius", &radius))
+                    if(primitiveType == PrimitiveType::Sphere && ImGui::InputFloat("Radius", &radius))
                     {
                         radius = glm::max(1e-6f, radius);
                         mesh->setRadius(radius);

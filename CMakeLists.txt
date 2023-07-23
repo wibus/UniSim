@@ -70,6 +70,8 @@ set(EngineFile
     resource.cpp
     sky.h
     sky.cpp
+    terrain.h
+    terrain.cpp
     ui.h
     ui.cpp
 )
@@ -82,6 +84,13 @@ set(ShaderFiles
     shaders/physicalsky.glsl
     shaders/sphericalsky.glsl
     shaders/moonlight.glsl
+    shaders/noterrain.glsl
+    shaders/flatterrain.glsl
+    shaders/common/constants.glsl
+    shaders/common/data.glsl
+    shaders/common/inputs.glsl
+    shaders/common/signatures.glsl
+    shaders/common/utils.glsl
 )
 
 ## Projects ##

@@ -64,7 +64,9 @@ private:
     GLuint _pathTraceUnit;
     GLint _pathTraceFormat;
 
-    GLuint _computePathTraceId;
+    GLuint _pathTraceUtilsShaderId;
+    GLuint _computePathTraceShaderId;
+    GLuint _computePathTraceProgramId;
     GLuint _colorGradingId;
 
     unsigned int _frameIndex;

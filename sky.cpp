@@ -158,12 +158,12 @@ std::shared_ptr<GraphicTask> SkySphere::graphicTask()
     return _task;
 }
 
-std::vector<GLuint> SkySphere::shaders() const
+std::vector<GLuint> SkySphere::pathTracerShaders() const
 {
-    return {static_cast<SkySphere::Task&>(*_task).shader()};
+    return {static_cast<Task&>(*_task).shader()};
 }
 
-GLuint SkySphere::setProgramResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const
+GLuint SkySphere::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const
 {
     GLuint texId = static_cast<SkySphere::Task&>(*_task).texture();
 
@@ -193,7 +193,7 @@ bool SkySphere::Task::defineResources(GraphicContext& context)
     resources.define<GpuTextureResource>(ResourceName(SkyMap), {*_texture});
     _textureId = resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId;
 
-    if(!generateComputerShader(_shaderId, "shaders/sphericalsky.glsl"))
+    if(!generatePathTracerModule(_shaderId, context.settings, "shaders/sphericalsky.glsl"))
         return false;
 
     return true;
@@ -392,12 +392,12 @@ std::shared_ptr<GraphicTask> PhysicalSky::graphicTask()
     return _task;
 }
 
-std::vector<GLuint> PhysicalSky::shaders() const
+std::vector<GLuint> PhysicalSky::pathTracerShaders() const
 {
-    return {static_cast<PhysicalSky::Task&>(*_task).shader(), _model->shader()};
+    return {static_cast<Task&>(*_task).shader(), _model->shader()};
 }
 
-GLuint PhysicalSky::setProgramResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const
+GLuint PhysicalSky::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const
 {
     GLuint textureUnits[] = {
         textureUnitStart++,
@@ -475,7 +475,7 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
 {
     ResourceManager& resources = context.resources;
 
-    if(!generateComputerShader(_shaderId, "shaders/physicalsky.glsl"))
+    if(!generatePathTracerModule(_shaderId, context.settings, "shaders/physicalsky.glsl"))
         return false;
 
     if(!generateComputeProgram(_lightingProgramId, "shaders/moonlight.glsl"))

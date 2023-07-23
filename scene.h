@@ -12,6 +12,7 @@ namespace unisim
 {
 
 class Sky;
+class Terrain;
 class Object;
 class Camera;
 class Texture;
@@ -28,6 +29,8 @@ public:
 
     std::shared_ptr<Sky> sky() const { return _sky; }
 
+    std::shared_ptr<Terrain> terrain() const { return _terrain; }
+
     std::vector<std::shared_ptr<Object>>& objects() { return _objects; }
     const std::vector<std::shared_ptr<Object>>& objects() const { return _objects; }
 
@@ -37,6 +40,8 @@ protected:
     std::string _name;
 
     std::shared_ptr<Sky> _sky;
+
+    std::shared_ptr<Terrain> _terrain;
 
     std::vector<std::shared_ptr<Object>> _objects;
 };
