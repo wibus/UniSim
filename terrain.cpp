@@ -16,8 +16,7 @@ DeclareProfilePointGpu(Terrain);
 DefineResource(FlatTerrain);
 
 
-Terrain::Terrain() :
-    _objectOffset(-1)
+Terrain::Terrain()
 {
 
 }
@@ -38,26 +37,21 @@ std::shared_ptr<GraphicTask> NoTerrain::graphicTask()
     return _task;
 }
 
-std::vector<GLuint> NoTerrain::pathTracerShaders() const
-{
-    return {static_cast<Task&>(*_task).shader()};
-}
-
-GLuint NoTerrain::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const
-{
-    return textureUnitStart;
-}
-
 NoTerrain::Task::Task() :
-    GraphicTask("No Terrain"),
-    _shaderId(0)
+    GraphicTask("No Terrain")
 {
 
 }
 
 bool NoTerrain::Task::defineResources(GraphicContext& context)
 {
-    if(!generatePathTracerModule(_shaderId, context.settings, "shaders/noterrain.glsl"))
+    return true;
+}
+
+bool NoTerrain::Task::definePathTracerModules(GraphicContext& context)
+{
+    GLuint moduleId = 0;
+    if(!addPathTracerModule(moduleId, context.settings, "shaders/noterrain.glsl"))
         return false;
 
     return true;
@@ -93,32 +87,31 @@ std::shared_ptr<GraphicTask> FlatTerrain::graphicTask()
     return _task;
 }
 
-std::vector<GLuint> FlatTerrain::pathTracerShaders() const
-{
-    return {static_cast<Task&>(*_task).shader()};
-}
-
-GLuint FlatTerrain::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const
-{
-    glUniform1f(glGetUniformLocation(programId, "terrainHeight"), _height);
-    glUniform1f(glGetUniformLocation(programId, "terrainObject0"), objectOffset());
-
-    return textureUnitStart;
-}
-
 FlatTerrain::Task::Task() :
-    GraphicTask("Flat Terrain"),
-    _shaderId(0)
+    GraphicTask("Flat Terrain")
 {
 
 }
 
 bool FlatTerrain::Task::defineResources(GraphicContext& context)
 {
-    if(!generatePathTracerModule(_shaderId, context.settings, "shaders/flatterrain.glsl"))
+    return true;
+}
+
+bool FlatTerrain::Task::definePathTracerModules(GraphicContext& context)
+{
+    GLuint moduleId = 0;
+    if(!addPathTracerModule(moduleId, context.settings, "shaders/flatterrain.glsl"))
         return false;
 
     return true;
+}
+
+void FlatTerrain::Task::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& textureUnitStart) const
+{
+    FlatTerrain& terrain = *dynamic_cast<FlatTerrain*>(context.scene.terrain().get());
+
+    glUniform1f(glGetUniformLocation(programId, "terrainHeight"), terrain.height());
 }
 
 }

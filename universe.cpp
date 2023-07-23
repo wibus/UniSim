@@ -313,7 +313,6 @@ bool Universe::setup()
     auto& objects = _project->scene().objects();
     auto addObjects = [&](const std::vector<std::shared_ptr<Object>>& o)
         {objects.insert(objects.end(), o.begin(), o.end());};
-    _project->scene().terrain()->setObjectOffset(objects.size());
     addObjects(_project->scene().terrain()->objects());
 
     bool ok = true;

@@ -158,28 +158,6 @@ std::shared_ptr<GraphicTask> SkySphere::graphicTask()
     return _task;
 }
 
-std::vector<GLuint> SkySphere::pathTracerShaders() const
-{
-    return {static_cast<Task&>(*_task).shader()};
-}
-
-GLuint SkySphere::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const
-{
-    GLuint texId = static_cast<SkySphere::Task&>(*_task).texture();
-
-    GLuint skyMapUnit = textureUnitStart++;
-    glActiveTexture(GL_TEXTURE0 + skyMapUnit);
-    glBindTexture(GL_TEXTURE_2D, texId);
-    glUniform1i(glGetUniformLocation(programId, "skyMap"), skyMapUnit);
-
-    glUniform4f(glGetUniformLocation(programId, "skyQuaternion"),
-                quaternion()[0], quaternion()[1], quaternion()[2], quaternion()[3]);
-
-    glUniform1f(glGetUniformLocation(programId, "skyExposure"), exposure());
-
-    return textureUnitStart;
-}
-
 SkySphere::Task::Task(const std::shared_ptr<Texture>& texture) :
     GraphicTask("SkySphere"),
     _texture(texture)
@@ -191,12 +169,33 @@ bool SkySphere::Task::defineResources(GraphicContext& context)
 {
     ResourceManager& resources = context.resources;
     resources.define<GpuTextureResource>(ResourceName(SkyMap), {*_texture});
-    _textureId = resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId;
 
-    if(!generatePathTracerModule(_shaderId, context.settings, "shaders/sphericalsky.glsl"))
+    return true;
+}
+
+bool SkySphere::Task::definePathTracerModules(GraphicContext& context)
+{
+    GLuint moduleId = 0;
+    if(!addPathTracerModule(moduleId, context.settings, "shaders/sphericalsky.glsl"))
         return false;
 
     return true;
+}
+
+void SkySphere::Task::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint &textureUnitStart) const
+{
+    SkySphere& sky = *dynamic_cast<SkySphere*>(context.scene.sky().get());
+    ResourceManager& resources = context.resources;
+
+    GLuint skyMapUnit = textureUnitStart++;
+    glActiveTexture(GL_TEXTURE0 + skyMapUnit);
+    glBindTexture(GL_TEXTURE_2D, resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId);
+    glUniform1i(glGetUniformLocation(programId, "skyMap"), skyMapUnit);
+
+    glm::vec4 quaternion = sky.quaternion();
+    glUniform4fv(glGetUniformLocation(programId, "skyQuaternion"), 1, &quaternion[0]);
+
+    glUniform1f(glGetUniformLocation(programId, "skyExposure"), sky.exposure());
 }
 
 /*
@@ -392,58 +391,6 @@ std::shared_ptr<GraphicTask> PhysicalSky::graphicTask()
     return _task;
 }
 
-std::vector<GLuint> PhysicalSky::pathTracerShaders() const
-{
-    return {static_cast<Task&>(*_task).shader(), _model->shader()};
-}
-
-GLuint PhysicalSky::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const
-{
-    GLuint textureUnits[] = {
-        textureUnitStart++,
-        textureUnitStart++,
-        textureUnitStart++,
-        textureUnitStart++,
-    };
-
-   _model->SetProgramUniforms(programId, textureUnits[0], textureUnits[1], textureUnits[2], textureUnits[3]);
-
-    glm::vec3 sunDirection = _sun->direction();
-    glm::vec3 moonDirection = _moon->direction();
-    float sunToMoonRatio = _moon->emissionLuminance() / _sun->emissionLuminance();
-
-    glUniform3f(glGetUniformLocation(programId, "sunDirection"),
-                sunDirection[0], sunDirection[1], sunDirection[2]);
-
-    glUniform3f(glGetUniformLocation(programId, "moonDirection"),
-                moonDirection[0], moonDirection[1], moonDirection[2]);
-
-    glUniform1f(glGetUniformLocation(programId, "sunToMoonRatio"),
-                sunToMoonRatio);
-
-    glUniform1f(glGetUniformLocation(programId, "groundHeightKM"),
-                _params->bottom_radius.to(km));
-
-    GLuint moonLightingUnit = textureUnitStart++;
-    glActiveTexture(GL_TEXTURE0 + moonLightingUnit);
-    glBindTexture(GL_TEXTURE_2D, context.resources.get<GpuImageResource>(ResourceName(MoonLighting)).texId);
-    glUniform1i(glGetUniformLocation(programId, "moon"), moonLightingUnit);
-
-    glm::vec4 moonQuaternion = _task->moonQuaternion();
-    glUniform4fv(glGetUniformLocation(programId, "moonQuaternion"), 1, &moonQuaternion[0]);
-
-    GLuint starsUnit = textureUnitStart++;
-    glActiveTexture(GL_TEXTURE0 + starsUnit);
-    glBindTexture(GL_TEXTURE_2D, context.resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId);
-    glUniform1i(glGetUniformLocation(programId, "stars"), starsUnit);
-
-    glUniform4fv(glGetUniformLocation(programId, "starsQuaternion"), 1, &quaternion()[0]);
-
-    glUniform1f(glGetUniformLocation(programId, "starsExposure"), exposure());
-
-    return textureUnitStart;
-}
-
 struct PhysicalSkyCommonParams
 {
     glm::mat4 transform;
@@ -463,7 +410,6 @@ PhysicalSky::Task::Task(
     _params(params),
     _sun(sun),
     _moon(moon),
-    _shaderId(0),
     _lightingProgramId(0),
     _moonLightingDimensions(1024),
     _starsTexture(stars)
@@ -474,9 +420,6 @@ PhysicalSky::Task::Task(
 bool PhysicalSky::Task::defineResources(GraphicContext& context)
 {
     ResourceManager& resources = context.resources;
-
-    if(!generatePathTracerModule(_shaderId, context.settings, "shaders/physicalsky.glsl"))
-        return false;
 
     if(!generateComputeProgram(_lightingProgramId, "shaders/moonlight.glsl"))
         return false;
@@ -504,6 +447,65 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
     resources.define<GpuTextureResource>(ResourceName(SkyMap), {*_starsTexture});
 
     return true;
+}
+
+bool PhysicalSky::Task::definePathTracerModules(GraphicContext& context)
+{
+    GLuint moduleId = 0;
+    if(!addPathTracerModule(moduleId, context.settings, "shaders/physicalsky.glsl"))
+        return false;
+
+    addPathTracerModule(_model.shader());
+
+    return true;
+}
+
+void PhysicalSky::Task::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& textureUnitStart) const
+{
+    PhysicalSky& sky = *dynamic_cast<PhysicalSky*>(context.scene.sky().get());
+    ResourceManager& resources = context.resources;
+
+    GLuint textureUnits[] = {
+        textureUnitStart++,
+        textureUnitStart++,
+        textureUnitStart++,
+        textureUnitStart++,
+    };
+
+   _model.SetProgramUniforms(programId, textureUnits[0], textureUnits[1], textureUnits[2], textureUnits[3]);
+
+    glm::vec3 sunDirection = _sun.direction();
+    glm::vec3 moonDirection = _moon.direction();
+    float sunToMoonRatio = _moon.emissionLuminance() / _sun.emissionLuminance();
+
+    glUniform3f(glGetUniformLocation(programId, "sunDirection"),
+                sunDirection[0], sunDirection[1], sunDirection[2]);
+
+    glUniform3f(glGetUniformLocation(programId, "moonDirection"),
+                moonDirection[0], moonDirection[1], moonDirection[2]);
+
+    glUniform1f(glGetUniformLocation(programId, "sunToMoonRatio"),
+                sunToMoonRatio);
+
+    glUniform1f(glGetUniformLocation(programId, "groundHeightKM"),
+                _params.bottom_radius.to(km));
+
+    GLuint moonLightingUnit = textureUnitStart++;
+    glActiveTexture(GL_TEXTURE0 + moonLightingUnit);
+    glBindTexture(GL_TEXTURE_2D, resources.get<GpuImageResource>(ResourceName(MoonLighting)).texId);
+    glUniform1i(glGetUniformLocation(programId, "moon"), moonLightingUnit);
+
+    glUniform4fv(glGetUniformLocation(programId, "moonQuaternion"), 1, &_moonQuaternion[0]);
+
+    GLuint starsUnit = textureUnitStart++;
+    glActiveTexture(GL_TEXTURE0 + starsUnit);
+    glBindTexture(GL_TEXTURE_2D, resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId);
+    glUniform1i(glGetUniformLocation(programId, "stars"), starsUnit);
+
+    glm::vec4 starsQuaternion = sky.quaternion();
+    glUniform4fv(glGetUniformLocation(programId, "starsQuaternion"), 1, &starsQuaternion[0]);
+
+    glUniform1f(glGetUniformLocation(programId, "starsExposure"), sky.exposure());
 }
 
 void PhysicalSky::Task::update(GraphicContext& context)
@@ -554,9 +556,6 @@ void PhysicalSky::Task::update(GraphicContext& context)
 
 void PhysicalSky::Task::render(GraphicContext& context)
 {
-    const Scene& scene = context.scene;
-    const Camera& camera = context.camera;
-    const Viewport& viewport = camera.viewport();
     ResourceManager& resources = context.resources;
 
     ProfileGpu(PhysicalSky);

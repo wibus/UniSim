@@ -22,6 +22,7 @@ public:
     Radiation();
 
     void registerDynamicResources(GraphicContext& context) override;
+    bool definePathTracerModules(GraphicContext& context) override;
     bool defineResources(GraphicContext& context) override;
 
     void update(GraphicContext& context) override;

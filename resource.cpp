@@ -1,5 +1,7 @@
 #include "resource.h"
 
+#include <algorithm>
+
 #include "material.h"
 
 
@@ -110,6 +112,18 @@ GpuBindlessResource::~GpuBindlessResource()
 }
 
 
+PathTracerProvider::PathTracerProvider()
+{
+}
+
+PathTracerProvider::~PathTracerProvider()
+{
+}
+
+void PathTracerProvider::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& nextTextureUnit) const
+{
+}
+
 unsigned int ResourceManager::_resourceCount = 0;
 std::vector<std::string> ResourceManager::_names;
 
@@ -132,6 +146,36 @@ ResourceId ResourceManager::registerResource(const std::string& name)
 void ResourceManager::initialize()
 {
     _resources.resize(_resourceCount);
+}
+
+void ResourceManager::registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider)
+{
+    _providers.push_back(provider);
+}
+
+std::vector<GLuint> ResourceManager::pathTracerModules() const
+{
+    std::vector<GLuint> modules;
+    auto appendShaders = [&](const std::vector<GLuint>& s)
+    {
+        modules.insert(modules.end(), s.begin(), s.end());
+    };
+
+    // Append modules from all providers
+    for(const auto& provider : _providers)
+        appendShaders(provider->pathTracerModules());
+
+    // Remove duplicated modules
+    std::sort( modules.begin(), modules.end() );
+    modules.erase( std::unique( modules.begin(), modules.end() ), modules.end());
+
+    return modules;
+}
+
+void ResourceManager::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& nextTextureUnit) const
+{
+    for(const auto& provider : _providers)
+        provider->setPathTracerResources(context, programId, nextTextureUnit);
 }
 
 

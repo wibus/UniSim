@@ -151,31 +151,13 @@ bool Radiation::defineResources(GraphicContext& context)
 
     const std::vector<std::shared_ptr<Object>>& objects = scene.objects();
 
-    bool ok = generatePathTracerModule(_computePathTraceShaderId, context.settings, "shaders/pathtrace.glsl");
-    ok = ok && generatePathTracerModule(_pathTraceUtilsShaderId, context.settings, "shaders/common/utils.glsl");
-
-    // Gather shaders from sub-systems
-    std::vector<GLuint> shaders;
-    auto appendShaders = [&](const std::vector<GLuint>& s)
-    {
-        shaders.insert(shaders.end(), s.begin(), s.end());
-    };
-
-    appendShaders(scene.sky()->pathTracerShaders());
-    appendShaders(scene.terrain()->pathTracerShaders());
-    shaders.push_back(_computePathTraceShaderId);
-    shaders.push_back(_pathTraceUtilsShaderId);
-
-    // Remove duplicated shaders
-    std::sort( shaders.begin(), shaders.end() );
-    shaders.erase( std::unique( shaders.begin(), shaders.end() ), shaders.end());
+    std::vector<GLuint> pathTracerModules = context.resources.pathTracerModules();
 
     // Generate programs
-    ok = ok && generateComputeProgram(_computePathTraceProgramId, "pathtracer", shaders);
-    ok = ok && generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag") && ok;
-
-    if(!ok)
-        return ok;
+    if(!generateComputeProgram(_computePathTraceProgramId, "pathtracer", pathTracerModules))
+        return false;
+    if(!generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag"))
+        return false;
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
     {
@@ -271,7 +253,18 @@ bool Radiation::defineResources(GraphicContext& context)
     _pathTraceLoc = glGetUniformLocation(_computePathTraceProgramId, "result");
     glProgramUniform1i(_computePathTraceProgramId, _pathTraceLoc, _pathTraceUnit);
 
-    return ok;
+    return true;
+}
+
+bool Radiation::definePathTracerModules(GraphicContext& context)
+{
+    if(!addPathTracerModule(_computePathTraceShaderId, context.settings, "shaders/pathtrace.glsl"))
+        return false;
+
+    if(!addPathTracerModule(_pathTraceUtilsShaderId, context.settings, "shaders/common/utils.glsl"))
+        return false;
+
+    return true;
 }
 
 void Radiation::update(GraphicContext& context)
@@ -403,8 +396,7 @@ void Radiation::render(GraphicContext& context)
 
         // Set uniforms for sub-systems
         GLuint textureUnitStart = 0;
-        textureUnitStart = scene.sky()->setPathTracerResources(context, _computePathTraceProgramId, textureUnitStart);
-        textureUnitStart = scene.terrain()->setPathTracerResources(context, _computePathTraceProgramId, textureUnitStart);
+        resources.setPathTracerResources(context, _computePathTraceProgramId, textureUnitStart);
 
         glBindBufferBase(GL_UNIFORM_BUFFER, 0, _commonUbo);
         glBufferData(GL_UNIFORM_BUFFER, sizeof(CommonParams), &params, GL_STREAM_DRAW);

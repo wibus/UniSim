@@ -14,6 +14,8 @@ namespace unisim
 {
 
 class Texture;
+class GraphicContext;
+
 
 typedef unsigned int ResourceId;
 const ResourceId Invalid_ResourceId = ~0x0;
@@ -83,6 +85,23 @@ public:
 };
 
 
+class PathTracerProvider
+{
+public:
+    PathTracerProvider();
+    virtual ~PathTracerProvider();
+
+    std::vector<GLuint> pathTracerModules() const { return _pathTracerModules; }
+
+    virtual bool definePathTracerModules(GraphicContext& context) = 0;
+
+    virtual void setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& nextTextureUnit) const;
+
+protected:
+    std::vector<GLuint> _pathTracerModules;
+};
+
+
 class ResourceManager
 {
 public:
@@ -99,11 +118,17 @@ public:
     template<typename Resource>
     const Resource& get(ResourceId id) const;
 
+    void registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider);
+    std::vector<GLuint> pathTracerModules() const;
+    void setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& nextTextureUnit) const;
+
 private:
     static unsigned int _resourceCount;
     static std::vector<std::string> _names;
 
     std::vector<std::shared_ptr<GpuResource>> _resources;
+
+    std::vector<std::shared_ptr<PathTracerProvider>> _providers;
 };
 
 template<typename Resource>

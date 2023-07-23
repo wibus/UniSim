@@ -244,15 +244,19 @@ bool generateComputeProgram(
 GraphicTask::GraphicTask(const std::string& name) :
     _name(name)
 {
-
 }
 
 GraphicTask::~GraphicTask()
 {
-
 }
 
-bool GraphicTask::generatePathTracerModule(
+bool GraphicTask::addPathTracerModule(GLuint shaderId)
+{
+    _pathTracerModules.push_back(shaderId);
+    return true;
+}
+
+bool GraphicTask::addPathTracerModule(
         GLuint& shaderId,
         const GraphicSettings& settings,
         const std::string& computeFileName,
@@ -269,7 +273,12 @@ bool GraphicTask::generatePathTracerModule(
     std::vector<std::string> allSrcs = g_PathTracerCommonSrcs;
     allSrcs.push_back(loadSource(computeFileName));
 
-    return generateShader(shaderId, GL_COMPUTE_SHADER, computeFileName, allSrcs, allDefines);
+    bool success = generateShader(shaderId, GL_COMPUTE_SHADER, computeFileName, allSrcs, allDefines);
+
+    if(success)
+        _pathTracerModules.push_back(shaderId);
+
+    return success;
 }
 
 
@@ -297,6 +306,18 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/data.glsl"));
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
+
+    for(const auto& task : _tasks)
+    {
+        bool ok = task->definePathTracerModules(context);
+
+        if(!ok)
+        {
+            return false;
+        }
+
+        _resources.registerPathTracerProvider(std::dynamic_pointer_cast<PathTracerProvider>(task));
+    }
 
     for(const auto& task : _tasks)
     {

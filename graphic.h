@@ -61,7 +61,7 @@ struct GraphicContext
 };
 
 
-class GraphicTask
+class GraphicTask : public PathTracerProvider
 {
 public:
     GraphicTask(const std::string& name);
@@ -75,7 +75,10 @@ public:
     virtual void update(GraphicContext& context) {}
     virtual void render(GraphicContext& context) {}
 
-    bool generatePathTracerModule(
+protected:
+    bool addPathTracerModule(GLuint shaderId);
+
+    bool addPathTracerModule(
             GLuint& shaderId,
             const GraphicSettings& settings,
             const std::string& computeFileName,

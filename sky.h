@@ -123,10 +123,6 @@ public:
 
     virtual std::shared_ptr<GraphicTask> graphicTask() = 0;
 
-    virtual std::vector<GLuint> pathTracerShaders() const = 0;
-
-    virtual GLuint setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const = 0;
-
 private:
     SkyLocalization _localization;
     glm::vec4 _quaternion;
@@ -144,11 +140,6 @@ public:
 
     std::shared_ptr<GraphicTask> graphicTask() override;
 
-    std::vector<GLuint> pathTracerShaders() const override;
-
-    GLuint setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const override;
-
-
 private:
     std::shared_ptr<Texture> _texture;
 
@@ -157,16 +148,14 @@ private:
     public:
         Task(const std::shared_ptr<Texture>& texture);
 
+        bool definePathTracerModules(GraphicContext& context) override;
+
         bool defineResources(GraphicContext& context) override;
 
-        GLuint shader() const { return _shaderId; }
-
-        GLuint texture() const { return _textureId; }
+        void setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& textureUnitStart) const override;
 
     private:
         std::shared_ptr<Texture> _texture;
-        GLuint _shaderId;
-        GLuint _textureId;
     };
 
     std::shared_ptr<GraphicTask> _task;
@@ -180,10 +169,6 @@ public:
     virtual ~PhysicalSky();
 
     std::shared_ptr<GraphicTask> graphicTask() override;
-
-    std::vector<GLuint> pathTracerShaders() const override;
-
-    GLuint setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const override;
 
 private:
     typedef atmosphere::Model Model;
@@ -199,14 +184,14 @@ private:
                 DirectionalLight& moon,
                 const std::shared_ptr<Texture>& stars);
 
+        bool definePathTracerModules(GraphicContext& context) override;
+
         bool defineResources(GraphicContext& context) override;
+
+        void setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& textureUnitStart) const override;
 
         void update(GraphicContext& context) override;
         void render(GraphicContext& context) override;
-
-        GLuint shader() const { return _shaderId; }
-
-        glm::vec4 moonQuaternion() const { return _moonQuaternion; }
 
     private:
         Model& _model;
@@ -216,7 +201,6 @@ private:
         glm::mat4 _moonTransform;
         glm::vec4 _moonQuaternion;
 
-        GLuint _shaderId;
         GLuint _lightingProgramId;
 
         GLuint _paramsUbo;

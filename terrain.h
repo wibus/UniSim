@@ -23,14 +23,7 @@ public:
 
     const std::vector<std::shared_ptr<Object>>& objects() const { return _objects; }
 
-    void setObjectOffset(unsigned int offset) { _objectOffset = offset; }
-    unsigned int objectOffset() const { return _objectOffset; }
-
     virtual std::shared_ptr<GraphicTask> graphicTask() = 0;
-
-    virtual std::vector<GLuint> pathTracerShaders() const = 0;
-
-    virtual GLuint setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const = 0;
 
 protected:
     void clearObjects() { _objects.clear(); }
@@ -38,7 +31,6 @@ protected:
 
 private:
     std::vector<std::shared_ptr<Object>> _objects;
-    unsigned int _objectOffset;
 };
 
 
@@ -49,22 +41,15 @@ public:
 
     std::shared_ptr<GraphicTask> graphicTask() override;
 
-    std::vector<GLuint> pathTracerShaders() const override;
-
-    GLuint setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const override;
-
 private:
     class Task : public GraphicTask
     {
     public:
         Task();
 
+        bool definePathTracerModules(GraphicContext& context) override;
+
         bool defineResources(GraphicContext& context) override;
-
-        GLuint shader() const { return _shaderId; }
-
-    public:
-        GLuint _shaderId;
     };
 
     std::shared_ptr<Task> _task;
@@ -83,22 +68,17 @@ public:
 
     std::shared_ptr<GraphicTask> graphicTask() override;
 
-    std::vector<GLuint> pathTracerShaders() const override;
-
-    GLuint setPathTracerResources(GraphicContext& context, GLuint programId, GLuint textureUnitStart) const override;
-
 private:
     class Task : public GraphicTask
     {
     public:
         Task();
 
+        bool definePathTracerModules(GraphicContext& context) override;
+
         bool defineResources(GraphicContext& context) override;
 
-        GLuint shader() const { return _shaderId; }
-
-    public:
-        GLuint _shaderId;
+        void setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& textureUnitStart) const override;
     };
 
     double _height;
