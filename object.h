@@ -5,21 +5,22 @@
 
 #include <string>
 #include <memory>
+#include <vector>
+
 
 namespace unisim
 {
 
 class Body;
-class Mesh;
-class Material;
+class Primitive;
+
 
 class Object
 {
 public:
     Object(const std::string& name,
            const std::shared_ptr<Body>& body,
-           const std::shared_ptr<Mesh>& mesh,
-           const std::shared_ptr<Material>& materal,
+           const std::vector<std::shared_ptr<Primitive>>& primitives,
            Object* parent);
 
     virtual ~Object();
@@ -29,11 +30,9 @@ public:
     void setBody(const std::shared_ptr<Body>& body);
     std::shared_ptr<Body> body() const { return _body; }
 
-    void setMesh(const std::shared_ptr<Mesh>& mesh);
-    std::shared_ptr<Mesh> mesh() const { return _mesh; }
-
-    void setMaterial(const std::shared_ptr<Material>& material);
-    std::shared_ptr<Material> material() const { return _material; }
+    const std::vector<std::shared_ptr<Primitive>>& primitives() const { return _primitives; }
+    void setPrimitives(const std::vector<std::shared_ptr<Primitive>>& primitives) { _primitives = primitives; }
+    void addPrimitives(const std::shared_ptr<Primitive>& primitive) { _primitives.push_back(primitive); }
 
 private:
     Object* _parent;
@@ -42,9 +41,7 @@ private:
 
     std::shared_ptr<Body> _body;
 
-    std::shared_ptr<Mesh> _mesh;
-
-    std::shared_ptr<Material> _material;
+    std::vector<std::shared_ptr<Primitive>> _primitives;
 };
 
 }

@@ -56,8 +56,10 @@ set(EngineFile
     object.cpp
     body.h
     body.cpp
-    mesh.h
-    mesh.cpp
+    primitive.h
+    primitive.cpp
+    bvh.h
+    bvh.cpp
     scene.h
     scene.cpp
     profiler.h
@@ -84,13 +86,12 @@ set(ShaderFiles
     shaders/physicalsky.glsl
     shaders/sphericalsky.glsl
     shaders/moonlight.glsl
-    shaders/noterrain.glsl
-    shaders/flatterrain.glsl
     shaders/common/constants.glsl
     shaders/common/data.glsl
     shaders/common/inputs.glsl
     shaders/common/signatures.glsl
     shaders/common/utils.glsl
+    shaders/common/intersection.glsl
 )
 
 ## Projects ##

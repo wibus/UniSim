@@ -1,11 +1,15 @@
 #include "graphic.h"
 
 #include <fstream>
+#include <algorithm>
 
 #include "radiation.h"
 #include "scene.h"
 #include "sky.h"
 #include "terrain.h"
+#include "primitive.h"
+#include "material.h"
+#include "bvh.h"
 
 
 namespace unisim
@@ -267,8 +271,12 @@ bool GraphicTask::addPathTracerModule(
     if(settings.unbiased)
         allDefines.push_back("UNBIASED");
 
-    allDefines.push_back("PRIMITIVE_TYPE_SPHERE  0");
-    allDefines.push_back("PRIMITIVE_TYPE_TERRAIN 1");
+    for(int t = 0; t < Primitive::Type_Count; ++t)
+    {
+        std::string upperName = Primitive::Type_Names[t];
+        std::transform(upperName.begin(), upperName.end(), upperName.begin(), ::toupper);
+        allDefines.push_back("PRIMITIVE_TYPE_" + upperName + " " + std::to_string(t));
+    }
 
     std::vector<std::string> allSrcs = g_PathTracerCommonSrcs;
     allSrcs.push_back(loadSource(computeFileName));
@@ -291,7 +299,7 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 {
     createTaskGraph(scene, camera);
 
-    GraphicContext context = {scene, camera, _resources, _settings};
+    GraphicContext context = {scene, camera, _resources, *_materials, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -313,6 +321,7 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 
         if(!ok)
         {
+            std::cerr << task->name() << " path tracer module definition failed\n";
             return false;
         }
 
@@ -325,6 +334,7 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 
         if(!ok)
         {
+            std::cerr << task->name() << " resource definition failed\n";
             return false;
         }
     }
@@ -334,7 +344,7 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 
 void GraphicTaskGraph::execute(const Scene& scene, const Camera& camera)
 {
-    GraphicContext context = {scene, camera, _resources, _settings};
+    GraphicContext context = {scene, camera, _resources, *_materials, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -349,9 +359,17 @@ void GraphicTaskGraph::execute(const Scene& scene, const Camera& camera)
 
 void GraphicTaskGraph::createTaskGraph(const Scene& scene, const Camera& camera)
 {
+    _materials.reset(new MaterialDatabase());
+    addTask(_materials);
+
+    _bvh.reset(new BVH());
+    addTask(_bvh);
+
     addTask(scene.sky()->graphicTask());
     addTask(scene.terrain()->graphicTask());
-    addTask(std::make_shared<Radiation>());
+
+    _pathTracer.reset( new Radiation());
+    addTask(_pathTracer);
 }
 
 void GraphicTaskGraph::addTask(const std::shared_ptr<GraphicTask>& task)

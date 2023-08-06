@@ -13,6 +13,7 @@ namespace unisim
 
 class Object;
 class Material;
+class Plane;
 
 
 class Terrain
@@ -77,12 +78,10 @@ private:
         bool definePathTracerModules(GraphicContext& context) override;
 
         bool defineResources(GraphicContext& context) override;
-
-        void setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& textureUnitStart) const override;
-    };
+};
 
     double _height;
-    std::shared_ptr<Object> _object;
+    std::shared_ptr<Plane> _plane;
     std::shared_ptr<Task> _task;
 };
 

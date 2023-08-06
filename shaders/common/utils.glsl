@@ -62,17 +62,26 @@ float toLuminance(const vec3 c)
     return sqrt( 0.299*c.r*c.r + 0.587*c.g*c.g + 0.114*c.b*c.b);
 }
 
+vec4 quatConj(vec4 q)
+{
+    return vec4(-q.x, -q.y, -q.z, q.w);
+}
+
 vec3 rotate(vec4 q, vec3 v)
 {
     return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }
 
+vec2 findUV(vec3 N)
+{
+    float theta = atan(N.y, N.x);
+    float phi = asin(N.z);
+    return vec2(fract(theta / (2 * PI) + 0.5), phi / PI + 0.5);
+}
+
 vec2 findUV(vec4 quat, vec3 N)
 {
-    vec3 gN = rotate(quat, N);
-    float theta = atan(gN.y, gN.x);
-    float phi = asin(gN.z);
-    return vec2(fract(theta / (2 * PI) + 0.5), phi / PI + 0.5);
+    return findUV( rotate(quat, N) );
 }
 
 void makeOrthBase(in vec3 N, out vec3 T, out vec3 B)

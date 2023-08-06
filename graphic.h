@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <functional>
+#include <string_view>
 
 #include "resource.h"
 
@@ -12,6 +14,9 @@ namespace unisim
 
 class Scene;
 class Camera;
+class Radiation;
+class MaterialDatabase;
+class BVH;
 
 std::string loadSource(const std::string& fileName);
 
@@ -57,9 +62,9 @@ struct GraphicContext
     const Scene& scene;
     const Camera& camera;
     ResourceManager& resources;
+    const MaterialDatabase& materials;
     const GraphicSettings& settings;
 };
-
 
 class GraphicTask : public PathTracerProvider
 {
@@ -107,6 +112,10 @@ private:
     GraphicSettings _settings;
     ResourceManager _resources;
     std::vector<std::shared_ptr<GraphicTask>> _tasks;
+
+    std::shared_ptr<Radiation> _pathTracer;
+    std::shared_ptr<MaterialDatabase> _materials;
+    std::shared_ptr<BVH> _bvh;
 };
 
 

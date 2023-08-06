@@ -1,6 +1,8 @@
 #ifndef UNITS_H
 #define UNITS_H
 
+#include <type_traits>
+
 #include <GLM/glm.hpp>
 #include <GLM/gtx/quaternion.hpp>
 

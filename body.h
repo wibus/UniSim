@@ -16,17 +16,14 @@ public:
     bool isStatic() const { return _isStatic; }
     void setIsStatic(bool isStatic) { _isStatic = isStatic; }
 
-    double radius() const { return _radius; }
-    void setRadius(double radius) { _radius = radius; }
-
     double mass() const { return _mass; }
     void setMass(double mass) { _mass = mass; }
 
-    double area() const;
+    double area() const { return _area;}
 
-    double volume() const;
+    double volume() const { return _volume; }
 
-    double density() const;
+    double density() const { return _mass / _volume; }
 
     glm::dvec3 position() const { return _position; }
     void setPosition(const glm::dvec3& position);
@@ -66,7 +63,8 @@ private:
     glm::dvec3 _linearVelocity; // m / s
 
     // geometry
-    double _radius; // m
+    double _area;
+    double _volume;
 
     // composition
     double _mass; // Kg

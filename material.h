@@ -3,12 +3,18 @@
 
 #include <GLM/glm.hpp>
 
+#include <unordered_map>
 #include <string>
 #include <vector>
+
+#include "graphic.h"
 
 
 namespace unisim
 {
+
+struct GpuMaterial;
+
 
 struct Texture
 {
@@ -46,8 +52,13 @@ public:
     Material(const std::string& name);
     ~Material();
 
+    const std::string& name() const { return _name;}
+
+    Texture* albedo() const { return _albedo; }
     bool loadAlbedo(const std::string& fileName);
-    Texture* albedo() const;
+
+    Texture* specular() const { return _specular; }
+    bool loadSpecular(const std::string& fileName);
 
     glm::vec3 defaultAlbedo() const { return _defaultAlbedo; }
     void setDefaultAlbedo(const glm::vec3& albedo);
@@ -70,6 +81,7 @@ public:
 private:
     std::string _name;
     Texture* _albedo;
+    Texture* _specular;
 
     glm::vec3 _defaultAlbedo;
     glm::vec3 _defaultEmissionColor;
@@ -80,12 +92,49 @@ private:
 };
 
 
+using MaterialId = uint32_t;
+const MaterialId MaterialId_Invalid = MaterialId(-1);
 
-// IMPLEMENTATION //
-inline Texture* Material::albedo() const
+
+class MaterialDatabase : public GraphicTask
 {
-    return _albedo;
-}
+public:
+    MaterialDatabase();
+
+    void registerMaterial(const std::shared_ptr<Material>& material);
+    MaterialId materialId(const std::shared_ptr<Material>& material) const;
+    bool isMaterialRegistered(const std::shared_ptr<Material>& material) const;
+
+    void registerDynamicResources(GraphicContext& context) override;
+    bool definePathTracerModules(GraphicContext& context) override;
+    bool defineResources(GraphicContext& context) override;
+
+    void setPathTracerResources(
+            GraphicContext& context,
+            PathTracerInterface& interface) const override;
+
+    void update(GraphicContext& context) override;
+    void render(GraphicContext& context) override;
+
+private:
+    uint64_t toGpu(
+            const GraphicContext& context,
+            std::vector<GPUBindlessTexture>& textures,
+            std::vector<GpuMaterial>& materials);
+
+    std::vector<std::shared_ptr<Material>> _materials;
+    std::unordered_map<uint64_t, MaterialId> _materialIds;
+
+    struct MaterialResources
+    {
+        ResourceId textureAlbedo;
+        ResourceId textureSpecular;
+        ResourceId bindlessAlbedo;
+        ResourceId bindlessSpecular;
+    };
+
+    std::vector<MaterialResources> _materialsResourceIds;
+};
 
 }
 

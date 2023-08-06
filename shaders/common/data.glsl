@@ -1,17 +1,48 @@
 // Data structures
+struct Primitive
+{
+    uint type;
+    uint index;
+    uint material;
+    uint pad1;
+};
+
+struct Mesh
+{
+    uint vertexStart;
+    uint vertexEnd;
+    uint triangleStart;
+    uint triangleEnd;
+    uint submeshStart;
+    uint submeshEnd;
+};
+
+struct Sphere
+{
+    float radius;
+};
+
+struct Plane
+{
+    float invScale;
+};
+
 struct Instance
 {
-    vec4 albedo;
-    vec4 emission;
-    vec4 specular;
     vec4 position;
     vec4 quaternion;
 
-    float radius;
-    float mass;
+    uint primitiveBegin;
+    uint primitiveEnd;
 
-    uint materialId;
-    uint primitiveType;
+    int pad1;
+    int pad2;
+};
+
+struct Emitter
+{
+    uint instance;
+    uint primitive;
 };
 
 struct DirectionalLight
@@ -22,8 +53,14 @@ struct DirectionalLight
 
 struct Material
 {
-    layout(rgba8) readonly image2D albedo;
-    layout(rgba8) readonly image2D specular;
+    vec4 albedo;
+    vec4 emission;
+    vec4 specular;
+
+    int albedoTexture;
+    int specularTexture;
+    int pad1;
+    int pad2;
 };
 
 struct Ray
@@ -41,12 +78,14 @@ struct Ray
 struct Intersection
 {
     float t;
-    uint instanceId;
+    uint materialId;
+    vec3 normal;
+    vec2 uv;
+    float primitiveAreaPdf;
 };
 
 struct HitInfo
 {
-    uint instanceId;
     vec3 position;
     vec3 normal;
     vec3 diffuseAlbedo;
@@ -55,5 +94,13 @@ struct HitInfo
     float specularA;
     float specularA2;
     float NdotV;
-    float instanceAreaPdf;
+    float primitiveAreaPdf;
+};
+
+struct LightSample
+{
+    vec3 direction;
+    float distance;
+    vec3 emission;
+    float solidAngle;
 };

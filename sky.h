@@ -29,6 +29,8 @@ class Scene;
 class Texture;
 class Body;
 
+class PhysicalSkyCommonParams;
+
 
 class DirectionalLight
 {
@@ -67,6 +69,8 @@ public:
     static constexpr float MAX_TIME_OF_DAY = 24.0f;
     static constexpr float MAX_DAY_OF_YEAR = 365.2422f;
     static constexpr float MAX_DAY_OF_MOON = 27.322f;
+
+    static constexpr float EARTH_RADIUS = 6.371e6f;
 
     float longitude() const { return _longitude; }
     void setLongitude(float longitude) { _longitude = longitude; }
@@ -152,9 +156,14 @@ private:
 
         bool defineResources(GraphicContext& context) override;
 
-        void setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& textureUnitStart) const override;
+        void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
+
+        void update(GraphicContext& context) override;
 
     private:
+        u_int64_t toGpu(
+                const GraphicContext& context) const;
+
         std::shared_ptr<Texture> _texture;
     };
 
@@ -188,12 +197,16 @@ private:
 
         bool defineResources(GraphicContext& context) override;
 
-        void setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& textureUnitStart) const override;
+        void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
 
         void update(GraphicContext& context) override;
         void render(GraphicContext& context) override;
 
     private:
+        uint64_t toGpu(
+                const GraphicContext& context,
+                PhysicalSkyCommonParams& params) const;
+
         Model& _model;
         Params& _params;
         DirectionalLight& _sun;
@@ -215,9 +228,12 @@ private:
         std::unique_ptr<Texture> _moonAlbedo;
         int _moonLightingDimensions;
 
-        std::size_t _lastFrameHash;
+        std::size_t _moonHash;
+        bool _moonIsDirty;
 
         std::shared_ptr<Texture> _starsTexture;
+
+        std::shared_ptr<PhysicalSkyCommonParams> _gpuParams;
     };
 
     std::unique_ptr<Model> _model;

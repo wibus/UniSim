@@ -1,6 +1,7 @@
 Ray genRay(uvec2 pixelPos)
 {
-    vec4 noise = sampleBlueNoise(0);
+    const uint rayDepth = 0;
+    vec4 noise = sampleBlueNoise(rayDepth);
 
     vec4 pixelClip = vec4(
         float(pixelPos.x) + noise.x,
@@ -33,142 +34,154 @@ Ray genRay(uvec2 pixelPos)
     return ray;
 }
 
-Intersection intersectSphere(in Ray ray, in uint instanceId)
-{
-    Intersection intersection;
-    intersection.t = -1.0;
-    intersection.instanceId = instanceId;
-
-    Instance instance = instances[instanceId];
-
-    vec3 O = ray.origin;
-    vec3 D = ray.direction;
-    vec3 C = instance.position.xyz;
-
-    vec3 L = C - O;
-    float t_ca = dot(L, D);
-
-    if(t_ca < 0)
-        return intersection;
-
-    float dSqr = (dot(L, L) - t_ca*t_ca);
-
-    if(dSqr > instance.radius * instance.radius)
-        return intersection;
-
-    float t_hc = sqrt(instance.radius * instance.radius - dSqr);
-    float t_0 = t_ca - t_hc;
-    float t_1 = t_ca + t_hc;
-
-    if(t_0 > 0)
-        intersection.t = t_0;
-    else if(t_1 > 0)
-        intersection.t = t_1;
-
-    return intersection;
-}
-
 Intersection raycast(in Ray ray)
 {
     Intersection bestIntersection;
     bestIntersection.t = 1 / 0.0;
 
-    for(uint b = 0; b < instances.length(); ++b)
+    for(uint i = 0; i < instances.length(); ++i)
     {
-        Intersection intersection;
-        intersection.t = -1;
-        intersection.instanceId = -1;
+        Instance instance = instances[i];
 
-        if(instances[b].primitiveType == PRIMITIVE_TYPE_SPHERE)
-        {
-            intersection = intersectSphere(ray, b);
-        }
-        else if(instances[b].primitiveType == PRIMITIVE_TYPE_TERRAIN)
-        {
-            intersection = intersectTerrain(ray, b);
-        }
+        Ray instanceRay;
+        instanceRay.origin = rotate(instance.quaternion, ray.origin - instance.position.xyz);
+        instanceRay.direction = rotate(instance.quaternion, ray.direction);
 
-        if(intersection.t > 0 && intersection.t < bestIntersection.t)
+        for(uint p = instance.primitiveBegin; p < instance.primitiveEnd; ++p)
         {
-            bestIntersection = intersection;
+            Intersection intersection;
+            intersection.t = -1;
+
+            Primitive primitive = primitives[p];
+
+            if(primitive.type == PRIMITIVE_TYPE_MESH)
+            {
+                intersection = intersectMesh(instanceRay, primitive.index, primitive.material);
+            }
+            else if(primitive.type == PRIMITIVE_TYPE_SPHERE)
+            {
+                intersection = intersectSphere(instanceRay, primitive.index, primitive.material);
+            }
+            else if(primitive.type == PRIMITIVE_TYPE_PLANE)
+            {
+                intersection = intersectPlane(instanceRay, primitive.index, primitive.material);
+            }
+
+            if(intersection.t > 0 && intersection.t < bestIntersection.t)
+            {
+                bestIntersection = intersection;
+                bestIntersection.normal = rotate(
+                    quatConj(instance.quaternion),
+                    bestIntersection.normal);
+            }
         }
     }
 
     return bestIntersection;
 }
 
+bool shadowcast(in Ray ray, float tMax)
+{
+    for(uint i = 0; i < instances.length(); ++i)
+    {
+        Instance instance = instances[i];
+
+        Ray instanceRay;
+        instanceRay.origin = rotate(instance.quaternion, ray.origin - instance.position.xyz);
+        instanceRay.direction = rotate(instance.quaternion, ray.direction);
+
+        for(uint p = instance.primitiveBegin; p < instance.primitiveEnd; ++p)
+        {
+            Primitive primitive = primitives[p];
+
+            Intersection intersection;
+            intersection.t = -1;
+
+            if(primitive.type == PRIMITIVE_TYPE_MESH)
+            {
+                intersection = intersectMesh(instanceRay, primitive.index, primitive.material);
+            }
+            else if(primitive.type == PRIMITIVE_TYPE_SPHERE)
+            {
+                intersection = intersectSphere(instanceRay, primitive.index, primitive.material);
+            }
+            else if(primitive.type == PRIMITIVE_TYPE_PLANE)
+            {
+                intersection = intersectPlane(instanceRay, primitive.index, primitive.material);
+            }
+
+            if(intersection.t > 0 && intersection.t < tMax * 0.99999)
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 HitInfo probe(in Ray ray, in Intersection intersection)
 {
-    Instance instance = instances[intersection.instanceId];
+    Material material = materials[intersection.materialId];
 
     HitInfo hitInfo;
 
-    hitInfo.instanceId = intersection.instanceId;
-
     hitInfo.position = ray.origin + intersection.t * ray.direction;
+    hitInfo.normal = intersection.normal;
 
-    if(instance.primitiveType == PRIMITIVE_TYPE_SPHERE)
-        hitInfo.normal = normalize(hitInfo.position - instance.position.xyz);
-    else if(instance.primitiveType == PRIMITIVE_TYPE_TERRAIN)
-        hitInfo.normal = vec3(0, 0, ray.direction.z != 0 ? -sign(ray.direction.z): 1);
-    else
-        hitInfo.normal = vec3(0, 0, 1);
+    hitInfo.position += hitInfo.normal * 1e-4 * max(intersection.t, maxV(abs(hitInfo.position)));
 
-    hitInfo.position += hitInfo.normal * 1e-6 * max(1, maxV(abs(hitInfo.position)));
-
-    vec3 albedo = instance.albedo.rgb;
-    if(instance.materialId > 0)
+    vec3 albedo = material.albedo.rgb;
+    if(material.albedoTexture != -1)
     {
-        vec2 uv = findUV(instance.quaternion, hitInfo.normal);
-        layout(rgba8) image2D albedoImg = materials[instance.materialId-1].albedo;
-        ivec2 imgSize = imageSize(albedoImg);
-        vec3 texel = imageLoad(albedoImg, ivec2(imgSize * vec2(uv.x, 1 - uv.y))).rgb;
+        layout(rgba8) image2D img = textures[material.albedoTexture];
+        ivec2 imgSize = imageSize(img);
+        vec2 uv = intersection.uv;
+        vec3 texel = imageLoad(img, ivec2(imgSize * vec2(uv.x, 1 - uv.y))).rgb;
 
         albedo = toLinear(texel);
     }
 
-    hitInfo.specularA = instance.specular.r;
-    hitInfo.specularA2 = hitInfo.specularA * hitInfo.specularA;
+    vec3 specular = material.specular.rgb;
+    if(material.specularTexture != -1)
+    {
+        layout(rgba8) image2D img = textures[material.specularTexture];
+        ivec2 imgSize = imageSize(img);
+        vec2 uv = intersection.uv;
+        vec3 texel = imageLoad(img, ivec2(imgSize * vec2(uv.x, 1 - uv.y))).rgb;
 
-    float metalness = instance.specular.g;
-    float reflectance = instance.specular.b;
+        specular = toLinear(texel);
+    }
+
+    hitInfo.specularA = specular.r;
+    hitInfo.specularA2 = specular.r * specular.r;
+
+    float metalness = specular.g;
+    float reflectance = specular.b;
 
     hitInfo.diffuseAlbedo = mix(albedo, vec3(0, 0, 0), metalness);
     hitInfo.specularF0 = mix(reflectance.xxx, albedo, metalness);
-    hitInfo.emission = instance.emission.rgb;
+    hitInfo.emission = material.emission.rgb;
 
     hitInfo.NdotV = max(0.0f, -dot(hitInfo.normal, ray.direction));
 
-    if(instance.primitiveType == PRIMITIVE_TYPE_SPHERE)
-    {
-        float iRSqr = instance.radius * instance.radius;
-        vec3 originToHit = (instance.position.xyz - ray.origin);
-        float distanceSqr = dot(originToHit, originToHit);
-        float sinThetaMaxSqr = iRSqr / distanceSqr;
-        float cosThetaMax = sqrt(max(0, 1 - sinThetaMaxSqr));
-        float solidAngle = 2 * PI * (1 - cosThetaMax);
-        hitInfo.instanceAreaPdf = 1 / solidAngle;
-    }
-    else
-    {
-        hitInfo.instanceAreaPdf = 1 / (2 * PI);
-    }
+    hitInfo.primitiveAreaPdf = intersection.primitiveAreaPdf;
 
     return hitInfo;
 }
 
-vec3 evaluateBSDF(Ray ray, HitInfo hitInfo, vec3 L, float solidAngle)
+vec3 evaluateBSDF(HitInfo hitInfo, vec3 V, vec3 L, float solidAngle)
 {
-    float lightAreaPdf = 1 / solidAngle;
-
-    vec3 H = normalize(L - ray.direction);
+    vec3 H = normalize(L - V);
     float NdotL = max(0, dot(hitInfo.normal, L));
     float NdotH = dot(hitInfo.normal, H);
-    float HdotV = -dot(H, ray.direction);
+    float HdotV = -dot(H, V);
     float NdotV = hitInfo.NdotV;
 
     vec3 f = fresnel(HdotV, hitInfo.specularF0);
     float ndf = ggxNDF(hitInfo.specularA2, NdotH);
+
+    float lightAreaPdf = 1 / solidAngle;
 
     float diffuseWeight = misHeuristic(1, lightAreaPdf, 1, cosineHemispherePdf(NdotL));
     vec3 diffuse = hitInfo.diffuseAlbedo / PI * (1 - f) * diffuseWeight;
@@ -176,19 +189,35 @@ vec3 evaluateBSDF(Ray ray, HitInfo hitInfo, vec3 L, float solidAngle)
     vec3 specularAlbedo = f * ndf * ggxSmithG2AndDenom(hitInfo.specularA2, NdotV, NdotL);
     float specularPdf = ggxVisibleNormalsDistributionFunction(hitInfo.specularA2, NdotV, NdotH, HdotV) / (4 * HdotV);
     float specularWeight = hitInfo.specularA != 0 ? misHeuristic(1, lightAreaPdf, 1, specularPdf) : 0;
-    vec3 specular = (NdotL > 0 && NdotV > 0 && hitInfo.specularA2 != 0) ? specularAlbedo * specularWeight : vec3(0, 0, 0);
+    vec3 specular = (hitInfo.specularA2 != 0) ? specularAlbedo * specularWeight : vec3(0, 0, 0);
 
-    return NdotL * (diffuse + specular) * solidAngle;
+    return (NdotL > 0 && NdotV > 0) ? NdotL * (diffuse + specular) * solidAngle : vec3(0, 0, 0);
 }
 
-vec3 sampleSphereLight(uint emitterId, Ray ray, HitInfo hitInfo, vec4 noise)
+LightSample sampleMesh(uint meshId, uint materialId, vec3 position, vec4 noise)
 {
-    Instance emitter = instances[emitterId];
+    // TODO
+    Mesh mesh = meshes[meshId];
+    Material material = materials[materialId];
 
-    float lRSqr = emitter.radius * emitter.radius;
+    LightSample lightSample;
+    lightSample.direction = vec3(0, 0, 1);
+    lightSample.distance = 1.0;
+    lightSample.emission = vec3(0, 0, 0);
+    lightSample.solidAngle = 0.0;
 
-    vec3 hitToLight = (emitter.position.xyz - hitInfo.position);
-    float distanceSqr = dot(hitToLight, hitToLight);
+    return lightSample;
+}
+
+LightSample sampleSphere(uint sphereId, uint materialId, vec3 position, vec4 noise)
+{
+    Sphere sphere = spheres[sphereId];
+    Material material = materials[materialId];
+
+    float lRSqr = sphere.radius * sphere.radius;
+
+    vec3 hitToCenter = - position;
+    float distanceSqr = dot(hitToCenter, hitToCenter);
 
     float sinThetaMaxSqr = lRSqr / distanceSqr;
     float cosThetaMax = sqrt(max(0, 1 - sinThetaMaxSqr));
@@ -202,28 +231,50 @@ vec3 sampleSphereLight(uint emitterId, Ray ray, HitInfo hitInfo, vec4 noise)
 
     float dc = sqrt(distanceSqr);
     float ds = dc * cosTheta - sqrt(max(0, lRSqr - dc * dc * sinTheta * sinTheta));
-    float cosAlpha = (dc * dc + lRSqr - ds * ds) / (2 * dc * emitter.radius);
+    float cosAlpha = (dc * dc + lRSqr - ds * ds) / (2 * dc * sphere.radius);
     float sinAlpha = sqrt(max(0, 1 - cosAlpha * cosAlpha));
 
-    vec3 lT, lB, lN = -normalize(hitToLight);
+    vec3 lT, lB, lN = -normalize(hitToCenter);
     makeOrthBase(lN, lT, lB);
 
-    vec3 lightN = emitter.radius * vec3(sinAlpha * cos(phi), sinAlpha * sin(phi), cosAlpha);
+    vec3 lightN = sphere.radius * vec3(sinAlpha * cos(phi), sinAlpha * sin(phi), cosAlpha);
     vec3 lightP = lightN.x * lT + lightN.y * lB + lightN.z * lN;
-    vec3 L = normalize(hitToLight + lightP);
+    vec3 hitToSample = hitToCenter + lightP;
+    float sampleDist = length(hitToSample);
+    vec3 L = hitToSample / sampleDist;
 
-    Ray shadowRay;
-    shadowRay.origin = hitInfo.position;
-    shadowRay.direction = L;
+    LightSample lightSample;
+    lightSample.direction = L;
+    lightSample.distance = sampleDist;
+    lightSample.emission = material.emission.rgb;
+    lightSample.solidAngle = solidAngle;
 
-    Intersection shadowIntersection = raycast(shadowRay);
-    if(shadowIntersection.instanceId == emitterId)
-        return evaluateBSDF(ray, hitInfo, L, solidAngle) * emitter.emission.rgb;
-    else
-        return vec3(0);
+    return lightSample;
 }
 
-vec3 sampleDirectionalLight(uint lightId, Ray ray, HitInfo hitInfo, vec4 noise)
+LightSample samplePlane(uint planeId, uint materialId, vec3 position, vec4 noise)
+{
+    Plane plane = planes[planeId];
+    Material material = materials[materialId];
+
+    float r = noise.b;
+    float theta = 2 * PI * noise.a;
+
+    vec2 Lxy = vec2(cos(theta), sin(theta)) * r;
+    vec3 L = vec3(Lxy, sqrt(1 - dot(Lxy, Lxy)));
+    L.z = L.z * sign(-position.z);
+    L.z = L.z == 0 ? 1 : L.z;
+
+    LightSample lightSample;
+    lightSample.direction = L;
+    lightSample.distance = -position.z / L.z;
+    lightSample.emission = material.emission.rgb;
+    lightSample.solidAngle = 2 * PI;
+
+    return lightSample;
+}
+
+LightSample sampleDirectionalLight(uint lightId, vec3 position, vec4 noise)
 {
     DirectionalLight light = directionalLights[lightId];
 
@@ -233,27 +284,23 @@ vec3 sampleDirectionalLight(uint lightId, Ray ray, HitInfo hitInfo, vec4 noise)
     vec3 l = sampleUniformCone(noise.b, noise.a, light.directionCosThetaMax.w);
     vec3 L = normalize(l.x * T + l.y * B + l.z * N);
 
-    Ray shadowRay;
-    shadowRay.origin = hitInfo.position;
-    shadowRay.direction = L;
-
     vec3 skyLuminance;
     vec3 skyTransmittance;
     SampleSkyLuminance(
         skyLuminance,
         skyTransmittance,
-        shadowRay.origin,
-        shadowRay.direction);
+        position,
+        L);
 
-    vec3 emission = SampleDirectionalLightLuminance(shadowRay.direction, lightId);
+    vec3 emission = SampleDirectionalLightLuminance(L, lightId);
 
-    Intersection shadowIntersection = raycast(shadowRay);
-    if(shadowIntersection.t == 1 / 0.0)
-        return evaluateBSDF(ray, hitInfo, L, light.emissionSolidAngle.a)
-                * emission
-                * skyTransmittance;
-    else
-        return vec3(0);
+    LightSample lightSample;
+    lightSample.direction = L;
+    lightSample.distance = 1 / 0.0;
+    lightSample.emission = emission * skyTransmittance;
+    lightSample.solidAngle = light.emissionSolidAngle.a;
+
+    return lightSample;
 }
 
 vec3 shadeHit(Ray ray, HitInfo hitInfo)
@@ -264,22 +311,67 @@ vec3 shadeHit(Ray ray, HitInfo hitInfo)
 
     for(uint e = 0; e < emitters.length(); ++e)
     {
-        uint emitterId = emitters[e];
+        Emitter emitter = emitters[e];
+        Instance instance = instances[emitter.instance];
+        uint primitiveId = instance.primitiveBegin + emitter.primitive;
+        Primitive primitive = primitives[primitiveId];
 
-        if(emitterId == hitInfo.instanceId)
+        vec3 objSpacePosition = rotate(instance.quaternion, hitInfo.position - instance.position.xyz);
+
+        LightSample lightSample;
+
+        if(primitive.type == PRIMITIVE_TYPE_MESH)
+        {
+            lightSample = sampleMesh(primitive.index, primitive.material, objSpacePosition, noise);
+        }
+        else if(primitive.type == PRIMITIVE_TYPE_SPHERE)
+        {
+            lightSample = sampleSphere(primitive.index, primitive.material, objSpacePosition, noise);
+        }
+        else if(primitive.type == PRIMITIVE_TYPE_PLANE)
+        {
+            lightSample = samplePlane(primitive.index, primitive.material, objSpacePosition, noise);
+        }
+
+        lightSample.direction = rotate(quatConj(instance.quaternion), lightSample.direction);
+
+        if(dot(lightSample.direction, hitInfo.normal) <= 0)
             continue;
 
-        if(instances[emitterId].primitiveType == PRIMITIVE_TYPE_SPHERE)
-            L_out += sampleSphereLight(emitterId, ray, hitInfo, noise);
+        Ray shadowRay;
+        shadowRay.origin = hitInfo.position;
+        shadowRay.direction = lightSample.direction;
+
+        if(shadowcast(shadowRay, lightSample.distance))
+        {
+            L_out += lightSample.emission * evaluateBSDF(
+                        hitInfo,
+                        ray.direction,
+                        lightSample.direction,
+                        lightSample.solidAngle);
+        }
     }
 
     for(uint dl = 0; dl < directionalLights.length(); ++dl)
     {
-        L_out += sampleDirectionalLight(dl, ray, hitInfo, noise);
+        LightSample lightSample = sampleDirectionalLight(dl, hitInfo.position, noise);
+
+        Ray shadowRay;
+        shadowRay.origin = hitInfo.position;
+        shadowRay.direction = lightSample.direction;
+
+        if(shadowcast(shadowRay, lightSample.distance))
+        {
+            L_out += lightSample.emission * evaluateBSDF(
+                        hitInfo,
+                        ray.direction,
+                        lightSample.direction,
+                        lightSample.solidAngle);
+        }
     }
 
     // Emission
-    float weight = misHeuristic(1, ray.bsdfPdf, 1, hitInfo.instanceAreaPdf);
+    float weight = misHeuristic(1, ray.bsdfPdf, 1, hitInfo.primitiveAreaPdf);
     L_out += weight * hitInfo.emission;
 
     return ray.throughput * L_out;

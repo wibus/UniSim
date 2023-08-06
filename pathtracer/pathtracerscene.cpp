@@ -2,7 +2,7 @@
 
 #include "../object.h"
 #include "../body.h"
-#include "../mesh.h"
+#include "../primitive.h"
 #include "../camera.h"
 #include "../material.h"
 #include "../sky.h"
@@ -17,11 +17,11 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
     std::shared_ptr<Body> body(new Body(radius, 1, true));
     body->setPosition(position);
 
-    std::shared_ptr<Mesh> mesh(new Mesh(PrimitiveType::Sphere, radius));
-
     std::shared_ptr<Material> material(new Material(name));
+    std::shared_ptr<Primitive> primitive(new Sphere(radius));
+    primitive->setMaterial(material);
 
-    std::shared_ptr<Object> object(new Object(name, body, mesh, material, parent));
+    std::shared_ptr<Object> object(new Object(name, body, {primitive}, parent));
 
     return object;
 }
@@ -45,28 +45,29 @@ PathTracerScene::PathTracerScene() :
     localization.setDayOfMoon(17.0);
 
     auto light = makeObject("Light", 1, {0, 7.5, 9});
-    light->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
-    light->material()->setDefaultEmissionColor({1, 1, 1});
-    light->material()->setDefaultEmissionLuminance(25);
+    light->primitives()[0]->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
+    light->primitives()[0]->material()->setDefaultEmissionColor({1, 1, 1});
+    light->primitives()[0]->material()->setDefaultEmissionLuminance(25);
     _objects.push_back(light);
 
     auto ballLeft = makeObject("Ball Left", 2, {-3, 12, 2});
-    ballLeft->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
-    ballLeft->material()->loadAlbedo("textures/mars_albedo.jpg");
-    ballLeft->material()->setDefaultRoughness(2);
+    ballLeft->primitives()[0]->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
+    ballLeft->primitives()[0]->material()->loadAlbedo("textures/mars_albedo.jpg");
+    ballLeft->primitives()[0]->material()->setDefaultRoughness(2);
     _objects.push_back(ballLeft);
 
     auto ballRight = makeObject("Ball Right", 2, {3, 12, 2});
-    ballRight->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
-    ballRight->material()->setDefaultMetalness(0);
-    ballRight->material()->setDefaultRoughness(0.0);
-    ballRight->material()->setDefaultReflectance(0.04);
+    ballRight->primitives()[0]->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
+    ballRight->primitives()[0]->material()->setDefaultMetalness(0);
+    ballRight->primitives()[0]->material()->setDefaultRoughness(0.0);
+    ballRight->primitives()[0]->material()->setDefaultReflectance(0.04);
+    ballRight->body()->setQuaternion(quat(glm::dvec3(0, 0, 1), glm::pi<double>()));
     _objects.push_back(ballRight);
 
     auto ballFront = makeObject("Ball Front", 1, {0, 10, 1});
-    ballFront->material()->setDefaultAlbedo({1.0, 0.85, 0.03});
-    ballFront->material()->setDefaultRoughness(0.2);
-    ballFront->material()->setDefaultMetalness(1);
+    ballFront->primitives()[0]->material()->setDefaultAlbedo({1.0, 0.85, 0.03});
+    ballFront->primitives()[0]->material()->setDefaultRoughness(0.2);
+    ballFront->primitives()[0]->material()->setDefaultMetalness(1);
     _objects.push_back(ballFront);
 }
 

@@ -15,6 +15,12 @@ namespace unisim
 {
 
 class Scene;
+class PathTracerInterface;
+
+struct GpuEmitter;
+struct GpuDirectionalLight;
+struct GpuPathTracerCommonParams;
+
 
 class Radiation : public GraphicTask
 {
@@ -25,6 +31,10 @@ public:
     bool definePathTracerModules(GraphicContext& context) override;
     bool defineResources(GraphicContext& context) override;
 
+    void setPathTracerResources(
+            GraphicContext& context,
+            PathTracerInterface& interface) const override;
+
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
 
@@ -33,28 +43,14 @@ public:
     static const unsigned int MAX_FRAME_COUNT = 4096;
 
 private:
-    void setViewport(Viewport viewport);
+    uint64_t toGpu(
+            GraphicContext& context,
+            GpuPathTracerCommonParams& gpuCommonParams,
+            std::vector<GpuEmitter>& gpuEmitters,
+            std::vector<GpuDirectionalLight>& gpuDirectionalLights);
 
     GLuint _vbo;
     GLuint _vao;
-
-    GLuint _commonUbo;
-    GLuint _instancesSSBO;
-    GLuint _dirLightsSSBO;
-    GLuint _materialsSSBO;
-    GLuint _emittersSSBO;
-
-    std::vector<GLuint> _objectToMat;
-
-    struct MaterialResources
-    {
-        ResourceId textureAlbedo;
-        ResourceId textureSpecular;
-        ResourceId bindlessAlbedo;
-        ResourceId bindlessSpecular;
-    };
-
-    std::vector<MaterialResources> _objectsResourceIds;
 
     ResourceId _blueNoiseTextureResourceIds[BLUE_NOISE_TEX_COUNT];
     ResourceId _blueNoiseBindlessResourceIds[BLUE_NOISE_TEX_COUNT];
@@ -71,9 +67,11 @@ private:
     GLuint _colorGradingId;
 
     unsigned int _frameIndex;
-    std::size_t _lastFrameHash;
+    uint64_t _pathTracerHash;
 
     Viewport _viewport;
+
+    std::shared_ptr<PathTracerInterface> _pathTracerInterface;
 };
 
 }

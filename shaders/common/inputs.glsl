@@ -1,4 +1,4 @@
-layout (std140, binding = 0) uniform CommonParams
+layout (std140) uniform PathTracerCommonParams
 {
     mat4 rayMatrix;
     vec4 lensePosition;
@@ -13,24 +13,49 @@ layout (std140, binding = 0) uniform CommonParams
     vec4 halton[64];
 };
 
-layout (std140, binding = 1) buffer Instances
+layout (std430) buffer Primitives
+{
+    Primitive primitives[];
+};
+
+layout (std430) buffer Meshes
+{
+    Mesh meshes[];
+};
+
+layout (std430) buffer Spheres
+{
+    Sphere spheres[];
+};
+
+layout (std430) buffer Planes
+{
+    Plane planes[];
+};
+
+layout (std430) buffer Instances
 {
     Instance instances[];
 };
 
-layout (std140, binding = 2) buffer DirectionalLights
+layout (std430) buffer Emitters
+{
+    Emitter emitters[];
+};
+
+layout (std430) buffer DirectionalLights
 {
     DirectionalLight directionalLights[];
 };
 
-layout (std430, binding = 3) buffer Emitters
+layout (std140) buffer Textures
 {
-    uint emitters[];
+    layout(rgba8) readonly image2D textures[];
 };
 
-layout (std140, binding = 4) buffer Materials
+layout (std430) buffer Materials
 {
     Material materials[];
 };
 
-uniform layout(binding = 5, rgba32f) image2D result;
+uniform layout(rgba32f) image2D result;

@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include "GLM/gtx/transform.hpp"
@@ -9,6 +10,7 @@
 #include "../units.h"
 #include "../object.h"
 #include "../body.h"
+#include "../primitive.h"
 #include "../material.h"
 #include "../scene.h"
 
@@ -208,7 +210,7 @@ void SolarSystemCameraMan::orbit(int newBodyId, int oldBodyId)
 {
     if(_objectId != -1 && _objectId < _scene.objects().size())
     {
-        const Body& body = *_scene.objects()[newBodyId]->body();
+        const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[newBodyId]->primitives()[0]);
         _latitude = glm::dvec4(0, 0, 0, 1);
         _longitude = glm::dvec4(0, 0, 0, 1);
         _pan = glm::dvec4(0, 0, 0, 1);
@@ -216,19 +218,22 @@ void SolarSystemCameraMan::orbit(int newBodyId, int oldBodyId)
         _roam = glm::dvec4(0, 0, 0, 1);
 
         if(_mode == Mode::Ground)
-            _distance = 10.0 * body.radius();
+            _distance = 10.0 * sphere.radius();
         else
         {
-            if(_distance <= body.radius() * 1.1)
-                _distance = body.radius() * 1.1;
+            if(_distance <= sphere.radius() * 1.1)
+                _distance = sphere.radius() * 1.1;
         }
 
         if(_autoExpose && oldBodyId != newBodyId)
         {
             if(oldBodyId != -1 && oldBodyId < _scene.objects().size())
             {
-                if(!(glm::any(glm::bvec3(_scene.objects()[oldBodyId]->material()->defaultEmissionColor())) ||
-                     glm::any(glm::bvec3(_scene.objects()[newBodyId]->material()->defaultEmissionColor()))))
+                const Sphere& oldSphere = static_cast<Sphere&>(*_scene.objects()[oldBodyId]->primitives()[0]);
+                const Sphere& newSphere = static_cast<Sphere&>(*_scene.objects()[newBodyId]->primitives()[0]);
+
+                if(!(glm::any(glm::bvec3(oldSphere.material()->defaultEmissionColor())) ||
+                     glm::any(glm::bvec3(newSphere.material()->defaultEmissionColor()))))
                 {
                     glm::dvec3 oldPos = _scene.objects()[oldBodyId]->body()->position();
                     float oldRelIrradiance = 1.0 / glm::dot(oldPos, oldPos);
@@ -342,15 +347,15 @@ void SolarSystemCameraMan::moveForward()
     case Mode::Orbit:
         if(_objectId != -1 && _objectId < _scene.objects().size())
         {
-            const Body& body = *_scene.objects()[_objectId]->body();
-            _distance = glm::mix(body.radius(),  _distance, 1 / APPROACH_INC);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            _distance = glm::mix((double)sphere.radius(),  _distance, 1 / APPROACH_INC);
         }
         break;
     case Mode::Ground:
         if(_objectId != -1 && _objectId < _scene.objects().size())
         {
-            const Body& body = *_scene.objects()[_objectId]->body();
-            double moveScale = (_distance - body.radius()) / _distance;
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            double moveScale = (_distance - sphere.radius()) / _distance;
 
             glm::dvec4 camQuat = quatMul(_roam, _pan);
             glm::dvec3 rotAxis = rotatePoint(camQuat, glm::dvec3(1, 0, 0));
@@ -374,15 +379,15 @@ void SolarSystemCameraMan::moveBackward()
     case Mode::Orbit:
         if(_objectId != -1 && _objectId < _scene.objects().size())
         {
-            const Body& body = *_scene.objects()[_objectId]->body();
-            _distance = glm::mix(body.radius(),  _distance, APPROACH_INC);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            _distance = glm::mix((double)sphere.radius(),  _distance, APPROACH_INC);
         }
         break;
     case Mode::Ground:
         if(_objectId != -1 && _objectId < _scene.objects().size())
         {
-            const Body& body = *_scene.objects()[_objectId]->body();
-            double moveScale = (_distance - body.radius()) / _distance;
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            double moveScale = (_distance - sphere.radius()) / _distance;
 
             glm::dvec4 camQuat = quatMul(_roam, _pan);
             glm::dvec3 rotAxis = rotatePoint(camQuat, glm::dvec3(1, 0, 0));
@@ -407,8 +412,8 @@ void SolarSystemCameraMan::strafeLeft()
     case Mode::Ground:
         if(_objectId != -1 && _objectId < _scene.objects().size())
         {
-            const Body& body = *_scene.objects()[_objectId]->body();
-            double moveScale = (_distance - body.radius()) / _distance;
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            double moveScale = (_distance - sphere.radius()) / _distance;
 
             glm::dvec4 camQuat = quatMul(_roam, _pan);
             glm::dvec3 rotAxis = rotatePoint(camQuat, glm::dvec3(0, 0, 1));
@@ -433,8 +438,8 @@ void SolarSystemCameraMan::strafeRight()
     case Mode::Ground:
         if(_objectId != -1 && _objectId < _scene.objects().size())
         {
-            const Body& body = *_scene.objects()[_objectId]->body();
-            double moveScale = (_distance - body.radius()) / _distance;
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            double moveScale = (_distance - sphere.radius()) / _distance;
 
             glm::dvec4 camQuat = quatMul(_roam, _pan);
             glm::dvec3 rotAxis = rotatePoint(camQuat, glm::dvec3(0, 0, 1));
@@ -459,8 +464,8 @@ void SolarSystemCameraMan::strafeUp()
     case Mode::Ground:
         if(_objectId != -1 && _objectId < _scene.objects().size())
         {
-            const Body& body = *_scene.objects()[_objectId]->body();
-            _distance = glm::mix(body.radius(),  _distance, APPROACH_INC);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            _distance = glm::mix((double)sphere.radius(),  _distance, APPROACH_INC);
         }
         break;
     }
@@ -477,8 +482,8 @@ void SolarSystemCameraMan::strafeDown()
     case Mode::Ground:
         if(_objectId != -1 && _objectId < _scene.objects().size())
         {
-            const Body& body = *_scene.objects()[_objectId]->body();
-            _distance = glm::mix(body.radius(),  _distance, 1 / APPROACH_INC);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            _distance = glm::mix((double)sphere.radius(),  _distance, 1 / APPROACH_INC);
         }
         break;
     }

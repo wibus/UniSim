@@ -29,7 +29,8 @@ Body::Body(double radius, double densityGramPerCm3, bool isStatic) :
     _position(0, 0, 0),
     _angularSpeed(0),
     _linearVelocity(0, 0, 0),
-    _radius(radius),
+    _area(4.0 * glm::pi<double>() * radius * radius),
+    _volume(4.0 / 3.0 * glm::pi<double>() * radius * radius * radius),
     _mass(4 / 3.0f * glm::pi<double>() * radius * radius * radius * (densityGramPerCm3 * 1e3)),
     _isStatic(isStatic)
 {
@@ -59,21 +60,6 @@ void Body::setQuaternion(const glm::dvec4& quaternion)
 void Body::setAngularSpeed(double angularSpeed)
 {
     _angularSpeed = angularSpeed;
-}
-
-double Body::area() const
-{
-    return 4.0 * glm::pi<double>() * _radius * _radius;
-}
-
-double Body::volume() const
-{
-    return 4.0 / 3.0 * glm::pi<double>() * _radius * _radius * _radius;
-}
-
-double Body::density() const
-{
-    return _mass / volume();
 }
 
 // ref: https://personal.math.ubc.ca/~cass/courses/m309-01a/orbits.pdf

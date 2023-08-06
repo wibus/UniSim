@@ -7,7 +7,7 @@
 #include "scene.h"
 #include "object.h"
 #include "body.h"
-#include "mesh.h"
+#include "primitive.h"
 #include "material.h"
 #include "camera.h"
 #include "profiler.h"
@@ -228,23 +228,12 @@ void displayObjects(Scene& scene)
             if(ImGui::TreeNode(object->name().c_str()))
             {
                 auto body = object->body();
-                auto mesh = object->mesh();
-                auto material = object->material();
 
                 if(body && ImGui::TreeNode("Body"))
                 {
                     bool isStatic = body->isStatic();
                     if(ImGui::Checkbox("Is Static", &isStatic))
                         body->setIsStatic(isStatic);
-
-                    double radius = body->radius();
-                    if(ImGui::InputDouble("Radius", &radius, 0.1))
-                    {
-                        radius = glm::max(1e-6, radius);
-                        body->setRadius(radius);
-                        if(mesh && mesh->primitiveType() == PrimitiveType::Sphere)
-                            mesh->setRadius(radius);
-                    }
 
                     double mass = body->mass();
                     if(ImGui::InputDouble("Mass", &mass, 0.1))
@@ -276,60 +265,78 @@ void displayObjects(Scene& scene)
                     ImGui::TreePop();
                 }
 
-                if(mesh && ImGui::TreeNode("Mesh"))
+                if(!object->primitives().empty() && ImGui::TreeNode("Primitives"))
                 {
-                    PrimitiveType primitiveType = mesh->primitiveType();
-                    if(ImGui::BeginCombo("Primitive Type", PrimitiveType_Names[primitiveType]))
+                    for(std::size_t p = 0; p < object->primitives().size(); ++p)
                     {
-                        for(int i = 0; i < PrimitiveType::Count; ++i)
+                        Primitive& primitive = *object->primitives()[p];
+
+                        if(ImGui::TreeNode(&primitive, "Primitive %u: %s", (uint)p, Primitive::Type_Names[primitive.type()]))
                         {
-                            if(ImGui::Selectable(PrimitiveType_Names[i], primitiveType == i))
-                                primitiveType = (PrimitiveType)i;
+                            switch(primitive.type())
+                            {
+                            case Primitive::Mesh :
+                                {
+                                    Mesh& mesh = static_cast<Mesh&>(primitive);
+                                    ImGui::Text("Vertex count: %u", (uint)mesh.vertices().size());
+                                    ImGui::Text("Triangle count: %u", (uint)mesh.triangles().size());
+                                    ImGui::Text("Sub-mesh count: %u", (uint)mesh.subMeshes().size());
+                                }
+                                break;
+                            case Primitive::Sphere :
+                                {
+                                    Sphere& sphere = static_cast<Sphere&>(primitive);
+                                    float radius = sphere.radius();
+                                    if(ImGui::InputFloat("Radius", &radius))
+                                        sphere.setRadius(radius);
+                                }
+                                break;
+                            case Primitive::Plane :
+                                {
+                                    Plane& plane = static_cast<Plane&>(primitive);
+                                }
+                                break;
+                            default:
+                                assert(false);
+                            }
+
+                            Material* material = primitive.material().get();
+                            if(material && ImGui::TreeNode("Material"))
+                            {
+                                displayTexture(material->albedo());
+
+                                glm::vec3 albedo = material->defaultAlbedo();
+                                if(ImGui::ColorPicker3("Albedo", &albedo[0]))
+                                    material->setDefaultAlbedo(albedo);
+
+                                glm::vec3 emissionColor = material->defaultEmissionColor();
+                                if(ImGui::ColorPicker3("Emission", &emissionColor[0]))
+                                    material->setDefaultEmissionColor(emissionColor);
+
+                                float emissionLuminance = material->defaultEmissionLuminance();
+                                if(ImGui::InputFloat("Luminance", &emissionLuminance))
+                                    material->setDefaultEmissionLuminance(emissionLuminance);
+
+                                float roughness = material->defaultRoughness();
+                                if(ImGui::SliderFloat("Roughness", &roughness, 0, 1))
+                                    material->setDefaultRoughness(roughness);
+
+                                float metalness = material->defaultMetalness();
+                                if(ImGui::SliderFloat("Metalness", &metalness, 0, 1))
+                                    material->setDefaultMetalness(metalness);
+
+                                float reflectance = material->defaultReflectance();
+                                if(ImGui::InputFloat("Reflectance", &reflectance, 0.01f))
+                                {
+                                    reflectance = glm::clamp(reflectance, 0.0f, 1.0f);
+                                    material->setDefaultReflectance(reflectance);
+                                }
+
+                                ImGui::TreePop();
+                            }
+
+                            ImGui::TreePop();
                         }
-                        ImGui::EndCombo();
-                    }
-
-                    float radius = mesh->radius();
-                    if(primitiveType == PrimitiveType::Sphere && ImGui::InputFloat("Radius", &radius))
-                    {
-                        radius = glm::max(1e-6f, radius);
-                        mesh->setRadius(radius);
-                        if(body)
-                            body->setRadius(radius);
-                    }
-
-                    ImGui::TreePop();
-                }
-
-                if(material && ImGui::TreeNode("Material"))
-                {
-                    displayTexture(material->albedo());
-
-                    glm::vec3 albedo = material->defaultAlbedo();
-                    if(ImGui::ColorPicker3("Albedo", &albedo[0]))
-                        material->setDefaultAlbedo(albedo);
-
-                    glm::vec3 emissionColor = material->defaultEmissionColor();
-                    if(ImGui::ColorPicker3("Emission", &emissionColor[0]))
-                        material->setDefaultEmissionColor(emissionColor);
-
-                    float emissionLuminance = material->defaultEmissionLuminance();
-                    if(ImGui::InputFloat("Luminance", &emissionLuminance))
-                        material->setDefaultEmissionLuminance(emissionLuminance);
-
-                    float roughness = material->defaultRoughness();
-                    if(ImGui::SliderFloat("Roughness", &roughness, 0, 1))
-                        material->setDefaultRoughness(roughness);
-
-                    float metalness = material->defaultMetalness();
-                    if(ImGui::SliderFloat("Metalness", &metalness, 0, 1))
-                        material->setDefaultMetalness(metalness);
-
-                    float reflectance = material->defaultReflectance();
-                    if(ImGui::InputFloat("Reflectance", &reflectance, 0.01f))
-                    {
-                        reflectance = glm::clamp(reflectance, 0.0f, 1.0f);
-                        material->setDefaultReflectance(reflectance);
                     }
 
                     ImGui::TreePop();

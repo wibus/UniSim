@@ -21,7 +21,11 @@ vec3 toLinear(const vec3 sRGB);
 
 float toLuminance(const vec3 c);
 
+vec4 quatConj(vec4 q);
+
 vec3 rotate(vec4 q, vec3 v);
+
+vec2 findUV(vec3 N);
 
 vec2 findUV(vec4 quat, vec3 N);
 
@@ -62,6 +66,12 @@ vec3 sampleUniformCone(float U1, float U2, float cosThetaMax);
 vec2 sampleUniformDisk(float U1, float U2);
 
 
+// Intersection
+Intersection intersectMesh(Ray ray, uint meshId, uint materialId);
+Intersection intersectSphere(Ray ray, uint sphereId, uint materialId);
+Intersection intersectPlane(Ray ray, uint planeId, uint materialId);
+
+
 // SYSTEMS //
 
 // Sky
@@ -80,7 +90,3 @@ void SampleSkyLuminanceToPoint(
 vec3 SampleDirectionalLightLuminance(
         vec3 viewDir,
         uint lightId);
-
-
-// Terrain
-Intersection intersectTerrain(in Ray ray, in uint instanceId);

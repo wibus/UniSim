@@ -3,7 +3,7 @@
 #include "../units.h"
 #include "../object.h"
 #include "../body.h"
-#include "../mesh.h"
+#include "../primitive.h"
 #include "../material.h"
 #include "../sky.h"
 
@@ -14,9 +14,11 @@ namespace unisim
 std::shared_ptr<Object> makePlanet(const std::string& name, double radius, double density, Object* parent = nullptr)
 {
     std::shared_ptr<Body> body(new Body(radius, density));
-    std::shared_ptr<Mesh> mesh(new Mesh(PrimitiveType::Sphere, radius));
+    std::shared_ptr<Primitive> sphere(new Sphere(radius));
     std::shared_ptr<Material> material(new Material(name));
-    std::shared_ptr<Object> object(new Object(name, body, mesh, material, parent));
+    sphere->setMaterial(material);
+
+    std::shared_ptr<Object> object(new Object(name, body, {sphere}, parent));
     return object;
 }
 
@@ -30,8 +32,8 @@ SolarSystemScene::SolarSystemScene() :
 
     // Sun
     std::shared_ptr<Object> sun = makePlanet("Sun", 696.340e6, 1.41f);
-    sun->material()->setDefaultAlbedo(glm::dvec3(1.0, 1.0, 0.5));
-    sun->material()->setDefaultEmissionColor(glm::dvec3(1.0, 1.0, 1.0) * 2.009e7);
+    sun->primitives()[0]->material()->setDefaultAlbedo(glm::dvec3(1.0, 1.0, 0.5));
+    sun->primitives()[0]->material()->setDefaultEmissionColor(glm::dvec3(1.0, 1.0, 1.0) * 2.009e7);
     _objects.push_back(sun);
 
     // Planets
@@ -70,12 +72,11 @@ SolarSystemScene::SolarSystemScene() :
             const glm::vec3& defaultEmission = glm::vec3(),
             float defaultEmissionLuminance = 0.0f)
     {
-        std::shared_ptr<Material> material(new Material(name));
+        std::shared_ptr<Material> material = body->primitives()[0]->material();
         material->loadAlbedo("textures/"+name+"_albedo.jpg");
         material->setDefaultAlbedo(defaultAlbedo);
         material->setDefaultEmissionColor(defaultEmission);
         material->setDefaultEmissionLuminance(defaultEmissionLuminance);
-        body->setMaterial(material);
     };
 
     setupMaterial(sun,      "sun",      glm::vec3(1.0, 1.0, 0.5), glm::vec3(1.0, 1.0, 1.0), 1.6e9);

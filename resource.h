@@ -1,6 +1,7 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
+#include <map>
 #include <vector>
 #include <memory>
 #include <string>
@@ -85,6 +86,88 @@ public:
 };
 
 
+class GpuStorageResource : public GpuResource
+{
+public:
+    struct Definition
+    {
+        std::size_t elemSize;
+        std::size_t elemCount;
+        void* data;
+    };
+
+    GpuStorageResource(ResourceId id, Definition def);
+    ~GpuStorageResource();
+
+    void update(const Definition& def) const;
+
+    GLuint bufferId;
+};
+
+
+class GpuConstantResource : public GpuResource
+{
+public:
+    struct Definition
+    {
+        std::size_t size;
+        void* data;
+    };
+
+    GpuConstantResource(ResourceId id, Definition def);
+    ~GpuConstantResource();
+
+    void update(const Definition& def) const;
+
+    GLuint bufferId;
+};
+
+
+struct GPUBindlessTexture
+{
+    GPUBindlessTexture() :
+        texture(0),
+        padding(0)
+    {}
+
+    GPUBindlessTexture(GLuint64 tex) :
+        texture(tex),
+        padding(0)
+    {}
+
+    GLuint64 texture;
+    GLuint64 padding;
+};
+
+
+class PathTracerInterface
+{
+public:
+    PathTracerInterface(GLuint programId);
+
+    GLuint programId() const { return _programId; }
+
+    bool declareUbo(const std::string& blockName);
+    bool declareSsbo(const std::string& blockName);
+
+    GLuint getUboBindPoint(const std::string& blockName) const;
+    GLuint getSsboBindPoint(const std::string& blockName) const;
+
+    GLuint grabTextureUnit();
+    void resetTextureUnits();
+
+private:
+    GLuint _programId;
+    GLuint _nextTextureUnit;
+
+    GLuint _nextUboBindPoint;
+    std::map<std::string, GLuint> _uboBindPoints;
+
+    GLuint _nextSsboBindPoint;
+    std::map<std::string, GLuint> _ssboBindPoints;
+};
+
+
 class PathTracerProvider
 {
 public:
@@ -95,10 +178,32 @@ public:
 
     virtual bool definePathTracerModules(GraphicContext& context) = 0;
 
-    virtual void setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& nextTextureUnit) const;
+    virtual void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
+
+    uint64_t hash() const { return _hash; }
+
+    template<typename T>
+    static uint64_t hashVal(const T& data, uint64_t seed)
+    {
+        return combineHashes(seed, std::hash<std::string_view>()(
+            std::string_view((char*)&data, sizeof (T))));
+    }
+
+    template<typename T>
+    static uint64_t hashVec(const std::vector<T>& data, uint64_t seed)
+    {
+        return combineHashes(seed, std::hash<std::string_view>()(
+            std::string_view((char*)data.data(), sizeof (T) * data.size())));
+    }
+
+    static uint64_t combineHashes(uint64_t h1, uint64_t h2)
+    {
+        return h1 ^ (h2 + 0x9e3779b9 + (h1<<6) + (h1>>2));
+    }
 
 protected:
     std::vector<GLuint> _pathTracerModules;
+    uint64_t _hash;
 };
 
 
@@ -120,7 +225,9 @@ public:
 
     void registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider);
     std::vector<GLuint> pathTracerModules() const;
-    void setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& nextTextureUnit) const;
+    void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
+
+    uint64_t pathTracerHash() const;
 
 private:
     static unsigned int _resourceCount;

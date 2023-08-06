@@ -112,7 +112,138 @@ GpuBindlessResource::~GpuBindlessResource()
 }
 
 
-PathTracerProvider::PathTracerProvider()
+GpuStorageResource::GpuStorageResource(ResourceId id, Definition def) :
+    GpuResource(id)
+{
+    glGenBuffers(1, &bufferId);
+    update(def);
+}
+
+GpuStorageResource::~GpuStorageResource()
+{
+    glDeleteBuffers(1, &bufferId);
+}
+
+void GpuStorageResource::update(const Definition& def) const
+{
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferId);
+    GLsizei dataSize = def.elemSize * def.elemCount;
+    glBufferData(GL_SHADER_STORAGE_BUFFER, dataSize, def.data, GL_STATIC_DRAW);
+}
+
+
+GpuConstantResource::GpuConstantResource(ResourceId id, Definition def) :
+    GpuResource(id)
+{
+    glGenBuffers(1, &bufferId);
+    update(def);
+}
+
+GpuConstantResource::~GpuConstantResource()
+{
+    glDeleteBuffers(1, &bufferId);
+}
+
+void GpuConstantResource::update(const Definition& def) const
+{
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferId);
+    glBindBuffer(GL_UNIFORM_BUFFER, bufferId);
+    glBufferData(GL_UNIFORM_BUFFER, def.size, def.data, GL_STATIC_DRAW);
+}
+
+
+PathTracerInterface::PathTracerInterface(GLuint programId) :
+    _programId(programId),
+    _nextTextureUnit(0),
+    _nextUboBindPoint(0),
+    _nextSsboBindPoint(0)
+{
+    if (declareUbo("PathTracerCommonParams") &&
+        declareSsbo("Primitives") &&
+        declareSsbo("Meshes") &&
+        declareSsbo("Spheres") &&
+        declareSsbo("Planes") &&
+        declareSsbo("Instances") &&
+        declareSsbo("Emitters") &&
+        declareSsbo("DirectionalLights") &&
+        declareSsbo("Textures") &&
+        declareSsbo("Materials"))
+    {
+        std::cout << "Path tracer interface initialized" << std::endl;
+    }
+    else
+    {
+        std::cerr << "Could not declare path tracer input binding points" << std::endl;
+        assert(false);
+    }
+}
+
+
+bool PathTracerInterface::declareUbo(const std::string& blockName)
+{
+    assert(_uboBindPoints.find(blockName) == _uboBindPoints.end());
+
+    GLuint location = glGetProgramResourceIndex(_programId, GL_UNIFORM_BLOCK, blockName.c_str());
+
+    if(location == GL_INVALID_ENUM)
+        return false;
+
+    glShaderStorageBlockBinding(_programId, location, _nextUboBindPoint);
+    _uboBindPoints[blockName] = _nextUboBindPoint;
+    ++_nextUboBindPoint;
+
+    return true;
+}
+
+bool PathTracerInterface::declareSsbo(const std::string& blockName)
+{
+    assert(_ssboBindPoints.find(blockName) == _ssboBindPoints.end());
+
+    GLuint location = glGetProgramResourceIndex(_programId, GL_SHADER_STORAGE_BLOCK, blockName.c_str());
+
+    if(location == GL_INVALID_ENUM)
+        return false;
+
+    glShaderStorageBlockBinding(_programId, location, _nextSsboBindPoint);
+    _ssboBindPoints[blockName] = _nextSsboBindPoint;
+    ++_nextSsboBindPoint;
+
+    return true;
+}
+
+
+GLuint PathTracerInterface::getUboBindPoint(const std::string& blockName) const
+{
+    auto it = _uboBindPoints.find(blockName);
+    if(it != _uboBindPoints.end())
+        return it->second;
+
+    return -1;
+}
+
+GLuint PathTracerInterface::getSsboBindPoint(const std::string& blockName) const
+{
+    auto it = _ssboBindPoints.find(blockName);
+    if(it != _ssboBindPoints.end())
+        return it->second;
+
+    return -1;
+}
+
+
+GLuint PathTracerInterface::grabTextureUnit()
+{
+    return _nextTextureUnit++;
+}
+
+void PathTracerInterface::resetTextureUnits()
+{
+    _nextTextureUnit = 0;
+}
+
+
+PathTracerProvider::PathTracerProvider() :
+    _hash(0)
 {
 }
 
@@ -120,7 +251,7 @@ PathTracerProvider::~PathTracerProvider()
 {
 }
 
-void PathTracerProvider::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& nextTextureUnit) const
+void PathTracerProvider::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
 }
 
@@ -138,9 +269,8 @@ ResourceManager::~ResourceManager()
 
 ResourceId ResourceManager::registerResource(const std::string& name)
 {
-    ++_resourceCount;
     _names.push_back(name);
-    return _resourceCount;
+    return _resourceCount++;
 }
 
 void ResourceManager::initialize()
@@ -172,10 +302,18 @@ std::vector<GLuint> ResourceManager::pathTracerModules() const
     return modules;
 }
 
-void ResourceManager::setPathTracerResources(GraphicContext& context, GLuint programId, GLuint& nextTextureUnit) const
+void ResourceManager::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
     for(const auto& provider : _providers)
-        provider->setPathTracerResources(context, programId, nextTextureUnit);
+        provider->setPathTracerResources(context, interface);
+}
+
+uint64_t ResourceManager::pathTracerHash() const
+{
+    uint64_t hash;
+    for(const auto& provider : _providers)
+        hash = PathTracerProvider::combineHashes(hash, provider->hash());
+    return hash;
 }
 
 
