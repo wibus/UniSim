@@ -14,9 +14,10 @@ namespace unisim
 
 class Scene;
 class Camera;
-class Radiation;
+class Lighting;
 class MaterialDatabase;
 class BVH;
+class PathTracer;
 class ColorGrading;
 
 
@@ -115,7 +116,8 @@ private:
     ResourceManager _resources;
     std::vector<std::shared_ptr<GraphicTask>> _tasks;
 
-    std::shared_ptr<Radiation> _pathTracer;
+    std::shared_ptr<PathTracer> _pathTracer;
+    std::shared_ptr<Lighting> _lighting;
     std::shared_ptr<MaterialDatabase> _materials;
     std::shared_ptr<BVH> _bvh;
     std::shared_ptr<ColorGrading> _colorGrading;

@@ -10,6 +10,7 @@
 #include "body.h"
 #include "units.h"
 #include "profiler.h"
+#include "light.h"
 
 #include <bruneton/model.h>
 #include <bruneton/definitions.h>
@@ -19,26 +20,13 @@ using namespace atmosphere::reference;
 namespace unisim
 {
 
-DeclareProfilePoint(PhysicalSky);
-DeclareProfilePointGpu(PhysicalSky);
+DefineProfilePoint(PhysicalSky);
+DefineProfilePointGpu(PhysicalSky);
 
 DefineResource(SkyMap);
 DefineResource(MoonAlbedo);
 DefineResource(MoonLighting);
 
-
-DirectionalLight::DirectionalLight(const std::string& name) :
-    _name(name),
-    _emissionColor(1, 1, 1),
-    _emissionLuminance(1)
-{
-
-}
-
-DirectionalLight::~DirectionalLight()
-{
-
-}
 
 std::shared_ptr<DirectionalLight> makeDirLight(const std::string& name, const glm::dvec3& position, const glm::dvec3& emission, double luminance, double solidAngle)
 {

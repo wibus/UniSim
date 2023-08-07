@@ -113,11 +113,11 @@ private:
 };
 
 #define PID_CPU(name) ProfileIdCpu_##name
-#define DeclareProfilePoint(name) static ProfileIdCpu PID_CPU(name) = Profiler::GetInstance().registerCpuPoint(#name)
+#define DefineProfilePoint(name) static ProfileIdCpu PID_CPU(name) = Profiler::GetInstance().registerCpuPoint(#name)
 #define Profile(name) ScoppedCpuPoint profilePoint_##name(PID_CPU(name))
 
 #define PID_GPU(name) ProfileIdGpu_##name
-#define DeclareProfilePointGpu(name) static ProfileIdGpu PID_GPU(name) = Profiler::GetInstance().registerGpuPoint(#name)
+#define DefineProfilePointGpu(name) static ProfileIdGpu PID_GPU(name) = Profiler::GetInstance().registerGpuPoint(#name)
 #define ProfileGpu(name) ScoppedGpuPoint profilePointGpu_##name(PID_GPU(name))
 
 }

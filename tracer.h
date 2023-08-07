@@ -1,31 +1,26 @@
-#ifndef RADIATION_H
-#define RADIATION_H
+#ifndef TRACER_H
+#define TRACER_H
 
-#include <vector>
 #include <memory>
 
 #include <GLM/glm.hpp>
 #include <GL/glew.h>
 
 #include "graphic.h"
-#include "camera.h"
 
 
 namespace unisim
 {
 
-class Scene;
+struct Viewport;
 class PathTracerInterface;
-
-struct GpuEmitter;
-struct GpuDirectionalLight;
 struct GpuPathTracerCommonParams;
 
 
-class Radiation : public GraphicTask
+class PathTracer : public GraphicTask
 {
 public:
-    Radiation();
+    PathTracer();
 
     void registerDynamicResources(GraphicContext& context) override;
     bool definePathTracerModules(GraphicContext& context) override;
@@ -38,6 +33,7 @@ public:
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
 
+
     static const unsigned int BLUE_NOISE_TEX_COUNT = 64;
     static const unsigned int HALTON_SAMPLE_COUNT = 64;
     static const unsigned int MAX_FRAME_COUNT = 4096;
@@ -45,9 +41,7 @@ public:
 private:
     uint64_t toGpu(
             GraphicContext& context,
-            GpuPathTracerCommonParams& gpuCommonParams,
-            std::vector<GpuEmitter>& gpuEmitters,
-            std::vector<GpuDirectionalLight>& gpuDirectionalLights);
+            GpuPathTracerCommonParams& gpuCommonParams);
 
     ResourceId _blueNoiseTextureResourceIds[BLUE_NOISE_TEX_COUNT];
     ResourceId _blueNoiseBindlessResourceIds[BLUE_NOISE_TEX_COUNT];
@@ -65,11 +59,11 @@ private:
     unsigned int _frameIndex;
     uint64_t _pathTracerHash;
 
-    Viewport _viewport;
+    std::unique_ptr<Viewport> _viewport;
 
-    std::shared_ptr<PathTracerInterface> _pathTracerInterface;
+    std::unique_ptr<PathTracerInterface> _pathTracerInterface;
 };
 
 }
 
-#endif // RADIATION_H
+#endif // TRACER_H

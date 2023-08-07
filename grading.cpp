@@ -7,10 +7,10 @@
 namespace unisim
 {
 
-DeclareProfilePointGpu(Clear);
-DeclareProfilePointGpu(ColorGrade);
+DefineProfilePointGpu(Clear);
+DefineProfilePointGpu(ColorGrade);
 
-DeclareResource(PathTrace);
+DeclareResource(PathTracerResult);
 
 
 ColorGrading::ColorGrading() :
@@ -47,7 +47,7 @@ void ColorGrading::render(GraphicContext& context)
 {
     ResourceManager& resources = context.resources;
 
-    GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTrace)).texId;
+    GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTracerResult)).texId;
 
     {
         ProfileGpu(Clear);

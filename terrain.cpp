@@ -11,8 +11,8 @@
 namespace unisim
 {
 
-DeclareProfilePoint(Terrain);
-DeclareProfilePointGpu(Terrain);
+DefineProfilePoint(Terrain);
+DefineProfilePointGpu(Terrain);
 
 DefineResource(FlatTerrain);
 

@@ -13,6 +13,7 @@
 #include "profiler.h"
 #include "sky.h"
 #include "graphic.h"
+#include "light.h"
 
 
 namespace unisim

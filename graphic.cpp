@@ -3,7 +3,7 @@
 #include <fstream>
 #include <algorithm>
 
-#include "radiation.h"
+#include "light.h"
 #include "scene.h"
 #include "sky.h"
 #include "terrain.h"
@@ -11,6 +11,7 @@
 #include "material.h"
 #include "bvh.h"
 #include "grading.h"
+#include "tracer.h"
 
 
 namespace unisim
@@ -369,7 +370,10 @@ void GraphicTaskGraph::createTaskGraph(const Scene& scene, const Camera& camera)
     addTask(scene.sky()->graphicTask());
     addTask(scene.terrain()->graphicTask());
 
-    _pathTracer.reset( new Radiation());
+    _lighting.reset( new Lighting());
+    addTask(_lighting);
+
+    _pathTracer.reset( new PathTracer());
     addTask(_pathTracer);
 
     _colorGrading.reset(new ColorGrading());

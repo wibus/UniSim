@@ -2,8 +2,6 @@
 
 #include <iostream>
 
-#include <GLM/gtc/constants.hpp>
-
 #include <GLFW/glfw3.h>
 
 #include <imgui/imgui.h>
@@ -11,7 +9,6 @@
 #include <imgui/imgui_impl_opengl3.h>
 
 #include "units.h"
-#include "material.h"
 #include "scene.h"
 #include "project.h"
 #include "ui.h"
@@ -25,15 +22,15 @@
 namespace unisim
 {
 
-DeclareProfilePoint(PollEvents);
-DeclareProfilePoint(Update);
-DeclareProfilePoint(Draw);
-DeclareProfilePoint(ImGui_NewFrame);
-DeclareProfilePoint(ImGui_Render);
-DeclareProfilePoint(SwapBuffers);
+DefineProfilePoint(PollEvents);
+DefineProfilePoint(Update);
+DefineProfilePoint(Draw);
+DefineProfilePoint(ImGui_NewFrame);
+DefineProfilePoint(ImGui_Render);
+DefineProfilePoint(SwapBuffers);
 
-DeclareProfilePointGpu(ImGui);
-DeclareProfilePointGpu(SwapBuffers);
+DefineProfilePointGpu(ImGui);
+DefineProfilePointGpu(SwapBuffers);
 
 Universe& Universe::getInstance()
 {

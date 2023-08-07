@@ -9,7 +9,6 @@
 #include <GL/glew.h>
 
 #include "gravity.h"
-#include "radiation.h"
 #include "camera.h"
 #include "input.h"
 #include "graphic.h"

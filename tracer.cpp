@@ -1,52 +1,19 @@
-#include "radiation.h"
+#include "tracer.h"
 
-#include <iostream>
-#include <string>
-#include <fstream>
-#include <streambuf>
-#include <sstream>
-#include <functional>
-#include <string_view>
-
-#include "GLM/gtc/constants.hpp"
-
-#include "scene.h"
-#include "object.h"
-#include "body.h"
-#include "primitive.h"
-#include "camera.h"
-#include "units.h"
-#include "material.h"
 #include "random.h"
+#include "camera.h"
 #include "profiler.h"
-#include "sky.h"
-#include "terrain.h"
+#include "material.h"
 
 
 namespace unisim
 {
 
-DeclareProfilePointGpu(Radiation);
-DeclareProfilePointGpu(PathTrace);
+DefineProfilePointGpu(PathTracer);
 
-DefineResource(PathTrace);
-DeclareResource(MoonLighting);
-
+DefineResource(PathTracerResult);
 DefineResource(PathTracerCommonParams);
-DefineResource(DirectionalLights);
-DefineResource(Emitters);
 
-struct GpuEmitter
-{
-    GLuint instance;
-    GLuint primitive;
-};
-
-struct GpuDirectionalLight
-{
-    glm::vec4 directionCosThetaMax;
-    glm::vec4 emissionSolidAngle;
-};
 
 struct GpuPathTracerCommonParams
 {
@@ -59,12 +26,13 @@ struct GpuPathTracerCommonParams
 
     GLuint frameIndex;
 
-    GPUBindlessTexture blueNoise[Radiation::BLUE_NOISE_TEX_COUNT];
-    glm::vec4 halton[Radiation::HALTON_SAMPLE_COUNT];
+    GPUBindlessTexture blueNoise[PathTracer::BLUE_NOISE_TEX_COUNT];
+    glm::vec4 halton[PathTracer::HALTON_SAMPLE_COUNT];
 };
 
-Radiation::Radiation() :
-    GraphicTask("Radiation"),
+
+PathTracer::PathTracer() :
+    GraphicTask("Path Tracer"),
     _frameIndex(0),
     _pathTracerHash(0)
 {
@@ -76,16 +44,7 @@ Radiation::Radiation() :
     }
 }
 
-glm::vec3 toLinear(const glm::vec3& sRGB)
-{
-    glm::bvec3 cutoff = glm::lessThan(sRGB, glm::vec3(0.04045));
-    glm::vec3 higher = glm::pow((sRGB + glm::vec3(0.055))/glm::vec3(1.055), glm::vec3(2.4));
-    glm::vec3 lower = sRGB/glm::vec3(12.92);
-
-    return glm::mix(higher, lower, cutoff);
-}
-
-void Radiation::registerDynamicResources(GraphicContext& context)
+void PathTracer::registerDynamicResources(GraphicContext& context)
 {
     ResourceManager& resources = context.resources;
 
@@ -96,7 +55,7 @@ void Radiation::registerDynamicResources(GraphicContext& context)
     }
 }
 
-bool Radiation::definePathTracerModules(GraphicContext& context)
+bool PathTracer::definePathTracerModules(GraphicContext& context)
 {
     if(!addPathTracerModule(_computePathTraceShaderId, context.settings, "shaders/pathtrace.glsl"))
         return false;
@@ -107,7 +66,7 @@ bool Radiation::definePathTracerModules(GraphicContext& context)
     return true;
 }
 
-bool Radiation::defineResources(GraphicContext& context)
+bool PathTracer::defineResources(GraphicContext& context)
 {
     bool ok = true;
 
@@ -123,9 +82,7 @@ bool Radiation::defineResources(GraphicContext& context)
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
     {
-        std::stringstream ss;
-        ss << "LDR_RGBA_" << i << ".png";
-        std::string blueNoiseName = ss.str();
+        std::string blueNoiseName = "LDR_RGBA_" + std::to_string(i) + ".png";
 
         if(Texture* texture = Texture::load("textures/bluenoise64/" + blueNoiseName))
         {
@@ -142,39 +99,23 @@ bool Radiation::defineResources(GraphicContext& context)
     }
 
     GpuPathTracerCommonParams gpuCommonParams;
-    std::vector<GpuEmitter> gpuEmitters;
-    std::vector<GpuDirectionalLight> gpuDirectionalLights;
 
     _hash = toGpu(
         context,
-        gpuCommonParams,
-        gpuEmitters,
-        gpuDirectionalLights);
+        gpuCommonParams);
 
     ok = ok && resources.define<GpuConstantResource>(
                 ResourceName(PathTracerCommonParams), {
                     sizeof(GpuPathTracerCommonParams),
                     &gpuCommonParams});
 
-    ok = ok && resources.define<GpuStorageResource>(
-                ResourceName(Emitters), {
-                    sizeof(gpuEmitters),
-                    gpuEmitters.size(),
-                    gpuEmitters.data()});
-
-    ok = ok && resources.define<GpuStorageResource>(
-                ResourceName(DirectionalLights), {
-                    sizeof(GpuDirectionalLight),
-                    gpuDirectionalLights.size(),
-                    gpuDirectionalLights.data()});
-
-    _viewport = context.camera.viewport();
+    _viewport.reset(new Viewport(context.camera.viewport()));
 
     _pathTraceFormat = GL_RGBA32F;
     ok = ok && resources.define<GpuImageResource>(
-                ResourceName(PathTrace), {
-                    _viewport.width,
-                    _viewport.height,
+                ResourceName(PathTracerResult), {
+                    _viewport->width,
+                    _viewport->height,
                     _pathTraceFormat});
 
     _pathTraceUnit = 0;
@@ -186,7 +127,7 @@ bool Radiation::defineResources(GraphicContext& context)
     return ok;
 }
 
-void Radiation::setPathTracerResources(
+void PathTracer::setPathTracerResources(
         GraphicContext &context,
         PathTracerInterface &interface) const
 {
@@ -194,55 +135,32 @@ void Radiation::setPathTracerResources(
 
     glBindBufferBase(GL_UNIFORM_BUFFER, interface.getUboBindPoint("PathTracerCommonParams"),
                      resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)).bufferId);
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("Emitters"),
-                     resources.get<GpuStorageResource>(ResourceName(Emitters)).bufferId);
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("DirectionalLights"),
-                     resources.get<GpuStorageResource>(ResourceName(DirectionalLights)).bufferId);
-
 }
 
-void Radiation::update(GraphicContext& context)
+void PathTracer::update(GraphicContext& context)
 {
     const Camera& camera = context.camera;
     const Viewport& viewport = camera.viewport();
     ResourceManager& resources = context.resources;
 
-    if(_viewport != viewport)
+    if(*_viewport != viewport)
     {
-        _viewport = viewport;
+        *_viewport = viewport;
         resources.define<GpuImageResource>(
-                    ResourceName(PathTrace), {
+                    ResourceName(PathTracerResult), {
                         viewport.width,
                         viewport.height,
                         _pathTraceFormat});
     }
 
     GpuPathTracerCommonParams gpuCommonParams;
-    std::vector<GpuEmitter> gpuEmitters;
-    std::vector<GpuDirectionalLight> gpuDirectionalLights;
 
     uint64_t hash = toGpu(
         context,
-        gpuCommonParams,
-        gpuEmitters,
-        gpuDirectionalLights);
+        gpuCommonParams);
 
     if(_hash != hash)
     {
-        resources.get<GpuStorageResource>(
-                    ResourceName(Emitters)).update({
-                        sizeof(gpuEmitters),
-                        gpuEmitters.size(),
-                        gpuEmitters.data()});
-
-        resources.get<GpuStorageResource>(
-                    ResourceName(DirectionalLights)).update({
-                        sizeof(GpuDirectionalLight),
-                        gpuDirectionalLights.size(),
-                        gpuDirectionalLights.data()});
-
         _hash = hash;
     }
 
@@ -265,18 +183,16 @@ void Radiation::update(GraphicContext& context)
                     &gpuCommonParams});
 }
 
-void Radiation::render(GraphicContext& context)
+void PathTracer::render(GraphicContext& context)
 {
-    ProfileGpu(Radiation);
+    ProfileGpu(PathTracer);
 
     ResourceManager& resources = context.resources;
 
-    GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTrace)).texId;
+    GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTracerResult)).texId;
 
     if(_frameIndex < MAX_FRAME_COUNT)
     {
-        ProfileGpu(PathTrace);
-
         glUseProgram(_computePathTraceProgramId);
 
         // Set uniforms for sub-systems
@@ -284,17 +200,15 @@ void Radiation::render(GraphicContext& context)
 
         glBindImageTexture(_pathTraceUnit, pathTraceTexId, 0, false, 0, GL_WRITE_ONLY, _pathTraceFormat);
 
-        glDispatchCompute((_viewport.width + 7) / 8, (_viewport.height + 3) / 4, 1);
+        glDispatchCompute((_viewport->width + 7) / 8, (_viewport->height + 3) / 4, 1);
     }
 
     glUseProgram(0);
 }
 
-uint64_t Radiation::toGpu(
+uint64_t PathTracer::toGpu(
         GraphicContext& context,
-        GpuPathTracerCommonParams& gpuCommonParams,
-        std::vector<GpuEmitter>& gpuEmitters,
-        std::vector<GpuDirectionalLight>& gpuDirectionalLights)
+        GpuPathTracerCommonParams& gpuCommonParams)
 {
     ResourceManager& resources = context.resources;
 
@@ -318,40 +232,8 @@ uint64_t Radiation::toGpu(
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
         gpuCommonParams.halton[i] = _halton[i];
 
-    const auto& objects = context.scene.objects();
-    for(std::size_t i = 0; i < objects.size(); ++i)
-    {
-        const Object& object = *objects[i];
-        for(std::size_t p = 0; p < object.primitives().size(); ++p)
-        {
-            const Primitive& primitive = *object.primitives()[p];
-            if(glm::any(glm::greaterThan(primitive.material()->defaultEmissionColor(), glm::vec3())))
-            {
-                GpuEmitter& gpuEmitter = gpuEmitters.emplace_back();
-                gpuEmitter.instance = i;
-                gpuEmitter.primitive = p;
-            }
-        }
-    }
-
-    const auto& directionalLights = context.scene.sky()->directionalLights();
-    gpuDirectionalLights.reserve(directionalLights.size());
-    for(std::size_t i = 0; i < directionalLights.size(); ++i)
-    {
-        const std::shared_ptr<DirectionalLight>& directionalLight = directionalLights[i];
-        GpuDirectionalLight& gpuDirectionalLight = gpuDirectionalLights.emplace_back();
-        gpuDirectionalLight.directionCosThetaMax = glm::vec4(
-                    directionalLight->direction(),
-                    1 - directionalLight->solidAngle() / (2 * glm::pi<float>()));
-        gpuDirectionalLight.emissionSolidAngle = glm::vec4(
-                    directionalLight->emissionColor() * directionalLight->emissionLuminance(),
-                    directionalLight->solidAngle());
-    }
-
     uint64_t hash = 0;
     hash = hashVal(gpuCommonParams, hash);
-    hash = hashVec(gpuEmitters, hash);
-    hash = hashVec(gpuDirectionalLights, hash);
 
     return hash;
 }

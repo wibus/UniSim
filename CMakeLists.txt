@@ -48,8 +48,8 @@ set(EngineFile
     gravity.cpp
     graphic.h
     graphic.cpp
-    radiation.h
-    radiation.cpp
+    light.h
+    light.cpp
     material.h
     material.cpp
     camera.h
@@ -76,6 +76,8 @@ set(EngineFile
     sky.cpp
     terrain.h
     terrain.cpp
+    tracer.h
+    tracer.cpp
     ui.h
     ui.cpp
 )
