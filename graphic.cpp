@@ -10,6 +10,7 @@
 #include "primitive.h"
 #include "material.h"
 #include "bvh.h"
+#include "grading.h"
 
 
 namespace unisim
@@ -370,6 +371,9 @@ void GraphicTaskGraph::createTaskGraph(const Scene& scene, const Camera& camera)
 
     _pathTracer.reset( new Radiation());
     addTask(_pathTracer);
+
+    _colorGrading.reset(new ColorGrading());
+    addTask(_colorGrading);
 }
 
 void GraphicTaskGraph::addTask(const std::shared_ptr<GraphicTask>& task)

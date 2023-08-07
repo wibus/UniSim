@@ -176,7 +176,7 @@ public:
 
     std::vector<GLuint> pathTracerModules() const { return _pathTracerModules; }
 
-    virtual bool definePathTracerModules(GraphicContext& context) = 0;
+    virtual bool definePathTracerModules(GraphicContext& context);
 
     virtual void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
 

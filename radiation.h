@@ -49,9 +49,6 @@ private:
             std::vector<GpuEmitter>& gpuEmitters,
             std::vector<GpuDirectionalLight>& gpuDirectionalLights);
 
-    GLuint _vbo;
-    GLuint _vao;
-
     ResourceId _blueNoiseTextureResourceIds[BLUE_NOISE_TEX_COUNT];
     ResourceId _blueNoiseBindlessResourceIds[BLUE_NOISE_TEX_COUNT];
 
@@ -64,7 +61,6 @@ private:
     GLuint _pathTraceUtilsShaderId;
     GLuint _computePathTraceShaderId;
     GLuint _computePathTraceProgramId;
-    GLuint _colorGradingId;
 
     unsigned int _frameIndex;
     uint64_t _pathTracerHash;

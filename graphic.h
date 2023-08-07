@@ -17,6 +17,8 @@ class Camera;
 class Radiation;
 class MaterialDatabase;
 class BVH;
+class ColorGrading;
+
 
 std::string loadSource(const std::string& fileName);
 
@@ -116,6 +118,7 @@ private:
     std::shared_ptr<Radiation> _pathTracer;
     std::shared_ptr<MaterialDatabase> _materials;
     std::shared_ptr<BVH> _bvh;
+    std::shared_ptr<ColorGrading> _colorGrading;
 };
 
 

@@ -42,6 +42,8 @@ set(EngineFile
     universe.cpp
     input.h
     input.cpp
+    grading.h
+    grading.cpp
     gravity.h
     gravity.cpp
     graphic.h

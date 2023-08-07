@@ -27,9 +27,7 @@ namespace unisim
 {
 
 DeclareProfilePointGpu(Radiation);
-DeclareProfilePointGpu(Clear);
 DeclareProfilePointGpu(PathTrace);
-DeclareProfilePointGpu(ColorGrade);
 
 DefineResource(PathTrace);
 DeclareResource(MoonLighting);
@@ -120,8 +118,6 @@ bool Radiation::defineResources(GraphicContext& context)
     // Generate programs
     if(!generateComputeProgram(_computePathTraceProgramId, "pathtracer", pathTracerModules))
         return false;
-    if(!generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag"))
-        return false;
 
     _pathTracerInterface.reset(new PathTracerInterface(_computePathTraceProgramId));
 
@@ -144,24 +140,6 @@ bool Radiation::defineResources(GraphicContext& context)
             _blueNoiseBindlessResourceIds[i] = Invalid_ResourceId;
         }
     }
-
-
-    float points[] = {
-      -1.0f, -1.0f,  0.0f,
-       3.0f, -1.0f,  0.0f,
-      -1.0f,  3.0f,  0.0f,
-    };
-
-    glGenBuffers(1, &_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-    glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), points, GL_STATIC_DRAW);
-
-    glGenVertexArrays(1, &_vao);
-    glBindVertexArray(_vao);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-
 
     GpuPathTracerCommonParams gpuCommonParams;
     std::vector<GpuEmitter> gpuEmitters;
@@ -309,29 +287,7 @@ void Radiation::render(GraphicContext& context)
         glDispatchCompute((_viewport.width + 7) / 8, (_viewport.height + 3) / 4, 1);
     }
 
-    {
-        ProfileGpu(Clear);
-
-        glViewport(0, 0, _viewport.width, _viewport.height);
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
-
-    {
-        ProfileGpu(ColorGrade);
-
-        glUseProgram(_colorGradingId);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, pathTraceTexId);
-
-        glBindVertexArray(_vao);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 3);
-    }
-
     glUseProgram(0);
-
-    glFlush();
 }
 
 uint64_t Radiation::toGpu(

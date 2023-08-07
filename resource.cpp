@@ -251,6 +251,11 @@ PathTracerProvider::~PathTracerProvider()
 {
 }
 
+bool PathTracerProvider::definePathTracerModules(GraphicContext& context)
+{
+    return true;
+}
+
 void PathTracerProvider::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
 }
