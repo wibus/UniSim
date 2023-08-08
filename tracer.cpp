@@ -9,6 +9,7 @@
 namespace unisim
 {
 
+DefineProfilePoint(PathTracer);
 DefineProfilePointGpu(PathTracer);
 
 DefineResource(PathTracerResult);
@@ -139,6 +140,8 @@ void PathTracer::setPathTracerResources(
 
 void PathTracer::update(GraphicContext& context)
 {
+    Profile(PathTracer);
+
     const Camera& camera = context.camera;
     const Viewport& viewport = camera.viewport();
     ResourceManager& resources = context.resources;

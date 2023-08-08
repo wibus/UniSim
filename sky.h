@@ -30,7 +30,7 @@ class Texture;
 class Body;
 class DirectionalLight;
 
-class PhysicalSkyCommonParams;
+struct PhysicalSkyCommonParams;
 
 
 class SkyLocalization

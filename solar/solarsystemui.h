@@ -7,7 +7,7 @@
 namespace unisim
 {
 
-class SolarSystemUi : public Ui
+class SolarSystemUi : public UiEngineTask
 {
 public:
     SolarSystemUi();

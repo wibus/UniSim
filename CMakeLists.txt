@@ -46,6 +46,8 @@ set(EngineFile
     grading.cpp
     gravity.h
     gravity.cpp
+    engine.h
+    engine.cpp
     graphic.h
     graphic.cpp
     light.h

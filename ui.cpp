@@ -4,6 +4,8 @@
 
 #include <GLM/gtc/constants.hpp>
 
+#include <imgui/imgui_impl_opengl3.h>
+
 #include "scene.h"
 #include "object.h"
 #include "body.h"
@@ -19,24 +21,31 @@
 namespace unisim
 {
 
-Ui::Ui(bool showUi) :
+DefineProfilePoint(Ui);
+
+DefineProfilePoint(ImGui_Render);
+DefineProfilePointGpu(ImGui_Render);
+
+
+UiEngineTask::UiEngineTask(bool showUi) :
+    EngineTask("UI"),
     _showUi(showUi)
 {
 
 }
 
-Ui::~Ui()
+UiEngineTask::~UiEngineTask()
 {
 
 }
 
 
-void Ui::show()
+void UiEngineTask::show()
 {
     _showUi = true;
 }
 
-void Ui::hide()
+void UiEngineTask::hide()
 {
     _showUi = false;
 }
@@ -351,26 +360,28 @@ void displayObjects(Scene& scene)
     }
 }
 
-void Ui::render(const ResourceManager& resources, Scene &scene, Camera& camera)
+void UiEngineTask::update(EngineContext& context)
 {
+    Profile(Ui);
+
     if(!_showUi)
         return;
 
-    if(ImGui::Begin(scene.name().c_str(), &_showUi))
+    if(ImGui::Begin(context.scene.name().c_str(), &_showUi))
     {
         if(ImGui::BeginTabBar("#tabs"))
         {
             if(ImGui::BeginTabItem("Camera"))
             {
-                displayCamera(camera);
+                displayCamera(context.camera);
                 ImGui::EndTabItem();
             }
 
             if(ImGui::BeginTabItem("Scene"))
             {
-                displaySky(resources, scene);
-                displayDirectionalLights(scene);
-                displayObjects(scene);
+                displaySky(context.resources, context.scene);
+                displayDirectionalLights(context.scene);
+                displayObjects(context.scene);
                 ImGui::EndTabItem();
             }
 
@@ -385,6 +396,22 @@ void Ui::render(const ResourceManager& resources, Scene &scene, Camera& camera)
     }
 
     ImGui::End();
+}
+
+
+UiGraphicTask::UiGraphicTask() :
+    GraphicTask("UI")
+{
+
+}
+
+void UiGraphicTask::render(GraphicContext& context)
+{
+    Profile(ImGui_Render);
+    ProfileGpu(ImGui_Render);
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 }

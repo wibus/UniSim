@@ -5,10 +5,13 @@
 #include "body.h"
 #include "primitive.h"
 #include "material.h"
+#include "profiler.h"
 
 
 namespace unisim
 {
+
+DefineProfilePoint(BVH);
 
 DefineResource(Primitives);
 DefineResource(Meshes);
@@ -153,6 +156,8 @@ void BVH::setPathTracerResources(
 
 void BVH::update(GraphicContext& context)
 {
+    Profile(BVH);
+
     std::vector<GpuPrimitive> gpuPrimitives;
     std::vector<GpuMesh> gpuMeshes;
     std::vector<GpuSphere> gpuSpheres;

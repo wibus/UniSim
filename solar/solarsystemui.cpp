@@ -5,7 +5,7 @@ namespace unisim
 {
 
 SolarSystemUi::SolarSystemUi() :
-    Ui(true)
+    UiEngineTask(true)
 {
 
 }

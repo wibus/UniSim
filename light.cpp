@@ -13,6 +13,8 @@
 namespace unisim
 {
 
+DefineProfilePoint(Lighting);
+
 DefineResource(DirectionalLights);
 DefineResource(Emitters);
 
@@ -101,6 +103,8 @@ void Lighting::setPathTracerResources(
 
 void Lighting::update(GraphicContext& context)
 {
+    Profile(Lighting);
+
     ResourceManager& resources = context.resources;
 
     std::vector<GpuEmitter> gpuEmitters;

@@ -12,10 +12,15 @@
 #include "bvh.h"
 #include "grading.h"
 #include "tracer.h"
+#include "ui.h"
+#include "profiler.h"
 
 
 namespace unisim
 {
+
+DefineProfilePointGpu(Clear);
+
 
 const std::string GLSL_VERSION__HEADER = "#version 440\n";
 
@@ -292,6 +297,23 @@ bool GraphicTask::addPathTracerModule(
 }
 
 
+ClearSwapChain::ClearSwapChain() :
+    GraphicTask("Clear")
+{
+
+}
+
+void ClearSwapChain::render(GraphicContext& context)
+{
+    ProfileGpu(Clear);
+
+    const Viewport& viewport = context.camera.viewport();
+    glViewport(0, 0, viewport.width, viewport.height);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+
 GraphicTaskGraph::GraphicTaskGraph()
 {
     _settings.unbiased = false;
@@ -299,9 +321,11 @@ GraphicTaskGraph::GraphicTaskGraph()
 
 bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 {
-    createTaskGraph(scene, camera);
+    _materials.reset(new MaterialDatabase());
 
     GraphicContext context = {scene, camera, _resources, *_materials, _settings};
+
+    createTaskGraph(context);
 
     for(const auto& task : _tasks)
     {
@@ -359,25 +383,17 @@ void GraphicTaskGraph::execute(const Scene& scene, const Camera& camera)
     }
 }
 
-void GraphicTaskGraph::createTaskGraph(const Scene& scene, const Camera& camera)
+void GraphicTaskGraph::createTaskGraph(GraphicContext& context)
 {
-    _materials.reset(new MaterialDatabase());
     addTask(_materials);
-
-    _bvh.reset(new BVH());
-    addTask(_bvh);
-
-    addTask(scene.sky()->graphicTask());
-    addTask(scene.terrain()->graphicTask());
-
-    _lighting.reset( new Lighting());
-    addTask(_lighting);
-
-    _pathTracer.reset( new PathTracer());
-    addTask(_pathTracer);
-
-    _colorGrading.reset(new ColorGrading());
-    addTask(_colorGrading);
+    addTask(std::shared_ptr<GraphicTask>(new BVH()));
+    addTask(context.scene.sky()->graphicTask());
+    addTask(context.scene.terrain()->graphicTask());
+    addTask(std::shared_ptr<GraphicTask>(new Lighting()));
+    addTask(std::shared_ptr<GraphicTask>(new PathTracer()));
+    addTask(std::shared_ptr<GraphicTask>(new ClearSwapChain()));
+    addTask(std::shared_ptr<GraphicTask>(new ColorGrading()));
+    addTask(std::shared_ptr<GraphicTask>(new UiGraphicTask()));
 }
 
 void GraphicTaskGraph::addTask(const std::shared_ptr<GraphicTask>& task)

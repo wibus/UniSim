@@ -11,9 +11,9 @@
 #include "units.h"
 #include "scene.h"
 #include "project.h"
-#include "ui.h"
 #include "profiler.h"
 #include "terrain.h"
+#include "ui.h"
 
 #include "solar/solarsystemproject.h"
 #include "pathtracer/pathtracerproject.h"
@@ -26,10 +26,8 @@ DefineProfilePoint(PollEvents);
 DefineProfilePoint(Update);
 DefineProfilePoint(Draw);
 DefineProfilePoint(ImGui_NewFrame);
-DefineProfilePoint(ImGui_Render);
 DefineProfilePoint(SwapBuffers);
 
-DefineProfilePointGpu(ImGui);
 DefineProfilePointGpu(SwapBuffers);
 
 Universe& Universe::getInstance()
@@ -160,7 +158,7 @@ int Universe::launch(int argc, char** argv)
     glewExperimental = GL_TRUE;
     glewInit();
 
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
 
     glViewport(0, 0, _viewport.width, _viewport.height);
 
@@ -206,13 +204,6 @@ int Universe::launch(int argc, char** argv)
         draw();
 
         {
-            Profile(ImGui_Render);
-            ProfileGpu(ImGui);
-            ImGui::Render();
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        }
-
-        {
             Profile(SwapBuffers);
             ProfileGpu(SwapBuffers);
             glfwSwapBuffers(window);
@@ -242,10 +233,10 @@ void Universe::handleKeyboard(const KeyboardEvent& event)
     {
         if(event.key == GLFW_KEY_F10)
         {
-            if(_project->ui().isShown())
-                _project->ui().hide();
+            if(_project->ui()->isShown())
+                _project->ui()->hide();
             else
-                _project->ui().show();
+                _project->ui()->show();
         }
     }
 
@@ -313,8 +304,16 @@ bool Universe::setup()
     addObjects(_project->scene().terrain()->objects());
 
     bool ok = true;
-    ok = ok && _gravity.initialize(_project->scene());
-    ok = ok && _graphic.initialize(_project->scene(), _project->cameraMan().camera());
+
+    ok = ok && _graphic.initialize(
+                _project->scene(),
+                _project->cameraMan().camera());
+
+    ok = ok && _engine.initialize(
+                _project->scene(),
+                _project->cameraMan().camera(),
+                _project->ui(),
+                _graphic.resources());
 
     _dt = 0;
     _lastTime = std::chrono::high_resolution_clock::now();
@@ -333,8 +332,13 @@ void Universe::update()
 
     _dt *= 60 * 60 * 24 * _timeFactor;
 
-    _gravity.update(_project->scene(), _dt);
     _project->cameraMan().update(_inputs, _dt);
+
+    _engine.execute(
+        _dt,
+        _project->scene(),
+        _project->cameraMan().camera(),
+        _graphic.resources());
 }
 
 void Universe::draw()
@@ -342,11 +346,6 @@ void Universe::draw()
     Profile(Draw);
 
     _graphic.execute(
-        _project->scene(),
-        _project->cameraMan().camera());
-
-    _project->ui().render(
-        _graphic.resources(),
         _project->scene(),
         _project->cameraMan().camera());
 }

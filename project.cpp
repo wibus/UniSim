@@ -17,7 +17,7 @@ Project::~Project()
 
 }
 
-void Project::reset(Scene* scene, Ui* ui)
+void Project::reset(Scene* scene, UiEngineTask* ui)
 {
     _scene.reset(scene);
 

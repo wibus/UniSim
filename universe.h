@@ -8,10 +8,10 @@
 // To prevent glfw3.h from including gl.h
 #include <GL/glew.h>
 
-#include "gravity.h"
 #include "camera.h"
 #include "input.h"
 #include "graphic.h"
+#include "engine.h"
 
 
 class GLFWwindow;
@@ -51,8 +51,8 @@ public:
     Inputs _inputs;
 
     // Systems
-    Gravity _gravity;
     GraphicTaskGraph _graphic;
+    EngineTaskGraph  _engine;
 
     // Time
     double _dt;

@@ -12,7 +12,7 @@ namespace unisim
 
 class Scene;
 class CameraMan;
-class Ui;
+class UiEngineTask;
 
 
 class Project
@@ -29,11 +29,10 @@ public:
     CameraMan& cameraMan(int index = 0);
     const CameraMan& cameraMan(int index = 0) const;
 
-    Ui& ui();
-    const Ui& ui() const;
+    std::shared_ptr<UiEngineTask> ui() const { return _ui; }
 
 protected:
-    void reset(Scene* scene, Ui* ui);
+    void reset(Scene* scene, UiEngineTask* ui);
     int addCameraMan(CameraMan* cameraMan);
 
 private:
@@ -41,7 +40,7 @@ private:
 
     std::vector<std::shared_ptr<CameraMan>> _cameraMen;
 
-    std::unique_ptr<Ui> _ui;
+    std::shared_ptr<UiEngineTask> _ui;
 };
 
 
@@ -65,16 +64,6 @@ inline CameraMan& Project::cameraMan(int index)
 inline const CameraMan& Project::cameraMan(int index) const
 {
     return *_cameraMen[index];
-}
-
-inline Ui& Project::ui()
-{
-    return *_ui;
-}
-
-inline const Ui& Project::ui() const
-{
-    return *_ui;
 }
 
 }

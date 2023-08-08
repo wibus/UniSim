@@ -4,24 +4,26 @@
 #include "scene.h"
 #include "object.h"
 #include "body.h"
+#include "profiler.h"
 
 
 namespace unisim
 {
 
-Gravity::Gravity()
+DefineProfilePoint(Gravity);
+
+
+Gravity::Gravity() :
+    EngineTask("Gravity")
 {
 
 }
 
-bool Gravity::initialize(const Scene& scene) const
+void Gravity::update(EngineContext& context)
 {
-    return true;
-}
+    Profile(Gravity);
 
-void Gravity::update(Scene& scene, double dt)
-{
-    std::vector<std::shared_ptr<Object>>& objects = scene.objects();
+    std::vector<std::shared_ptr<Object>>& objects = context.scene.objects();
 
     if(objects.empty())
         return;
@@ -47,10 +49,10 @@ void Gravity::update(Scene& scene, double dt)
             double F = G * bodyA.mass() * bodyB.mass() / dSquared;
 
             if(!bodyA.isStatic())
-                bodyA.setLinearVelocity(bodyA.linearVelocity() + dt * U * (F / bodyA.mass()));
+                bodyA.setLinearVelocity(bodyA.linearVelocity() + context.dt * U * (F / bodyA.mass()));
 
             if(!bodyB.isStatic())
-                bodyB.setLinearVelocity(bodyB.linearVelocity() - dt * U * (F / bodyB.mass()));
+                bodyB.setLinearVelocity(bodyB.linearVelocity() - context.dt * U * (F / bodyB.mass()));
         }
     }
 
@@ -64,8 +66,8 @@ void Gravity::update(Scene& scene, double dt)
         if(body.isStatic())
             continue;
 
-        body.setQuaternion(quatMul(body.quaternion(), quat(glm::dvec3(0, 0, 1), body.angularSpeed() * dt)));
-        body.setPosition(body.position() + dt * body.linearVelocity());
+        body.setQuaternion(quatMul(body.quaternion(), quat(glm::dvec3(0, 0, 1), body.angularSpeed() * context.dt)));
+        body.setPosition(body.position() + context.dt * body.linearVelocity());
     }
 }
 

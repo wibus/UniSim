@@ -7,7 +7,7 @@
 namespace unisim
 {
 
-class PathTracerUi : public Ui
+class PathTracerUi : public UiEngineTask
 {
 public:
     PathTracerUi();

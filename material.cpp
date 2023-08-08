@@ -15,10 +15,13 @@
 #include "primitive.h"
 #include "object.h"
 #include "resource.h"
+#include "profiler.h"
 
 
 namespace unisim
 {
+
+DefineProfilePoint(Material);
 
 DefineResource(MaterialDatabase);
 DefineResource(BindlessTextures);
@@ -508,6 +511,8 @@ void MaterialDatabase::setPathTracerResources(
 
 void MaterialDatabase::update(GraphicContext& context)
 {
+    Profile(Material);
+
     std::vector<GpuMaterial> gpuMaterials;
     std::vector<GPUBindlessTexture> gpuTextures;
     uint64_t hash = toGpu(context, gpuTextures, gpuMaterials);

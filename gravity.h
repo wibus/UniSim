@@ -4,20 +4,20 @@
 #include <vector>
 #include <memory>
 
+#include "engine.h"
+
 
 namespace unisim
 {
 
 class Scene;
 
-class Gravity
+class Gravity : public EngineTask
 {
 public:
     Gravity();
 
-    bool initialize(const Scene& scene) const;
-
-    void update(Scene& scene, double dt);
+    void update(EngineContext& context) override;
 
 public:
 };

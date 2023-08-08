@@ -19,6 +19,7 @@ class MaterialDatabase;
 class BVH;
 class PathTracer;
 class ColorGrading;
+class UiGraphicTask;
 
 
 std::string loadSource(const std::string& fileName);
@@ -97,6 +98,15 @@ private:
 };
 
 
+class ClearSwapChain : public GraphicTask
+{
+public:
+    ClearSwapChain();
+
+    void render(GraphicContext& context) override;
+};
+
+
 class GraphicTaskGraph
 {
 public:
@@ -109,18 +119,13 @@ public:
     const ResourceManager& resources() const { return _resources; }
 
 private:
-    void createTaskGraph(const Scene& scene, const Camera& camera);
+    void createTaskGraph(GraphicContext& context);
     void addTask(const std::shared_ptr<GraphicTask>& task);
 
     GraphicSettings _settings;
     ResourceManager _resources;
     std::vector<std::shared_ptr<GraphicTask>> _tasks;
-
-    std::shared_ptr<PathTracer> _pathTracer;
-    std::shared_ptr<Lighting> _lighting;
     std::shared_ptr<MaterialDatabase> _materials;
-    std::shared_ptr<BVH> _bvh;
-    std::shared_ptr<ColorGrading> _colorGrading;
 };
 
 

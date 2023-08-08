@@ -1,6 +1,8 @@
 #ifndef UI_H
 #define UI_H
 
+#include "engine.h"
+#include "graphic.h"
 
 
 namespace unisim
@@ -11,20 +13,29 @@ class Camera;
 class ResourceManager;
 
 
-class Ui
+class UiEngineTask : public EngineTask
 {
 public:
-    Ui(bool showUi = false);
-    virtual ~Ui();
+    UiEngineTask(bool showUi = false);
+    virtual ~UiEngineTask();
 
     void show();
     void hide();
     bool isShown() const { return _showUi; }
 
-    virtual void render(const ResourceManager& resources, Scene& scene, Camera &camera);
+    virtual void update(EngineContext& context);
 
 protected:
     bool _showUi;
+};
+
+
+class UiGraphicTask : public GraphicTask
+{
+public:
+    UiGraphicTask();
+
+    void render(GraphicContext& context) override;
 };
 
 }
