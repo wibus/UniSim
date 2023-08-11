@@ -290,7 +290,6 @@ void displayObjects(Scene& scene)
                                     Mesh& mesh = static_cast<Mesh&>(primitive);
                                     ImGui::Text("Vertex count: %u", (uint)mesh.vertices().size());
                                     ImGui::Text("Triangle count: %u", (uint)mesh.triangles().size());
-                                    ImGui::Text("Sub-mesh count: %u", (uint)mesh.subMeshes().size());
                                 }
                                 break;
                             case Primitive::Sphere :

@@ -19,20 +19,14 @@ using Index = uint16_t;
 
 struct Vertex
 {
-    glm::vec3 p;
-    glm::vec3 n;
+    glm::vec3 position;
+    glm::vec3 nornal;
+    glm::vec2 uv;
 };
 
 struct Triangle
 {
     Index v[3];
-};
-
-struct SubMesh
-{
-    uint32_t triangleStart;
-    uint32_t triangleEnd;
-    std::shared_ptr<Material> _material;
 };
 
 
@@ -76,12 +70,12 @@ public:
 
     const std::vector<Vertex>& vertices() const { return _vertices; }
     const std::vector<Triangle>& triangles() const { return _triangles; }
-    const std::vector<SubMesh>& subMeshes() const { return _subMeshes; }
+
+    static Mesh cube(float length, float uvScale);
 
 private:
     std::vector<Vertex> _vertices;
     std::vector<Triangle> _triangles;
-    std::vector<SubMesh> _subMeshes;
 };
 
 

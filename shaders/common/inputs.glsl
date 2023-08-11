@@ -38,6 +38,26 @@ layout (std430) buffer Instances
     Instance instances[];
 };
 
+layout (std430) buffer BvhNodes
+{
+    BvhNode bvhNodes[];
+};
+
+layout (std430) buffer Triangles
+{
+    Triangle triangles[];
+};
+
+layout (std430) buffer VerticesPos
+{
+    VertexPos verticesPos[];
+};
+
+layout (std430) buffer VerticesData
+{
+    VertexData verticesData[];
+};
+
 layout (std430) buffer Emitters
 {
     Emitter emitters[];

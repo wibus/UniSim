@@ -164,6 +164,10 @@ PathTracerInterface::PathTracerInterface(GLuint programId) :
         declareSsbo("Spheres") &&
         declareSsbo("Planes") &&
         declareSsbo("Instances") &&
+        declareSsbo("BvhNodes") &&
+        declareSsbo("Triangles") &&
+        declareSsbo("VerticesPos") &&
+        declareSsbo("VerticesData") &&
         declareSsbo("Emitters") &&
         declareSsbo("DirectionalLights") &&
         declareSsbo("Textures") &&
@@ -186,7 +190,16 @@ bool PathTracerInterface::declareUbo(const std::string& blockName)
     GLuint location = glGetProgramResourceIndex(_programId, GL_UNIFORM_BLOCK, blockName.c_str());
 
     if(location == GL_INVALID_ENUM)
+    {
+        std::cerr << "Invalid uniform interface type\n";
         return false;
+    }
+
+    if(location == GL_INVALID_INDEX)
+    {
+        std::cerr << "Could not find uniform block named " << blockName << std::endl;
+        return false;
+    }
 
     glShaderStorageBlockBinding(_programId, location, _nextUboBindPoint);
     _uboBindPoints[blockName] = _nextUboBindPoint;
@@ -202,7 +215,16 @@ bool PathTracerInterface::declareSsbo(const std::string& blockName)
     GLuint location = glGetProgramResourceIndex(_programId, GL_SHADER_STORAGE_BLOCK, blockName.c_str());
 
     if(location == GL_INVALID_ENUM)
+    {
+        std::cerr << "Invalid uniform interface type\n";
         return false;
+    }
+
+    if(location == GL_INVALID_INDEX)
+    {
+        std::cerr << "Could not find SSBO block named " << blockName << std::endl;
+        return false;
+    }
 
     glShaderStorageBlockBinding(_programId, location, _nextSsboBindPoint);
     _ssboBindPoints[blockName] = _nextSsboBindPoint;
@@ -215,19 +237,21 @@ bool PathTracerInterface::declareSsbo(const std::string& blockName)
 GLuint PathTracerInterface::getUboBindPoint(const std::string& blockName) const
 {
     auto it = _uboBindPoints.find(blockName);
+    assert(it != _ssboBindPoints.end());
     if(it != _uboBindPoints.end())
         return it->second;
 
-    return -1;
+    return GL_INVALID_INDEX;
 }
 
 GLuint PathTracerInterface::getSsboBindPoint(const std::string& blockName) const
 {
     auto it = _ssboBindPoints.find(blockName);
+    assert(it != _ssboBindPoints.end());
     if(it != _ssboBindPoints.end())
         return it->second;
 
-    return -1;
+    return GL_INVALID_INDEX;
 }
 
 

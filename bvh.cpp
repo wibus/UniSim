@@ -18,6 +18,10 @@ DefineResource(Meshes);
 DefineResource(Spheres);
 DefineResource(Planes);
 DefineResource(Instances);
+DefineResource(BvhNodes);
+DefineResource(Triangles);
+DefineResource(VerticesPos);
+DefineResource(VerticesData);
 
 struct GpuPrimitive
 {
@@ -29,12 +33,7 @@ struct GpuPrimitive
 
 struct GpuMesh
 {
-    GLuint vertexStart;
-    GLuint vertexEnd;
-    GLuint triangleStart;
-    GLuint triangleEnd;
-    GLuint submeshStart;
-    GLuint submeshEnd;
+    GLuint bvhNode;
 };
 
 struct GpuSphere
@@ -57,6 +56,33 @@ struct GpuInstance
 
     int pad1;
     int pad2;
+};
+
+struct GpuBvhNode
+{
+    glm::vec3 aabbMin;
+    unsigned int leftFirst;
+    glm::vec3 aabbMax;
+    unsigned int triCount;
+};
+
+struct GpuTriangle
+{
+    uint v0;
+    uint v1;
+    uint v2;
+};
+
+struct GpuVertexPos
+{
+    glm::vec4 position;
+};
+
+struct GpuVertexData
+{
+    glm::vec4 normal;
+    glm::vec2 uv;
+    glm::vec2 pad1;
 };
 
 
@@ -87,13 +113,21 @@ bool BVH::defineResources(GraphicContext& context)
     std::vector<GpuSphere> gpuSpheres;
     std::vector<GpuPlane> gpuPlanes;
     std::vector<GpuInstance> gpuInstances;
+    std::vector<GpuBvhNode> gpuBvhNodes;
+    std::vector<GpuTriangle> gpuTriangles;
+    std::vector<GpuVertexPos> gpuVerticesPos;
+    std::vector<GpuVertexData> gpuVerticesData;
 
     _hash = toGpu(context,
           gpuPrimitives,
           gpuMeshes,
           gpuSpheres,
           gpuPlanes,
-          gpuInstances);
+          gpuInstances,
+          gpuBvhNodes,
+          gpuTriangles,
+          gpuVerticesPos,
+          gpuVerticesData);
 
     ResourceManager& resources = context.resources;
 
@@ -129,6 +163,30 @@ bool BVH::defineResources(GraphicContext& context)
             gpuInstances.size(),
             gpuInstances.data()});
 
+    ok = ok && resources.define<GpuStorageResource>(
+        ResourceName(BvhNodes), {
+            sizeof(GpuBvhNode),
+            gpuBvhNodes.size(),
+            gpuBvhNodes.data()});
+
+    ok = ok && resources.define<GpuStorageResource>(
+        ResourceName(Triangles), {
+            sizeof(GpuTriangle),
+            gpuTriangles.size(),
+            gpuTriangles.data()});
+
+    ok = ok && resources.define<GpuStorageResource>(
+        ResourceName(VerticesPos), {
+            sizeof(GpuVertexPos),
+            gpuVerticesPos.size(),
+            gpuVerticesPos.data()});
+
+    ok = ok && resources.define<GpuStorageResource>(
+        ResourceName(VerticesData), {
+            sizeof(GpuVertexData),
+            gpuVerticesData.size(),
+            gpuVerticesData.data()});
+
     return ok;
 }
 
@@ -152,6 +210,18 @@ void BVH::setPathTracerResources(
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("Instances"),
                      resources.get<GpuStorageResource>(ResourceName(Instances)).bufferId);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("BvhNodes"),
+                     resources.get<GpuStorageResource>(ResourceName(BvhNodes)).bufferId);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("Triangles"),
+                     resources.get<GpuStorageResource>(ResourceName(Triangles)).bufferId);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("VerticesPos"),
+                     resources.get<GpuStorageResource>(ResourceName(VerticesPos)).bufferId);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("VerticesData"),
+                     resources.get<GpuStorageResource>(ResourceName(VerticesData)).bufferId);
 }
 
 void BVH::update(GraphicContext& context)
@@ -163,13 +233,21 @@ void BVH::update(GraphicContext& context)
     std::vector<GpuSphere> gpuSpheres;
     std::vector<GpuPlane> gpuPlanes;
     std::vector<GpuInstance> gpuInstances;
+    std::vector<GpuBvhNode> gpuBvhNodes;
+    std::vector<GpuTriangle> gpuTriangles;
+    std::vector<GpuVertexPos> gpuVerticesPos;
+    std::vector<GpuVertexData> gpuVerticesData;
 
     uint64_t hash = toGpu(context,
           gpuPrimitives,
           gpuMeshes,
           gpuSpheres,
           gpuPlanes,
-          gpuInstances);
+          gpuInstances,
+          gpuBvhNodes,
+          gpuTriangles,
+          gpuVerticesPos,
+          gpuVerticesData);
 
     if(_hash == hash)
         return;
@@ -207,6 +285,30 @@ void BVH::update(GraphicContext& context)
             sizeof(GpuInstance),
             gpuInstances.size(),
             gpuInstances.data()});
+
+    resources.get<GpuStorageResource>(
+        ResourceName(BvhNodes)).update({
+            sizeof(GpuBvhNode),
+            gpuBvhNodes.size(),
+            gpuBvhNodes.data()});
+
+    resources.get<GpuStorageResource>(
+        ResourceName(Triangles)).update({
+            sizeof(GpuTriangle),
+            gpuTriangles.size(),
+            gpuTriangles.data()});
+
+    resources.get<GpuStorageResource>(
+        ResourceName(VerticesPos)).update({
+            sizeof(GpuVertexPos),
+            gpuVerticesPos.size(),
+            gpuVerticesPos.data()});
+
+    resources.get<GpuStorageResource>(
+        ResourceName(VerticesData)).update({
+            sizeof(GpuVertexData),
+            gpuVerticesData.size(),
+            gpuVerticesData.data()});
 }
 
 void BVH::render(GraphicContext& context)
@@ -219,7 +321,11 @@ uint64_t BVH::toGpu(
         std::vector<GpuMesh>& gpuMeshes,
         std::vector<GpuSphere>& gpuSpheres,
         std::vector<GpuPlane>& gpuPlanes,
-        std::vector<GpuInstance>& gpuInstances)
+        std::vector<GpuInstance>& gpuInstances,
+        std::vector<GpuBvhNode>& gpuBvhNodes,
+        std::vector<GpuTriangle>& gpuTriangles,
+        std::vector<GpuVertexPos>& gpuVerticesPos,
+        std::vector<GpuVertexData>& gpuVerticesData)
 {
     const auto& objects = context.scene.objects();
     for(const std::shared_ptr<Object>& object : objects)
@@ -244,12 +350,31 @@ uint64_t BVH::toGpu(
 
                 const Mesh& mesh = static_cast<Mesh&>(*primitive.get());
                 GpuMesh& gpuMesh = gpuMeshes.emplace_back();
-                gpuMesh.vertexStart = 0;
-                gpuMesh.vertexEnd = 0;
-                gpuMesh.triangleStart = 0;
-                gpuMesh.triangleEnd = 0;
-                gpuMesh.submeshStart = 0;
-                gpuMesh.submeshEnd = 0;
+                gpuMesh.bvhNode = gpuBvhNodes.size();
+
+                GpuBvhNode& gpuBvhNode = gpuBvhNodes.emplace_back();
+                gpuBvhNode.leftFirst = gpuTriangles.size();
+                gpuBvhNode.triCount = mesh.triangles().size();
+                gpuBvhNode.aabbMin = glm::vec3(MAXFLOAT);
+                gpuBvhNode.aabbMax = -glm::vec3(MAXFLOAT);
+
+                uint32_t vertexOffset = gpuVerticesPos.size();
+                for(const Vertex& vert : mesh.vertices())
+                {
+                    gpuVerticesPos.push_back({glm::vec4(vert.position, 1.0f)});
+                    gpuVerticesData.push_back({glm::vec4(vert.nornal, 0.0), {vert.uv}, {0, 0}});
+                    gpuBvhNode.aabbMin = glm::min(vert.position, gpuBvhNode.aabbMin);
+                    gpuBvhNode.aabbMax = glm::max(vert.position, gpuBvhNode.aabbMax);
+                }
+
+                for(const Triangle& tri : mesh.triangles())
+                {
+                    gpuTriangles.push_back({
+                        vertexOffset + tri.v[0],
+                        vertexOffset + tri.v[1],
+                        vertexOffset + tri.v[2]
+                    });
+                }
             }
                 break;
             case Primitive::Sphere :
@@ -287,6 +412,10 @@ uint64_t BVH::toGpu(
     hash = hashVec(gpuSpheres, hash);
     hash = hashVec(gpuPlanes, hash);
     hash = hashVec(gpuInstances, hash);
+    hash = hashVec(gpuBvhNodes, hash);
+    hash = hashVec(gpuTriangles, hash);
+    hash = hashVec(gpuVerticesPos, hash);
+    hash = hashVec(gpuVerticesData, hash);
 
     return hash;
 }

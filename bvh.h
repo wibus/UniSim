@@ -14,15 +14,10 @@ struct GpuMesh;
 struct GpuSphere;
 struct GpuPlane;
 struct GpuInstance;
-
-
-struct BVHNode
-{
-    glm::vec3 aabbMin;
-    unsigned int leftFirst;
-    glm::vec3 aabbMax;
-    unsigned int triCount;
-};
+struct GpuBvhNode;
+struct GpuTriangle;
+struct GpuVertexPos;
+struct GpuVertexData;
 
 
 class BVH : public GraphicTask
@@ -48,13 +43,22 @@ private:
             std::vector<GpuMesh>& gpuMeshes,
             std::vector<GpuSphere>& gpuSpheres,
             std::vector<GpuPlane>& gpuPlanes,
-            std::vector<GpuInstance>& gpuInstances);
+            std::vector<GpuInstance>& gpuInstances,
+            std::vector<GpuBvhNode>& gpuBvhNodes,
+            std::vector<GpuTriangle>& gpuTriangles,
+            std::vector<GpuVertexPos>& gpuVertPos,
+            std::vector<GpuVertexData>& gpuVertData);
 
     GLuint _primitivesSSBO;
     GLuint _meshesSSBO;
     GLuint _spheresSSBO;
     GLuint _planesSSBO;
     GLuint _instanceSSBO;
+    GLuint _bvhNodesSSBO;
+
+    GLuint _trianglesSSBO;
+    GLuint _verticesPosSSBO;
+    GLuint _verticesDataSSBO;
 };
 
 

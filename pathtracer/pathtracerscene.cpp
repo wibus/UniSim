@@ -26,6 +26,20 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
     return object;
 }
 
+std::shared_ptr<Object> makeCube(const std::string& name, double length, float uvScale, const glm::dvec3& position, Object* parent = nullptr)
+{
+    std::shared_ptr<Body> body(new Body(length, 1, true));
+    body->setPosition(position);
+
+    std::shared_ptr<Material> material(new Material(name));
+    std::shared_ptr<Primitive> primitive(new Mesh(Mesh::cube(length, uvScale)));
+    primitive->setMaterial(material);
+
+    std::shared_ptr<Object> object(new Object(name, body, {primitive}, parent));
+
+    return object;
+}
+
 void PathTracerScene::initializeCamera(Camera& camera)
 {
     camera.setEV(-0.4);
@@ -35,7 +49,13 @@ PathTracerScene::PathTracerScene() :
     Scene("Path Tracer")
 {
     _sky.reset(new PhysicalSky());
-    _terrain.reset(new FlatTerrain());
+
+    std::shared_ptr<FlatTerrain> terrain(new FlatTerrain(4));
+    std::shared_ptr<Material> terrainMaterial(new Material("Grass Terrain"));
+    terrainMaterial->loadAlbedo("textures/grass/Grass_albedo.jpg");
+    terrainMaterial->loadSpecular("textures/grass/Grass_specular.jpg");
+    terrain->setMaterial(terrainMaterial);
+    _terrain = std::static_pointer_cast<Terrain>(terrain);
 
     SkyLocalization& localization = _sky->localization();
     localization.setLongitude(-73.567);
@@ -69,6 +89,22 @@ PathTracerScene::PathTracerScene() :
     ballFront->primitives()[0]->material()->setDefaultRoughness(0.2);
     ballFront->primitives()[0]->material()->setDefaultMetalness(1);
     _objects.push_back(ballFront);
+
+    auto cubeLeft = makeCube("Cube Left", 100, 1, glm::dvec3(-80, 11, 50));
+    cubeLeft->body()->setQuaternion(quat(glm::dvec3(0, 0, 1), glm::pi<double>() * 0.0));
+    cubeLeft->primitives()[0]->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
+    cubeLeft->primitives()[0]->material()->setDefaultRoughness(0.5);
+    cubeLeft->primitives()[0]->material()->setDefaultMetalness(0);
+    _objects.push_back(cubeLeft);
+
+    auto cubeRight = makeCube("Cube Right", 100, 16, glm::dvec3(60, 11, -30));
+    cubeRight->body()->setQuaternion(quat(glm::dvec3(0, 0, 1), glm::pi<double>() * 0.0));
+    cubeRight->primitives()[0]->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
+    cubeRight->primitives()[0]->material()->setDefaultRoughness(0.5);
+    cubeRight->primitives()[0]->material()->setDefaultMetalness(0);
+    cubeRight->primitives()[0]->material()->loadAlbedo("textures/granite/Granite_albedo.jpg");
+    cubeRight->primitives()[0]->material()->loadSpecular("textures/granite/Granite_specular.jpg");
+    _objects.push_back(cubeRight);
 }
 
 }

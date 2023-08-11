@@ -52,7 +52,7 @@ bool NoTerrain::Task::defineResources(GraphicContext& context)
 }
 
 
-FlatTerrain::FlatTerrain() :
+FlatTerrain::FlatTerrain(float uvScale) :
     _height(0)
 {
     _task = std::make_shared<Task>();
@@ -62,7 +62,7 @@ FlatTerrain::FlatTerrain() :
     material->setDefaultRoughness(0.7f);
     material->setDefaultMetalness(0.0f);
 
-    _plane.reset(new Plane(1.0f));
+    _plane.reset(new Plane(uvScale));
     _plane->setMaterial(material);
 
     std::shared_ptr<Body> body(new Body(1.0f, 1.0f, true));

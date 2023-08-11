@@ -9,6 +9,8 @@ float maxV(vec3 v);
 
 float maxV(vec4 v);
 
+void swap(inout float a, inout float b);
+
 float sqr(float v);
 
 float distanceSqr(vec3 a, vec3 b);

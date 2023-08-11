@@ -60,7 +60,7 @@ private:
 class FlatTerrain : public Terrain
 {
 public:
-    FlatTerrain();
+    FlatTerrain(float uvScale = 1.0f);
 
     double height() const { return _height; }
     void setHeight(double height) { _height = height; }

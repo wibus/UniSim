@@ -24,6 +24,13 @@ float maxV(vec4 v)
     return max4(v.x, v.y, v.z, v.w);
 }
 
+void swap(inout float a, inout float b)
+{
+    float t = a;
+    a = b;
+    b = t;
+}
+
 float sqr(float v)
 {
     return v * v;

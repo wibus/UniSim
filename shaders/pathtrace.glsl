@@ -131,13 +131,14 @@ HitInfo probe(in Ray ray, in Intersection intersection)
 
     hitInfo.position += hitInfo.normal * 1e-4 * max(intersection.t, maxV(abs(hitInfo.position)));
 
+    vec2 uv = fract(vec2(intersection.uv.x, 1 - intersection.uv.y));
+
     vec3 albedo = material.albedo.rgb;
     if(material.albedoTexture != -1)
     {
         layout(rgba8) image2D img = textures[material.albedoTexture];
         ivec2 imgSize = imageSize(img);
-        vec2 uv = intersection.uv;
-        vec3 texel = imageLoad(img, ivec2(imgSize * vec2(uv.x, 1 - uv.y))).rgb;
+        vec3 texel = imageLoad(img, ivec2(imgSize * uv)).rgb;
 
         albedo = toLinear(texel);
     }
@@ -147,10 +148,9 @@ HitInfo probe(in Ray ray, in Intersection intersection)
     {
         layout(rgba8) image2D img = textures[material.specularTexture];
         ivec2 imgSize = imageSize(img);
-        vec2 uv = intersection.uv;
-        vec3 texel = imageLoad(img, ivec2(imgSize * vec2(uv.x, 1 - uv.y))).rgb;
+        vec3 texel = imageLoad(img, ivec2(imgSize * uv)).rgb;
 
-        specular = toLinear(texel);
+        specular.r = toLinear(texel).r;
     }
 
     hitInfo.specularA = specular.r;

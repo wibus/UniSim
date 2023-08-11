@@ -9,12 +9,7 @@ struct Primitive
 
 struct Mesh
 {
-    uint vertexStart;
-    uint vertexEnd;
-    uint triangleStart;
-    uint triangleEnd;
-    uint submeshStart;
-    uint submeshEnd;
+    uint bvhNode;
 };
 
 struct Sphere
@@ -37,6 +32,37 @@ struct Instance
 
     int pad1;
     int pad2;
+};
+
+struct BvhNode
+{
+    float aabbMinX;
+    float aabbMinY;
+    float aabbMinZ;
+    uint leftFirst;
+    float aabbMaxX;
+    float aabbMaxY;
+    float aabbMaxZ;
+    uint triCount;
+};
+
+struct Triangle
+{
+    uint v0;
+    uint v1;
+    uint v2;
+};
+
+struct VertexPos
+{
+    vec4 position;
+};
+
+struct VertexData
+{
+    vec4 normal;
+    vec2 uv;
+    vec2 pad1;
 };
 
 struct Emitter
