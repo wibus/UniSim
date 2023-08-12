@@ -24,6 +24,11 @@ Terrain::~Terrain()
 
 }
 
+void Terrain::ui()
+{
+
+}
+
 
 NoTerrain::NoTerrain()
 {

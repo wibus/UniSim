@@ -57,7 +57,6 @@ public:
 
     bool initialize(Scene& scene,
             Camera& camera,
-            const std::shared_ptr<UiEngineTask>& ui,
             const ResourceManager& resources);
 
     void execute(
@@ -67,13 +66,11 @@ public:
             const ResourceManager& resources);
 
 private:
-    void createTaskGraph(EngineContext& context);
+    void createTaskGraph(const Scene& scene);
     void addTask(const std::shared_ptr<EngineTask>& task);
 
     EngineSettings _settings;
     std::vector<std::shared_ptr<EngineTask>> _tasks;
-
-    std::shared_ptr<UiEngineTask> _ui;
 };
 
 }

@@ -54,6 +54,8 @@ public:
     std::shared_ptr<Material> material() const { return _material; }
     void setMaterial(const std::shared_ptr<Material>& material) { _material = material; }
 
+    virtual void ui();
+
 private:
     Type _type;
     std::shared_ptr<Material> _material;
@@ -73,6 +75,8 @@ public:
 
     static Mesh cube(float length, float uvScale);
 
+    void ui() override;
+
 private:
     std::vector<Vertex> _vertices;
     std::vector<Triangle> _triangles;
@@ -88,6 +92,8 @@ public:
     float radius() const { return _radius; }
     void setRadius(float radius) { _radius = radius; }
 
+    void ui() override;
+
 private:
     float _radius;
 };
@@ -101,6 +107,8 @@ public:
 
     float scale() const { return _scale; }
     void setScale(float scale) { _scale = scale; }
+
+    void ui() override;
 
 private:
     float _scale;

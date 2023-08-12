@@ -13,6 +13,7 @@
 #include "project.h"
 #include "profiler.h"
 #include "terrain.h"
+#include "sky.h"
 #include "ui.h"
 
 #include "solar/solarsystemproject.h"
@@ -77,7 +78,8 @@ void glfwErrorCallback(int error, const char* description)
 }
 
 Universe::Universe() :
-    _timeFactor(0.0)
+    _timeFactor(0.0),
+    _showUi(false)
 {
 }
 
@@ -202,6 +204,7 @@ int Universe::launch(int argc, char** argv)
         }
 
         update();
+        ui();
         draw();
 
         {
@@ -234,10 +237,7 @@ void Universe::handleKeyboard(const KeyboardEvent& event)
     {
         if(event.key == GLFW_KEY_F10)
         {
-            if(_project->ui()->isShown())
-                _project->ui()->hide();
-            else
-                _project->ui()->show();
+            _showUi = !_showUi;
         }
     }
 
@@ -313,7 +313,6 @@ bool Universe::setup()
     ok = ok && _engine.initialize(
                 _project->scene(),
                 _project->cameraMan().camera(),
-                _project->ui(),
                 _graphic.resources());
 
     _dt = 0;
@@ -354,6 +353,65 @@ void Universe::draw()
 void Universe::ui()
 {
     Profile(Ui);
+
+    if(!_showUi)
+        return;
+
+    if(ImGui::Begin(_project->scene().name().c_str(), &_showUi))
+    {
+        if(ImGui::BeginTabBar("#tabs"))
+        {
+            if(ImGui::BeginTabItem("General"))
+            {
+                Camera& camera = _project->cameraMan().camera();
+
+                float ev = camera.ev();
+                if(ImGui::SliderFloat("EV", &ev, -6.0f, 17.0f))
+                    camera.setEV(ev);
+
+                SkyLocalization& local = _project->scene().sky()->localization();
+                float timeOfDay = local.timeOfDay();
+                if(ImGui::SliderFloat("Time of Day", &timeOfDay, 0, SkyLocalization::MAX_TIME_OF_DAY))
+                    local.setTimeOfDay(timeOfDay);
+
+                //if(ImGui::Button("Reset Graphics"))
+                //{
+                //    bool ok = _graphic.initialize(
+                //        _project->scene(),
+                //        _project->cameraMan().camera());
+                //
+                //    if(!ok)
+                //    {
+                //        std::cerr << "Failed to reinitialize graphic systems\n";
+                //    }
+                //}
+
+                ImGui::EndTabItem();
+            }
+
+            if(ImGui::BeginTabItem("Camera"))
+            {
+                _project->cameraMan().camera().ui();
+                ImGui::EndTabItem();
+            }
+
+            if(ImGui::BeginTabItem("Scene"))
+            {
+                _project->scene().ui();
+                ImGui::EndTabItem();
+            }
+
+            if(ImGui::BeginTabItem("Profiler"))
+            {
+                Profiler::GetInstance().ui();
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
+    }
+
+    ImGui::End();
 }
 
 }

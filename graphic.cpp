@@ -323,9 +323,9 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 {
     _materials.reset(new MaterialDatabase());
 
-    GraphicContext context = {scene, camera, _resources, *_materials, _settings};
+    createTaskGraph(scene);
 
-    createTaskGraph(context);
+    GraphicContext context = {scene, camera, _resources, *_materials, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -383,17 +383,19 @@ void GraphicTaskGraph::execute(const Scene& scene, const Camera& camera)
     }
 }
 
-void GraphicTaskGraph::createTaskGraph(GraphicContext& context)
+void GraphicTaskGraph::createTaskGraph(const Scene& scene)
 {
+    _tasks.clear();
+
     addTask(_materials);
     addTask(std::shared_ptr<GraphicTask>(new BVH()));
-    addTask(context.scene.sky()->graphicTask());
-    addTask(context.scene.terrain()->graphicTask());
+    addTask(scene.sky()->graphicTask());
+    addTask(scene.terrain()->graphicTask());
     addTask(std::shared_ptr<GraphicTask>(new Lighting()));
     addTask(std::shared_ptr<GraphicTask>(new PathTracer()));
     addTask(std::shared_ptr<GraphicTask>(new ClearSwapChain()));
     addTask(std::shared_ptr<GraphicTask>(new ColorGrading()));
-    addTask(std::shared_ptr<GraphicTask>(new UiGraphicTask()));
+    addTask(std::shared_ptr<GraphicTask>(new Ui()));
 }
 
 void GraphicTaskGraph::addTask(const std::shared_ptr<GraphicTask>& task)

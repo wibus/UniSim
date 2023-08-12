@@ -39,6 +39,8 @@ public:
     float solidAngle() const { return _solidAngle; }
     void setSolidAngle(float solidAngle) { _solidAngle = solidAngle; }
 
+    void ui();
+
 private:
     std::string _name;
     glm::vec3 _position;

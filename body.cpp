@@ -1,5 +1,7 @@
 #include "body.h"
 
+#include <imgui/imgui.h>
+
 #include "GLM/gtc/constants.hpp"
 #include "GLM/gtx/transform.hpp"
 
@@ -140,6 +142,40 @@ void Body::setupRotation(
     glm::dvec4 phaseQuat          = quat(glm::dvec3(0, 0, 1), glm::radians(phase));
 
     _quaternion = quatMul(EARTH_BASE_QUAT, quatMul(rightAscensionQuat, quatMul(declinationQuat, phaseQuat)));
+}
+
+void Body::ui()
+{
+    bool isStatic = _isStatic;
+    if(ImGui::Checkbox("Is Static", &isStatic))
+        setIsStatic(isStatic);
+
+    double mass = _mass;
+    if(ImGui::InputDouble("Mass", &mass, 0.1))
+        setMass(glm::max(0.0, mass));
+
+    double area = _area;
+    ImGui::InputDouble("Area", &area, 0.0, 0.0, "%.6f", ImGuiInputTextFlags_ReadOnly);
+    double volume = _volume;
+    ImGui::InputDouble("Volume", &volume, 0.0, 0.0, "%.6f", ImGuiInputTextFlags_ReadOnly);
+    double density = this->density();
+    ImGui::InputDouble("Density", &density, 0.0, 0.0, "%.6f", ImGuiInputTextFlags_ReadOnly);
+
+    glm::vec3 position = _position;
+    if(ImGui::InputFloat3("Position", &position[0]))
+        setPosition(glm::dvec3(position));
+
+    glm::vec3 linearVelocity = _linearVelocity;
+    if(ImGui::InputFloat3("Velocity", &linearVelocity[0]))
+        setLinearVelocity(glm::dvec3(linearVelocity));
+
+    glm::vec4 quaternion = _quaternion;
+    if(ImGui::InputFloat4("Quaternion", &quaternion[0]))
+        setQuaternion(glm::dvec4(quaternion));
+
+    double angularSpeed = _angularSpeed;
+    if(ImGui::InputDouble("Angular Speed", &angularSpeed, glm::pi<double>() / 180))
+        setAngularSpeed(angularSpeed);
 }
 
 }

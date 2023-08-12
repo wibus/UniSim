@@ -1,5 +1,7 @@
 #include "sky.h"
 
+#include <imgui/imgui.h>
+
 #include <GLM/gtc/constants.hpp>
 #include <GLM/gtx/transform.hpp>
 #include <GLM/gtx/quaternion.hpp>
@@ -115,6 +117,28 @@ void SkyLocalization::computeSunAndMoon(
                 quatMul(spaceQuat, earthToSpaceAxisTransform));
 }
 
+void SkyLocalization::ui()
+{
+    glm::vec2 geom(_longitude, _latitude);
+    if(ImGui::InputFloat2("Long/Lat", &geom[0]))
+    {
+        setLongitude(geom[0]);
+        setLatitude(geom[1]);
+    }
+
+    float timeOfDay = _timeOfDay;
+    if(ImGui::SliderFloat("Time of Day", &timeOfDay, 0, SkyLocalization::MAX_TIME_OF_DAY))
+        setTimeOfDay(timeOfDay);
+
+    float dayOfYear = _dayOfYear;
+    if(ImGui::SliderFloat("Day of Year", &dayOfYear, 0, SkyLocalization::MAX_DAY_OF_YEAR))
+        setDayOfYear(dayOfYear);
+
+    float dayOfMoon = _dayOfMoon;
+    if(ImGui::SliderFloat("Day of Moon", &dayOfMoon, 0, SkyLocalization::MAX_DAY_OF_MOON))
+        setDayOfMoon(dayOfMoon);
+}
+
 Sky::Sky() :
     _quaternion(0, 0, 0, 1),
     _exposure(1)
@@ -125,6 +149,40 @@ Sky::Sky() :
 Sky::~Sky()
 {
 
+}
+
+void Sky::ui()
+{
+    glm::vec4 quaternion = _quaternion;
+    if(ImGui::InputFloat4("Quaternion", &quaternion[0]))
+    {
+        quaternion = glm::normalize(quaternion);
+        setQuaternion(quaternion);
+    }
+
+    float exposure = _exposure;
+    float ev = glm::log2(exposure);
+    if(ImGui::SliderFloat("Exposure", &ev, -20, 20))
+    {
+        exposure = glm::pow(2.0f, ev);
+        setExposure(exposure);
+    }
+
+    ImGui::Separator();
+
+    _localization.ui();
+
+    ImGui::Separator();
+
+    for(const auto& light : _directionalLights)
+    {
+        if(ImGui::TreeNode(light->name().c_str()))
+        {
+            light->ui();
+
+            ImGui::TreePop();
+        }
+    }
 }
 
 SkySphere::SkySphere() :

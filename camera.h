@@ -49,7 +49,7 @@ public:
     float focusDistance() const { return _focusDistance; }
     void setFocusDistance(float distance) { _focusDistance = distance; }
 
-    bool dofEnable() const { return _dofEnabled; }
+    bool dofEnabled() const { return _dofEnabled; }
     void setDofEnabled(bool enabled) { _dofEnabled = enabled; }
 
     float fieldOfView() const;
@@ -83,6 +83,8 @@ public:
     glm::dmat4 view() const;
     glm::mat4 proj() const;
     glm::mat4 screen() const;
+
+    void ui();
 
 private:
     void updateEV();

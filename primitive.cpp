@@ -1,5 +1,9 @@
 #include "primitive.h"
 
+#include <imgui/imgui.h>
+
+#include "material.h"
+
 
 namespace unisim
 {
@@ -19,6 +23,19 @@ Primitive::Primitive(Type type) :
 Primitive::~Primitive()
 {
 
+}
+
+void Primitive::ui()
+{
+    if(ImGui::TreeNode("Material"))
+    {
+        if(_material)
+            _material->ui();
+        else
+            ImGui::Text("No Material");
+
+        ImGui::TreePop();
+    }
 }
 
 
@@ -107,6 +124,14 @@ Mesh Mesh::cube(float length, float uvScale)
     return mesh;
 }
 
+void Mesh::ui()
+{
+    Primitive::ui();
+
+    ImGui::Text("Vertex count: %u", (uint)_vertices.size());
+    ImGui::Text("Triangle count: %u", (uint)_triangles.size());
+}
+
 
 Sphere::Sphere() :
     Primitive(Primitive::Sphere),
@@ -122,6 +147,15 @@ Sphere::Sphere(float radius) :
 
 }
 
+void Sphere::ui()
+{
+    Primitive::ui();
+
+    float radius = _radius;
+    if(ImGui::InputFloat("Radius", &radius))
+        setRadius(radius);
+}
+
 Plane::Plane() :
     Primitive(Primitive::Plane),
     _scale(1)
@@ -134,6 +168,15 @@ Plane::Plane(float scale) :
     _scale(scale)
 {
 
+}
+
+void Plane::ui()
+{
+    Primitive::ui();
+
+    float scale = _scale;
+    if(ImGui::InputFloat("Scale", &scale))
+        setScale(scale);
 }
 
 }

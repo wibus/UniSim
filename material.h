@@ -32,6 +32,8 @@ struct Texture
     static Texture* loadPng(const std::string& fileName);
     static Texture* loadExr(const std::string& fileName);
 
+    void ui();
+
     int width;
     int height;
     Format format;
@@ -77,6 +79,8 @@ public:
 
     float defaultReflectance() const { return _defaultReflectance; }
     void setDefaultReflectance(float reflectance);
+
+    void ui();
 
 private:
     std::string _name;

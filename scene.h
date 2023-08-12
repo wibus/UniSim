@@ -36,6 +36,8 @@ public:
 
     virtual void initializeCamera(Camera& camera);
 
+    void ui();
+
 protected:
     std::string _name;
 

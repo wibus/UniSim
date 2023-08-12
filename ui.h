@@ -8,32 +8,10 @@
 namespace unisim
 {
 
-class Scene;
-class Camera;
-class ResourceManager;
-
-
-class UiEngineTask : public EngineTask
+class Ui : public GraphicTask
 {
 public:
-    UiEngineTask(bool showUi = false);
-    virtual ~UiEngineTask();
-
-    void show();
-    void hide();
-    bool isShown() const { return _showUi; }
-
-    virtual void update(EngineContext& context);
-
-protected:
-    bool _showUi;
-};
-
-
-class UiGraphicTask : public GraphicTask
-{
-public:
-    UiGraphicTask();
+    Ui();
 
     void render(GraphicContext& context) override;
 };

@@ -17,7 +17,7 @@ Project::~Project()
 
 }
 
-void Project::reset(Scene* scene, UiEngineTask* ui)
+void Project::reset(Scene* scene)
 {
     _scene.reset(scene);
 
@@ -28,8 +28,6 @@ void Project::reset(Scene* scene, UiEngineTask* ui)
     {
         addView(cameraMan->camera().viewport());
     }
-
-    _ui.reset(ui);
 }
 
 int Project::addCameraMan(CameraMan* cameraMan)

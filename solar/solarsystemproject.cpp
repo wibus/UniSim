@@ -2,7 +2,6 @@
 
 #include "solarsystemcamera.h"
 #include "solarsystemscene.h"
-#include "solarsystemui.h"
 
 
 namespace unisim
@@ -10,7 +9,7 @@ namespace unisim
 
 SolarSystemProject::SolarSystemProject()
 {
-    reset(new SolarSystemScene(), new SolarSystemUi());
+    reset(new SolarSystemScene());
 }
 
 int SolarSystemProject::addView(Viewport viewport)

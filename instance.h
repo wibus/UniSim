@@ -34,6 +34,8 @@ public:
     void setPrimitives(const std::vector<std::shared_ptr<Primitive>>& primitives) { _primitives = primitives; }
     void addPrimitives(const std::shared_ptr<Primitive>& primitive) { _primitives.push_back(primitive); }
 
+    void ui();
+
 private:
     Instance* _parent;
 

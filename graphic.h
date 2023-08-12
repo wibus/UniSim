@@ -19,7 +19,7 @@ class MaterialDatabase;
 class BVH;
 class PathTracer;
 class ColorGrading;
-class UiGraphicTask;
+class Ui;
 
 
 std::string loadSource(const std::string& fileName);
@@ -119,7 +119,7 @@ public:
     const ResourceManager& resources() const { return _resources; }
 
 private:
-    void createTaskGraph(GraphicContext& context);
+    void createTaskGraph(const Scene& scene);
     void addTask(const std::shared_ptr<GraphicTask>& task);
 
     GraphicSettings _settings;

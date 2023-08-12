@@ -11,6 +11,8 @@
 #include <functional>
 #include <string_view>
 
+#include <imgui/imgui.h>
+
 #include "scene.h"
 #include "primitive.h"
 #include "instance.h"
@@ -316,6 +318,16 @@ Texture* Texture::loadExr(const std::string& fileName)
     }
 }
 
+void Texture::ui()
+{
+    int dimensions[2] = {width, height};
+    ImGui::InputInt2("Dimensions", &dimensions[0], ImGuiInputTextFlags_ReadOnly);
+    ImGui::Text("Format %s", format == Texture::UNORM8 ? "UNORM8" : "Float32");
+    ImGui::Text("Num Components %d", numComponents);
+    uint64_t handle64 = handle;
+    ImGui::Image((void*)handle64, ImVec2(512, (512.0f / dimensions[0]) * dimensions[1]));
+}
+
 Material::Material(const std::string& name) :
     _name(name),
     _albedo(nullptr),
@@ -390,6 +402,48 @@ bool Material::loadSpecular(const std::string &fileName)
     _specular = Texture::load(fileName);
 
     return _specular != nullptr;
+}
+
+void Material::ui()
+{
+    if(_albedo && ImGui::TreeNode("Albedo Texture"))
+    {
+        _albedo->ui();
+        ImGui::TreePop();
+    }
+
+    if(_specular && ImGui::TreeNode("Specular Texture"))
+    {
+        _specular->ui();
+        ImGui::TreePop();
+    }
+
+    glm::vec3 albedo = _defaultAlbedo;
+    if(ImGui::ColorEdit3("Albedo", &albedo[0]))
+        setDefaultAlbedo(albedo);
+
+    glm::vec3 emissionColor = _defaultEmissionColor;
+    if(ImGui::ColorEdit3("Emission", &emissionColor[0]))
+        setDefaultEmissionColor(emissionColor);
+
+    float emissionLuminance = _defaultEmissionLuminance;
+    if(ImGui::InputFloat("Luminance", &emissionLuminance))
+        setDefaultEmissionLuminance(emissionLuminance);
+
+    float roughness = _defaultRoughness;
+    if(ImGui::SliderFloat("Roughness", &roughness, 0, 1))
+        setDefaultRoughness(roughness);
+
+    float metalness = _defaultMetalness;
+    if(ImGui::SliderFloat("Metalness", &metalness, 0, 1))
+        setDefaultMetalness(metalness);
+
+    float reflectance = _defaultReflectance;
+    if(ImGui::InputFloat("Reflectance", &reflectance, 0.01f))
+    {
+        reflectance = glm::clamp(reflectance, 0.0f, 1.0f);
+        setDefaultReflectance(reflectance);
+    }
 }
 
 

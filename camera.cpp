@@ -1,5 +1,7 @@
 #include "camera.h"
 
+#include <imgui/imgui.h>
+
 #include "GLM/gtx/transform.hpp"
 
 
@@ -128,6 +130,85 @@ glm::mat4 Camera::screen() const
 void Camera::updateEV()
 {
     _ev = glm::log2(_fstop * _fstop * 100 / (_iso * _shutterSpeed));
+}
+
+void Camera::ui()
+{
+    int viewport[2] = {_viewport.width, _viewport.height};
+    ImGui::InputInt2("Viewport", &viewport[0], ImGuiInputTextFlags_ReadOnly);
+
+    float filmHeight = _filmHeight * 1000.0f;
+    if(ImGui::InputFloat("Film Height mm", &filmHeight))
+        setFilmHeight(filmHeight / 1000.0f);
+
+    float focalLength = _focalLength * 1000.0f;
+    if(ImGui::InputFloat("Focal Length", &focalLength))
+        setFocalLength(focalLength / 1000.0f);
+
+    float focusDistance = _focusDistance;
+    if(ImGui::InputFloat("Focus Distance", &focusDistance))
+        setFocusDistance(focusDistance);
+
+    bool dofENabled = _dofEnabled;
+    if(ImGui::Checkbox("DOF Enabled", &dofENabled))
+        setDofEnabled(dofENabled);
+
+    float fov = _fov;
+    if(ImGui::SliderAngle("FOV", &fov, 1, 179))
+        setFieldOfView(fov);
+
+    float fstop = _fstop;
+    if(ImGui::InputFloat("f-stop", &fstop, 0, 0, "%.1f"))
+        setFstop(fstop);
+
+    float shutterSpeed = _shutterSpeed;
+    if(ImGui::InputFloat("Shutter Speed", &shutterSpeed))
+        setShutterSpeed(shutterSpeed);
+
+    float iso = _iso;
+    if(ImGui::InputFloat("ISO", &iso))
+        setIso(iso);
+
+    float ev = _ev;
+    if(ImGui::SliderFloat("EV", &ev, -6.0f, 17.0f))
+        setEV(ev);
+
+    ImGui::Separator();
+
+    glm::vec3 position = _position;
+    if(ImGui::InputFloat3("Position", &position[0]))
+        setPosition(position);
+
+    glm::vec3 lookAt = _lookAt;
+    if(ImGui::InputFloat3("Look At", &lookAt[0]))
+        setLookAt(lookAt);
+
+    glm::vec3 up = _up;
+    if(ImGui::InputFloat3("Up", &up[0]))
+        setUp(glm::normalize(up));
+
+    ImGui::Separator();
+    glm::mat4 view = glm::transpose(this->view());
+    ImGui::InputFloat4("View", &view[0][0]);
+    ImGui::InputFloat4("",     &view[1][0]);
+    ImGui::InputFloat4("",     &view[2][0]);
+    ImGui::InputFloat4("",     &view[3][0]);
+
+    ImGui::Separator();
+    glm::mat4 proj = glm::transpose(this->proj());
+    ImGui::InputFloat4("Projection", &proj[0][0]);
+    ImGui::InputFloat4("",           &proj[1][0]);
+    ImGui::InputFloat4("",           &proj[2][0]);
+    ImGui::InputFloat4("",           &proj[3][0]);
+
+    ImGui::Separator();
+    glm::mat4 screen = glm::transpose(this->screen());
+    ImGui::InputFloat4("Screen", &screen[0][0]);
+    ImGui::InputFloat4("",       &screen[1][0]);
+    ImGui::InputFloat4("",       &screen[2][0]);
+    ImGui::InputFloat4("",       &screen[3][0]);
+
+    ImGui::Separator();
 }
 
 CameraMan::CameraMan(Viewport viewport) :

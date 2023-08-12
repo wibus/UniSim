@@ -65,6 +65,8 @@ public:
             glm::vec4& moonQuaternion,
             glm::vec4& starsQuaternion) const;
 
+    void ui();
+
 private:
     float _longitude;
     float _latitude;
@@ -98,6 +100,8 @@ public:
     const std::vector<std::shared_ptr<DirectionalLight>>& directionalLights() const { return _directionalLights; }
 
     virtual std::shared_ptr<GraphicTask> graphicTask() = 0;
+
+    virtual void ui();
 
 private:
     SkyLocalization _localization;

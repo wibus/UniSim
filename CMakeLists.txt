@@ -109,9 +109,7 @@ set(SolarSystemFiles
     solar/solarsystemscene.h
     solar/solarsystemscene.cpp
     solar/solarsystemcamera.h
-    solar/solarsystemcamera.cpp
-    solar/solarsystemui.h
-    solar/solarsystemui.cpp)
+    solar/solarsystemcamera.cpp)
 
 # Path Tracer
 set(PathTracerSystemFiles
@@ -120,9 +118,7 @@ set(PathTracerSystemFiles
     pathtracer/pathtracerscene.h
     pathtracer/pathtracerscene.cpp
     pathtracer/pathtracercamera.h
-    pathtracer/pathtracercamera.cpp
-    pathtracer/pathtracerui.h
-    pathtracer/pathtracerui.cpp)
+    pathtracer/pathtracercamera.cpp)
 
 add_executable(UniSim
     main.cpp

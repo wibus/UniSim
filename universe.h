@@ -65,6 +65,9 @@ public:
 
     // Projet
     std::unique_ptr<Project> _project;
+
+    // UI
+    bool _showUi;
 };
 
 

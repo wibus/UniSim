@@ -311,7 +311,7 @@ void Profiler::stopGpuPoint(ProfileIdGpu id)
 const float BOX_HEIGHT = 20;
 const float BOX_SPACING = 4;
 
-void Profiler::renderUi()
+void Profiler::ui()
 {
     const ResolvedPoint& cpuFrameNode = _renderedCpuTree[0];
     const ResolvedPoint& gpuFrameNode = _renderedGpuTree[0];

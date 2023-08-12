@@ -37,13 +37,11 @@ EngineTaskGraph::EngineTaskGraph()
 bool EngineTaskGraph::initialize(
         Scene& scene,
         Camera& camera,
-        const std::shared_ptr<UiEngineTask>& ui,
         const ResourceManager& resources)
 {
-    EngineContext context = {0, scene, camera, resources, _settings};
+    createTaskGraph(scene);
 
-    _ui = ui;
-    createTaskGraph(context);
+    EngineContext context = {0, scene, camera, resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -73,9 +71,9 @@ void EngineTaskGraph::execute(
     }
 }
 
-void EngineTaskGraph::createTaskGraph(EngineContext& context)
+void EngineTaskGraph::createTaskGraph(const Scene& scene)
 {
-    addTask(_ui);
+    _tasks.clear();
 
     addTask(std::shared_ptr<EngineTask>(new Gravity()));
 }

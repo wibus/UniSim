@@ -226,7 +226,7 @@ uint64_t PathTracer::toGpu(
     gpuCommonParams.lensePosition = glm::vec4(camera.position(), 1);
     gpuCommonParams.lenseDirection = glm::vec4(camera.direction(), 0);
     gpuCommonParams.focusDistance = camera.focusDistance();
-    gpuCommonParams.apertureRadius = camera.dofEnable() ? camera.focalLength() / camera.fstop() * 0.5f : 0.0f;
+    gpuCommonParams.apertureRadius = camera.dofEnabled() ? camera.focalLength() / camera.fstop() * 0.5f : 0.0f;
     gpuCommonParams.exposure = camera.exposure();
     gpuCommonParams.frameIndex = 0; // Must be constant for hasing
 

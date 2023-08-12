@@ -29,18 +29,14 @@ public:
     CameraMan& cameraMan(int index = 0);
     const CameraMan& cameraMan(int index = 0) const;
 
-    std::shared_ptr<UiEngineTask> ui() const { return _ui; }
-
 protected:
-    void reset(Scene* scene, UiEngineTask* ui);
+    void reset(Scene* scene);
     int addCameraMan(CameraMan* cameraMan);
 
 private:
     std::unique_ptr<Scene> _scene;
 
     std::vector<std::shared_ptr<CameraMan>> _cameraMen;
-
-    std::shared_ptr<UiEngineTask> _ui;
 };
 
 

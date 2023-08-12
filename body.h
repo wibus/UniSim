@@ -53,6 +53,8 @@ public:
             double rightAscension,
             double declination);
 
+    void ui();
+
 private:
     // transform
     glm::dvec4 _quaternion; // radians

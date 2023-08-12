@@ -53,7 +53,7 @@ public:
     void startGpuPoint(ProfileIdGpu id);
     void stopGpuPoint(ProfileIdGpu id);
 
-    void renderUi();
+    void ui();
 
 private:
     void renderChildrenText(const std::vector<ResolvedPoint>& tree, int nodeId);

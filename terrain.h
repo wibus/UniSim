@@ -26,6 +26,8 @@ public:
 
     virtual std::shared_ptr<GraphicTask> graphicTask() = 0;
 
+    virtual void ui();
+
 protected:
     void clearInstances() { _instances.clear(); }
     void addInstance(const std::shared_ptr<Instance>& instance) { _instances.push_back(instance); }
