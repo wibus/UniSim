@@ -11,7 +11,7 @@
 namespace unisim
 {
 
-class Object;
+class Instance;
 class Material;
 class Plane;
 
@@ -22,16 +22,16 @@ public:
     Terrain();
     virtual ~Terrain();
 
-    const std::vector<std::shared_ptr<Object>>& objects() const { return _objects; }
+    const std::vector<std::shared_ptr<Instance>>& instances() const { return _instances; }
 
     virtual std::shared_ptr<GraphicTask> graphicTask() = 0;
 
 protected:
-    void clearObjects() { _objects.clear(); }
-    void addObject(const std::shared_ptr<Object>& object) { _objects.push_back(object); }
+    void clearInstances() { _instances.clear(); }
+    void addInstance(const std::shared_ptr<Instance>& instance) { _instances.push_back(instance); }
 
 private:
-    std::vector<std::shared_ptr<Object>> _objects;
+    std::vector<std::shared_ptr<Instance>> _instances;
 };
 
 

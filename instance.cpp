@@ -1,4 +1,4 @@
-#include "object.h"
+#include "instance.h"
 
 #include "GLM/gtc/constants.hpp"
 #include "GLM/gtx/transform.hpp"
@@ -11,11 +11,11 @@
 namespace unisim
 {
 
-Object::Object(
+Instance::Instance(
         const std::string& name,
         const std::shared_ptr<Body>& body,
         const std::vector<std::shared_ptr<Primitive>>& primitives,
-        Object* parent) :
+        Instance* parent) :
     _parent(parent),
     _name(name),
     _body(body),
@@ -24,12 +24,12 @@ Object::Object(
 
 }
 
-Object::~Object()
+Instance::~Instance()
 {
 
 }
 
-void Object::setBody(const std::shared_ptr<Body>& body)
+void Instance::setBody(const std::shared_ptr<Body>& body)
 {
     _body = body;
 }

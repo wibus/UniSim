@@ -1,6 +1,6 @@
 #include "pathtracerscene.h"
 
-#include "../object.h"
+#include "../instance.h"
 #include "../body.h"
 #include "../primitive.h"
 #include "../camera.h"
@@ -12,7 +12,7 @@
 namespace unisim
 {
 
-std::shared_ptr<Object> makeObject(const std::string& name, double radius, const glm::dvec3& position, Object* parent = nullptr)
+std::shared_ptr<Instance> makeSphere(const std::string& name, double radius, const glm::dvec3& position, Instance* parent = nullptr)
 {
     std::shared_ptr<Body> body(new Body(radius, 1, true));
     body->setPosition(position);
@@ -21,12 +21,12 @@ std::shared_ptr<Object> makeObject(const std::string& name, double radius, const
     std::shared_ptr<Primitive> primitive(new Sphere(radius));
     primitive->setMaterial(material);
 
-    std::shared_ptr<Object> object(new Object(name, body, {primitive}, parent));
+    std::shared_ptr<Instance> instance(new Instance(name, body, {primitive}, parent));
 
-    return object;
+    return instance;
 }
 
-std::shared_ptr<Object> makeCube(const std::string& name, double length, float uvScale, const glm::dvec3& position, Object* parent = nullptr)
+std::shared_ptr<Instance> makeCube(const std::string& name, double length, float uvScale, const glm::dvec3& position, Instance* parent = nullptr)
 {
     std::shared_ptr<Body> body(new Body(length, 1, true));
     body->setPosition(position);
@@ -35,9 +35,9 @@ std::shared_ptr<Object> makeCube(const std::string& name, double length, float u
     std::shared_ptr<Primitive> primitive(new Mesh(Mesh::cube(length, uvScale)));
     primitive->setMaterial(material);
 
-    std::shared_ptr<Object> object(new Object(name, body, {primitive}, parent));
+    std::shared_ptr<Instance> instance(new Instance(name, body, {primitive}, parent));
 
-    return object;
+    return instance;
 }
 
 void PathTracerScene::initializeCamera(Camera& camera)
@@ -50,7 +50,7 @@ PathTracerScene::PathTracerScene() :
 {
     _sky.reset(new PhysicalSky());
 
-    std::shared_ptr<FlatTerrain> terrain(new FlatTerrain(4));
+    std::shared_ptr<FlatTerrain> terrain(new FlatTerrain(6));
     std::shared_ptr<Material> terrainMaterial(new Material("Grass Terrain"));
     terrainMaterial->loadAlbedo("textures/grass/Grass_albedo.jpg");
     terrainMaterial->loadSpecular("textures/grass/Grass_specular.jpg");
@@ -64,38 +64,38 @@ PathTracerScene::PathTracerScene() :
     localization.setDayOfYear(81.0f);
     localization.setDayOfMoon(17.0);
 
-    auto light = makeObject("Light", 1, {0, 7.5, 9});
+    auto light = makeSphere("Light", 1, {0, 7.5, 9});
     light->primitives()[0]->material()->setDefaultAlbedo({0.5, 0.5, 0.5});
     light->primitives()[0]->material()->setDefaultEmissionColor({1, 1, 1});
     light->primitives()[0]->material()->setDefaultEmissionLuminance(25);
-    _objects.push_back(light);
+    _instances.push_back(light);
 
-    auto ballLeft = makeObject("Ball Left", 2, {-3, 12, 2});
+    auto ballLeft = makeSphere("Ball Left", 2, {-3, 12, 2});
     ballLeft->primitives()[0]->material()->setDefaultAlbedo({0.8, 0.8, 0.8});
     ballLeft->primitives()[0]->material()->loadAlbedo("textures/mars_albedo.jpg");
     ballLeft->primitives()[0]->material()->setDefaultRoughness(2);
-    _objects.push_back(ballLeft);
+    _instances.push_back(ballLeft);
 
-    auto ballRight = makeObject("Ball Right", 2, {3, 12, 2});
+    auto ballRight = makeSphere("Ball Right", 2, {3, 12, 2});
     ballRight->primitives()[0]->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
     ballRight->primitives()[0]->material()->setDefaultMetalness(0);
     ballRight->primitives()[0]->material()->setDefaultRoughness(0.0);
     ballRight->primitives()[0]->material()->setDefaultReflectance(0.04);
     ballRight->body()->setQuaternion(quat(glm::dvec3(0, 0, 1), glm::pi<double>()));
-    _objects.push_back(ballRight);
+    _instances.push_back(ballRight);
 
-    auto ballFront = makeObject("Ball Front", 1, {0, 10, 1});
+    auto ballFront = makeSphere("Ball Front", 1, {0, 10, 1});
     ballFront->primitives()[0]->material()->setDefaultAlbedo({1.0, 0.85, 0.03});
     ballFront->primitives()[0]->material()->setDefaultRoughness(0.2);
     ballFront->primitives()[0]->material()->setDefaultMetalness(1);
-    _objects.push_back(ballFront);
+    _instances.push_back(ballFront);
 
     auto cubeLeft = makeCube("Cube Left", 100, 1, glm::dvec3(-80, 11, 50));
     cubeLeft->body()->setQuaternion(quat(glm::dvec3(0, 0, 1), glm::pi<double>() * 0.0));
     cubeLeft->primitives()[0]->material()->setDefaultAlbedo({0.9, 0.9, 0.9});
     cubeLeft->primitives()[0]->material()->setDefaultRoughness(0.5);
     cubeLeft->primitives()[0]->material()->setDefaultMetalness(0);
-    _objects.push_back(cubeLeft);
+    _instances.push_back(cubeLeft);
 
     auto cubeRight = makeCube("Cube Right", 100, 16, glm::dvec3(60, 11, -30));
     cubeRight->body()->setQuaternion(quat(glm::dvec3(0, 0, 1), glm::pi<double>() * 0.0));
@@ -104,7 +104,7 @@ PathTracerScene::PathTracerScene() :
     cubeRight->primitives()[0]->material()->setDefaultMetalness(0);
     cubeRight->primitives()[0]->material()->loadAlbedo("textures/granite/Granite_albedo.jpg");
     cubeRight->primitives()[0]->material()->loadSpecular("textures/granite/Granite_specular.jpg");
-    _objects.push_back(cubeRight);
+    _instances.push_back(cubeRight);
 }
 
 }

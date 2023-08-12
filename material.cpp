@@ -13,7 +13,7 @@
 
 #include "scene.h"
 #include "primitive.h"
-#include "object.h"
+#include "instance.h"
 #include "resource.h"
 #include "profiler.h"
 
@@ -428,9 +428,9 @@ bool MaterialDatabase::isMaterialRegistered(const std::shared_ptr<Material>& mat
 
 void MaterialDatabase::registerDynamicResources(GraphicContext& context)
 {
-    for(const auto& object : context.scene.objects())
+    for(const auto& instance : context.scene.instances())
     {
-        for(const auto& primitive : object->primitives())
+        for(const auto& primitive : instance->primitives())
         {
             const auto& material = primitive->material();
             if(material && !isMaterialRegistered(material))

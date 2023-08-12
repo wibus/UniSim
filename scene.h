@@ -13,7 +13,7 @@ namespace unisim
 
 class Sky;
 class Terrain;
-class Object;
+class Instance;
 class Camera;
 class Texture;
 class DirectionalLight;
@@ -31,8 +31,8 @@ public:
 
     std::shared_ptr<Terrain> terrain() const { return _terrain; }
 
-    std::vector<std::shared_ptr<Object>>& objects() { return _objects; }
-    const std::vector<std::shared_ptr<Object>>& objects() const { return _objects; }
+    std::vector<std::shared_ptr<Instance>>& instances() { return _instances; }
+    const std::vector<std::shared_ptr<Instance>>& instances() const { return _instances; }
 
     virtual void initializeCamera(Camera& camera);
 
@@ -43,7 +43,7 @@ protected:
 
     std::shared_ptr<Terrain> _terrain;
 
-    std::vector<std::shared_ptr<Object>> _objects;
+    std::vector<std::shared_ptr<Instance>> _instances;
 };
 
 }

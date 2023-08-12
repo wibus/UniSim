@@ -7,7 +7,7 @@
 #include <imgui/imgui_impl_opengl3.h>
 
 #include "scene.h"
-#include "object.h"
+#include "instance.h"
 #include "body.h"
 #include "primitive.h"
 #include "material.h"
@@ -74,6 +74,28 @@ void displayTexture(Texture* texture)
     ImGui::InputInt("Num Components", &numComponents);
     uint64_t handle = texture->handle;
     ImGui::Image((void*)handle, ImVec2(512, (512.0f / dimensions[0]) * dimensions[1]));
+}
+
+void displayGeneral(EngineContext& context)
+{
+    Camera& camera = context.camera;
+
+    float ev = camera.ev();
+    if(ImGui::SliderFloat("EV", &ev, -6.0f, 17.0f))
+        camera.setEV(ev);
+
+    SkyLocalization& local = context.scene.sky()->localization();
+    float timeOfDay = local.timeOfDay();
+    if(ImGui::SliderFloat("Time of Day", &timeOfDay, 0, SkyLocalization::MAX_TIME_OF_DAY))
+        local.setTimeOfDay(timeOfDay);
+
+    float dayOfYear = local.dayOfYear();
+    if(ImGui::SliderFloat("Day of Year", &dayOfYear, 0, SkyLocalization::MAX_DAY_OF_YEAR))
+        local.setDayOfYear(dayOfYear);
+
+    float dayOfMoon = local.dayOfMoon();
+    if(ImGui::SliderFloat("Day of Moon", &dayOfMoon, 0, SkyLocalization::MAX_DAY_OF_MOON))
+        local.setDayOfMoon(dayOfMoon);
 }
 
 void displayCamera(Camera& camera)
@@ -229,15 +251,15 @@ void displayDirectionalLights(Scene& scene)
     }
 }
 
-void displayObjects(Scene& scene)
+void displayInstances(Scene& scene)
 {
-    if(ImGui::TreeNode("Objects"))
+    if(ImGui::TreeNode("Instances"))
     {
-        for(const auto& object : scene.objects())
+        for(const auto& instance : scene.instances())
         {
-            if(ImGui::TreeNode(object->name().c_str()))
+            if(ImGui::TreeNode(instance->name().c_str()))
             {
-                auto body = object->body();
+                auto body = instance->body();
 
                 if(body && ImGui::TreeNode("Body"))
                 {
@@ -275,11 +297,11 @@ void displayObjects(Scene& scene)
                     ImGui::TreePop();
                 }
 
-                if(!object->primitives().empty() && ImGui::TreeNode("Primitives"))
+                if(!instance->primitives().empty() && ImGui::TreeNode("Primitives"))
                 {
-                    for(std::size_t p = 0; p < object->primitives().size(); ++p)
+                    for(std::size_t p = 0; p < instance->primitives().size(); ++p)
                     {
-                        Primitive& primitive = *object->primitives()[p];
+                        Primitive& primitive = *instance->primitives()[p];
 
                         if(ImGui::TreeNode(&primitive, "Primitive %u: %s", (uint)p, Primitive::Type_Names[primitive.type()]))
                         {
@@ -370,6 +392,12 @@ void UiEngineTask::update(EngineContext& context)
     {
         if(ImGui::BeginTabBar("#tabs"))
         {
+            if(ImGui::BeginTabItem("General"))
+            {
+                displayGeneral(context);
+                ImGui::EndTabItem();
+            }
+
             if(ImGui::BeginTabItem("Camera"))
             {
                 displayCamera(context.camera);
@@ -380,7 +408,7 @@ void UiEngineTask::update(EngineContext& context)
             {
                 displaySky(context.resources, context.scene);
                 displayDirectionalLights(context.scene);
-                displayObjects(context.scene);
+                displayInstances(context.scene);
                 ImGui::EndTabItem();
             }
 

@@ -41,6 +41,7 @@ public:
     bool setup();
     void update();
     void draw();
+    void ui();
 
 public:
     int _argc;

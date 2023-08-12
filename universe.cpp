@@ -25,6 +25,7 @@ namespace unisim
 DefineProfilePoint(PollEvents);
 DefineProfilePoint(Update);
 DefineProfilePoint(Draw);
+DefineProfilePoint(Ui);
 DefineProfilePoint(ImGui_NewFrame);
 DefineProfilePoint(SwapBuffers);
 
@@ -298,10 +299,10 @@ bool Universe::setup()
 
     _project->addView(_viewport);
 
-    auto& objects = _project->scene().objects();
-    auto addObjects = [&](const std::vector<std::shared_ptr<Object>>& o)
-        {objects.insert(objects.end(), o.begin(), o.end());};
-    addObjects(_project->scene().terrain()->objects());
+    auto& instances = _project->scene().instances();
+    auto addInstnaces = [&](const std::vector<std::shared_ptr<Instance>>& o)
+        {instances.insert(instances.end(), o.begin(), o.end());};
+    addInstnaces(_project->scene().terrain()->instances());
 
     bool ok = true;
 
@@ -348,6 +349,11 @@ void Universe::draw()
     _graphic.execute(
         _project->scene(),
         _project->cameraMan().camera());
+}
+
+void Universe::ui()
+{
+    Profile(Ui);
 }
 
 }

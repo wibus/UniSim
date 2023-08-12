@@ -1,7 +1,7 @@
 #include "bvh.h"
 
 #include "scene.h"
-#include "object.h"
+#include "instance.h"
 #include "body.h"
 #include "primitive.h"
 #include "material.h"
@@ -327,15 +327,15 @@ uint64_t BVH::toGpu(
         std::vector<GpuVertexPos>& gpuVerticesPos,
         std::vector<GpuVertexData>& gpuVerticesData)
 {
-    const auto& objects = context.scene.objects();
-    for(const std::shared_ptr<Object>& object : objects)
+    const auto& instances = context.scene.instances();
+    for(const std::shared_ptr<Instance>& instance : instances)
     {
         GpuInstance& gpuInstance = gpuInstances.emplace_back();
-        gpuInstance.position = glm::vec4(object->body()->position(), 0.0);
-        gpuInstance.quaternion = glm::vec4(quatConjugate(object->body()->quaternion()));
+        gpuInstance.position = glm::vec4(instance->body()->position(), 0.0);
+        gpuInstance.quaternion = glm::vec4(quatConjugate(instance->body()->quaternion()));
 
         gpuInstance.primitiveBegin = gpuPrimitives.size();
-        for(const std::shared_ptr<Primitive>& primitive : object->primitives())
+        for(const std::shared_ptr<Primitive>& primitive : instance->primitives())
         {
             GpuPrimitive& gpuPrimitive = gpuPrimitives.emplace_back();
             gpuPrimitive.type = primitive->type();

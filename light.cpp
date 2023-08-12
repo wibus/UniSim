@@ -4,7 +4,7 @@
 
 #include "sky.h"
 #include "scene.h"
-#include "object.h"
+#include "instance.h"
 #include "primitive.h"
 #include "material.h"
 #include "profiler.h"
@@ -138,13 +138,13 @@ uint64_t Lighting::toGpu(
         std::vector<GpuEmitter>& gpuEmitters,
         std::vector<GpuDirectionalLight>& gpuDirectionalLights)
 {
-    const auto& objects = context.scene.objects();
-    for(std::size_t i = 0; i < objects.size(); ++i)
+    const auto& instances = context.scene.instances();
+    for(std::size_t i = 0; i < instances.size(); ++i)
     {
-        const Object& object = *objects[i];
-        for(std::size_t p = 0; p < object.primitives().size(); ++p)
+        const Instance& instance = *instances[i];
+        for(std::size_t p = 0; p < instance.primitives().size(); ++p)
         {
-            const Primitive& primitive = *object.primitives()[p];
+            const Primitive& primitive = *instance.primitives()[p];
             if(glm::any(glm::greaterThan(primitive.material()->defaultEmissionColor(), glm::vec3())))
             {
                 GpuEmitter& gpuEmitter = gpuEmitters.emplace_back();

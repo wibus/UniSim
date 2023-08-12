@@ -1,5 +1,5 @@
-#ifndef OBJECT_H
-#define OBJECT_H
+#ifndef INSTANCE_H
+#define INSTANCE_H
 
 #include <GLM/glm.hpp>
 
@@ -15,15 +15,15 @@ class Body;
 class Primitive;
 
 
-class Object
+class Instance
 {
 public:
-    Object(const std::string& name,
+    Instance(const std::string& name,
            const std::shared_ptr<Body>& body,
            const std::vector<std::shared_ptr<Primitive>>& primitives,
-           Object* parent);
+           Instance* parent);
 
-    virtual ~Object();
+    virtual ~Instance();
 
     const std::string& name() const { return _name; }
 
@@ -35,7 +35,7 @@ public:
     void addPrimitives(const std::shared_ptr<Primitive>& primitive) { _primitives.push_back(primitive); }
 
 private:
-    Object* _parent;
+    Instance* _parent;
 
     std::string _name;
 
@@ -46,4 +46,4 @@ private:
 
 }
 
-#endif // OBJECT_H
+#endif // INSTANCE_H

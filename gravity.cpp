@@ -2,7 +2,7 @@
 
 #include "units.h"
 #include "scene.h"
-#include "object.h"
+#include "instance.h"
 #include "body.h"
 #include "profiler.h"
 
@@ -23,24 +23,24 @@ void Gravity::update(EngineContext& context)
 {
     Profile(Gravity);
 
-    std::vector<std::shared_ptr<Object>>& objects = context.scene.objects();
+    std::vector<std::shared_ptr<Instance>>& instances = context.scene.instances();
 
-    if(objects.empty())
+    if(instances.empty())
         return;
 
-    for(std::size_t i = 0; i < objects.size()-1; ++i)
+    for(std::size_t i = 0; i < instances.size()-1; ++i)
     {
-        if(objects[i]->body().get() == nullptr)
+        if(instances[i]->body().get() == nullptr)
             continue;
 
-        Body& bodyA = *objects[i]->body();
+        Body& bodyA = *instances[i]->body();
 
-        for(std::size_t j = i+1; j < objects.size(); ++j)
+        for(std::size_t j = i+1; j < instances.size(); ++j)
         {
-            if(objects[j]->body().get() == nullptr)
+            if(instances[j]->body().get() == nullptr)
                 continue;
 
-            Body& bodyB = *objects[j]->body();
+            Body& bodyB = *instances[j]->body();
 
             glm::dvec3 dist = bodyB.position() - bodyA.position();
             double dSquared = glm::dot(dist, dist);
@@ -56,12 +56,12 @@ void Gravity::update(EngineContext& context)
         }
     }
 
-    for(std::size_t i = 0; i < objects.size(); ++i)
+    for(std::size_t i = 0; i < instances.size(); ++i)
     {
-        if(objects[i]->body().get() == nullptr)
+        if(instances[i]->body().get() == nullptr)
             continue;
 
-        Body& body = *objects[i]->body();
+        Body& body = *instances[i]->body();
 
         if(body.isStatic())
             continue;

@@ -8,7 +8,7 @@
 #include "GLM/gtx/transform.hpp"
 
 #include "../units.h"
-#include "../object.h"
+#include "../instance.h"
 #include "../body.h"
 #include "../primitive.h"
 #include "../material.h"
@@ -67,9 +67,9 @@ void SolarSystemCameraMan::update(const Inputs& inputs, float dt)
         _camera.setLookAt(_position + _direction);
         break;
     case Mode::Orbit:
-        if(_objectId != -1 && _objectId < _scene.objects().size())
+        if(_instanceId != -1 && _instanceId < _scene.instances().size())
         {
-            glm::dvec3 bodyPos = _scene.objects()[_objectId]->body()->position();
+            glm::dvec3 bodyPos = _scene.instances()[_instanceId]->body()->position();
             glm::dvec3 distance(0, - _distance, 0);
             glm::dvec4 camQuat = quatMul(_longitude, _latitude);
             glm::dvec3 camPos = rotatePoint(camQuat, distance);
@@ -81,13 +81,13 @@ void SolarSystemCameraMan::update(const Inputs& inputs, float dt)
         }
         break;
     case Mode::Ground:
-        if(_objectId != -1 && _objectId < _scene.objects().size())
+        if(_instanceId != -1 && _instanceId < _scene.instances().size())
         {
             glm::dvec3 front(0, 0, _distance);
             glm::dvec3 up   (0, _distance, 0);
 
-            glm::dvec4 bodyQuat = _scene.objects()[_objectId]->body()->quaternion();
-            glm::dvec3 bodyPos = _scene.objects()[_objectId]->body()->position();
+            glm::dvec4 bodyQuat = _scene.instances()[_instanceId]->body()->quaternion();
+            glm::dvec3 bodyPos = _scene.instances()[_instanceId]->body()->position();
 
             glm::dvec4 camQuat = quatMul(bodyQuat, _roam);
             glm::dvec3 camPos = rotatePoint(camQuat, up);
@@ -136,13 +136,13 @@ void SolarSystemCameraMan::handleKeyboard(const Inputs& inputs, const KeyboardEv
         else if(event.key == GLFW_KEY_N)
         {
             std::cout << --moonDegrees << std::endl;
-            Body& moon = *_scene.objects()[9]->body();
+            Body& moon = *_scene.instances()[9]->body();
             moon.setQuaternion(quatMul(moon.quaternion(), quat(glm::dvec3(0, 0, -1), glm::pi<double>() / 180)));
         }
         else if(event.key == GLFW_KEY_M)
         {
             std::cout << ++moonDegrees << std::endl;
-            Body& moon = *_scene.objects()[9]->body();
+            Body& moon = *_scene.instances()[9]->body();
             moon.setQuaternion(quatMul(moon.quaternion(), quat(glm::dvec3(0, 0, 1), glm::pi<double>() / 180)));
         }
     }
@@ -189,13 +189,13 @@ void SolarSystemCameraMan::setMode(Mode mode)
     _mode = mode;
 
     if(_mode == Mode::Orbit || _mode == Mode::Ground)
-        orbit(_objectId, _objectId);
+        orbit(_instanceId, _instanceId);
 }
 
 void SolarSystemCameraMan::setBodyIndex(int bodyId)
 {
-    int oldBodyId = _objectId;
-    _objectId = bodyId;
+    int oldBodyId = _instanceId;
+    _instanceId = bodyId;
 
     if(_mode == Mode::Orbit || _mode == Mode::Ground)
         orbit(bodyId, oldBodyId);
@@ -208,9 +208,9 @@ void SolarSystemCameraMan::setDistance(float distance)
 
 void SolarSystemCameraMan::orbit(int newBodyId, int oldBodyId)
 {
-    if(_objectId != -1 && _objectId < _scene.objects().size())
+    if(_instanceId != -1 && _instanceId < _scene.instances().size())
     {
-        const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[newBodyId]->primitives()[0]);
+        const Sphere& sphere = static_cast<Sphere&>(*_scene.instances()[newBodyId]->primitives()[0]);
         _latitude = glm::dvec4(0, 0, 0, 1);
         _longitude = glm::dvec4(0, 0, 0, 1);
         _pan = glm::dvec4(0, 0, 0, 1);
@@ -227,18 +227,18 @@ void SolarSystemCameraMan::orbit(int newBodyId, int oldBodyId)
 
         if(_autoExpose && oldBodyId != newBodyId)
         {
-            if(oldBodyId != -1 && oldBodyId < _scene.objects().size())
+            if(oldBodyId != -1 && oldBodyId < _scene.instances().size())
             {
-                const Sphere& oldSphere = static_cast<Sphere&>(*_scene.objects()[oldBodyId]->primitives()[0]);
-                const Sphere& newSphere = static_cast<Sphere&>(*_scene.objects()[newBodyId]->primitives()[0]);
+                const Sphere& oldSphere = static_cast<Sphere&>(*_scene.instances()[oldBodyId]->primitives()[0]);
+                const Sphere& newSphere = static_cast<Sphere&>(*_scene.instances()[newBodyId]->primitives()[0]);
 
                 if(!(glm::any(glm::bvec3(oldSphere.material()->defaultEmissionColor())) ||
                      glm::any(glm::bvec3(newSphere.material()->defaultEmissionColor()))))
                 {
-                    glm::dvec3 oldPos = _scene.objects()[oldBodyId]->body()->position();
+                    glm::dvec3 oldPos = _scene.instances()[oldBodyId]->body()->position();
                     float oldRelIrradiance = 1.0 / glm::dot(oldPos, oldPos);
 
-                    glm::dvec3 newPos = _scene.objects()[newBodyId]->body()->position();
+                    glm::dvec3 newPos = _scene.instances()[newBodyId]->body()->position();
                     float newRelIrradiance = 1.0 / glm::dot(newPos, newPos);
 
                     _camera.setIso(_camera.iso() * newRelIrradiance / oldRelIrradiance);
@@ -345,16 +345,16 @@ void SolarSystemCameraMan::moveForward()
         _position += _direction * 1000.0;
         break;
     case Mode::Orbit:
-        if(_objectId != -1 && _objectId < _scene.objects().size())
+        if(_instanceId != -1 && _instanceId < _scene.instances().size())
         {
-            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.instances()[_instanceId]->primitives()[0]);
             _distance = glm::mix((double)sphere.radius(),  _distance, 1 / APPROACH_INC);
         }
         break;
     case Mode::Ground:
-        if(_objectId != -1 && _objectId < _scene.objects().size())
+        if(_instanceId != -1 && _instanceId < _scene.instances().size())
         {
-            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.instances()[_instanceId]->primitives()[0]);
             double moveScale = (_distance - sphere.radius()) / _distance;
 
             glm::dvec4 camQuat = quatMul(_roam, _pan);
@@ -377,16 +377,16 @@ void SolarSystemCameraMan::moveBackward()
         _position -= _direction * 1000.0;
         break;
     case Mode::Orbit:
-        if(_objectId != -1 && _objectId < _scene.objects().size())
+        if(_instanceId != -1 && _instanceId < _scene.instances().size())
         {
-            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.instances()[_instanceId]->primitives()[0]);
             _distance = glm::mix((double)sphere.radius(),  _distance, APPROACH_INC);
         }
         break;
     case Mode::Ground:
-        if(_objectId != -1 && _objectId < _scene.objects().size())
+        if(_instanceId != -1 && _instanceId < _scene.instances().size())
         {
-            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.instances()[_instanceId]->primitives()[0]);
             double moveScale = (_distance - sphere.radius()) / _distance;
 
             glm::dvec4 camQuat = quatMul(_roam, _pan);
@@ -410,9 +410,9 @@ void SolarSystemCameraMan::strafeLeft()
     case Mode::Orbit:
         break;
     case Mode::Ground:
-        if(_objectId != -1 && _objectId < _scene.objects().size())
+        if(_instanceId != -1 && _instanceId < _scene.instances().size())
         {
-            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.instances()[_instanceId]->primitives()[0]);
             double moveScale = (_distance - sphere.radius()) / _distance;
 
             glm::dvec4 camQuat = quatMul(_roam, _pan);
@@ -436,9 +436,9 @@ void SolarSystemCameraMan::strafeRight()
     case Mode::Orbit:
         break;
     case Mode::Ground:
-        if(_objectId != -1 && _objectId < _scene.objects().size())
+        if(_instanceId != -1 && _instanceId < _scene.instances().size())
         {
-            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.instances()[_instanceId]->primitives()[0]);
             double moveScale = (_distance - sphere.radius()) / _distance;
 
             glm::dvec4 camQuat = quatMul(_roam, _pan);
@@ -462,9 +462,9 @@ void SolarSystemCameraMan::strafeUp()
     case Mode::Orbit:
         break;
     case Mode::Ground:
-        if(_objectId != -1 && _objectId < _scene.objects().size())
+        if(_instanceId != -1 && _instanceId < _scene.instances().size())
         {
-            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.instances()[_instanceId]->primitives()[0]);
             _distance = glm::mix((double)sphere.radius(),  _distance, APPROACH_INC);
         }
         break;
@@ -480,9 +480,9 @@ void SolarSystemCameraMan::strafeDown()
     case Mode::Orbit:
         break;
     case Mode::Ground:
-        if(_objectId != -1 && _objectId < _scene.objects().size())
+        if(_instanceId != -1 && _instanceId < _scene.instances().size())
         {
-            const Sphere& sphere = static_cast<Sphere&>(*_scene.objects()[_objectId]->primitives()[0]);
+            const Sphere& sphere = static_cast<Sphere&>(*_scene.instances()[_instanceId]->primitives()[0]);
             _distance = glm::mix((double)sphere.radius(),  _distance, 1 / APPROACH_INC);
         }
         break;

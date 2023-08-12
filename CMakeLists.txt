@@ -56,8 +56,8 @@ set(EngineFile
     material.cpp
     camera.h
     camera.cpp
-    object.h
-    object.cpp
+    instance.h
+    instance.cpp
     body.h
     body.cpp
     primitive.h

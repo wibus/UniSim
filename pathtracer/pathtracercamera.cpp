@@ -8,9 +8,6 @@
 #include "GLM/gtx/transform.hpp"
 
 #include "../units.h"
-#include "../object.h"
-#include "../body.h"
-#include "../material.h"
 #include "../scene.h"
 
 

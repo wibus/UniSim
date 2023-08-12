@@ -2,7 +2,7 @@
 
 #include "scene.h"
 #include "body.h"
-#include "object.h"
+#include "instance.h"
 #include "primitive.h"
 #include "material.h"
 #include "profiler.h"
@@ -71,9 +71,9 @@ FlatTerrain::FlatTerrain(float uvScale) :
 
     std::vector<std::shared_ptr<Primitive>> primitives;
     primitives.push_back(std::dynamic_pointer_cast<Primitive>(_plane));
-    std::shared_ptr<Object> object(new Object("Terrain", body, primitives, nullptr));
+    std::shared_ptr<Instance> instance(new Instance("Terrain", body, primitives, nullptr));
 
-    addObject(object);
+    addInstance(instance);
 }
 
 void FlatTerrain::setMaterial(const std::shared_ptr<Material>& material)

@@ -1,7 +1,7 @@
 #include "solarsystemscene.h"
 
 #include "../units.h"
-#include "../object.h"
+#include "../instance.h"
 #include "../body.h"
 #include "../primitive.h"
 #include "../material.h"
@@ -11,15 +11,15 @@
 namespace unisim
 {
 
-std::shared_ptr<Object> makePlanet(const std::string& name, double radius, double density, Object* parent = nullptr)
+std::shared_ptr<Instance> makePlanet(const std::string& name, double radius, double density, Instance* parent = nullptr)
 {
     std::shared_ptr<Body> body(new Body(radius, density));
     std::shared_ptr<Primitive> sphere(new Sphere(radius));
     std::shared_ptr<Material> material(new Material(name));
     sphere->setMaterial(material);
 
-    std::shared_ptr<Object> object(new Object(name, body, {sphere}, parent));
-    return object;
+    std::shared_ptr<Instance> instance(new Instance(name, body, {sphere}, parent));
+    return instance;
 }
 
 SolarSystemScene::SolarSystemScene() :
@@ -31,20 +31,20 @@ SolarSystemScene::SolarSystemScene() :
     double secondsSinceJan1st2000 = 6834900; // March equinox 2000
 
     // Sun
-    std::shared_ptr<Object> sun = makePlanet("Sun", 696.340e6, 1.41f);
+    std::shared_ptr<Instance> sun = makePlanet("Sun", 696.340e6, 1.41f);
     sun->primitives()[0]->material()->setDefaultAlbedo(glm::dvec3(1.0, 1.0, 0.5));
     sun->primitives()[0]->material()->setDefaultEmissionColor(glm::dvec3(1.0, 1.0, 1.0) * 2.009e7);
-    _objects.push_back(sun);
+    _instances.push_back(sun);
 
     // Planets
-    std::shared_ptr<Object> mercury   = makePlanet("Mercury",   2.439e6,    5.43f,  &*sun);
-    std::shared_ptr<Object> venus     = makePlanet("Venus",     6.051e6,    5.24f,  &*sun);
-    std::shared_ptr<Object> earth     = makePlanet("Earth",     6.371e6,    5.51f,  &*sun);
-    std::shared_ptr<Object> mars      = makePlanet("Mars",      3.389e6,    3.93f,  &*sun);
-    std::shared_ptr<Object> jupiter   = makePlanet("Jupiter",   69.911e6,   1.33f,  &*sun);
-    std::shared_ptr<Object> saturn    = makePlanet("Saturn",    58.232e6,   0.687f, &*sun);
-    std::shared_ptr<Object> uranus    = makePlanet("Uranus",    25.362e6,   1.27f,  &*sun);
-    std::shared_ptr<Object> neptune   = makePlanet("Neptune",   24.622e6,   1.64f,  &*sun);
+    std::shared_ptr<Instance> mercury   = makePlanet("Mercury",   2.439e6,    5.43f,  &*sun);
+    std::shared_ptr<Instance> venus     = makePlanet("Venus",     6.051e6,    5.24f,  &*sun);
+    std::shared_ptr<Instance> earth     = makePlanet("Earth",     6.371e6,    5.51f,  &*sun);
+    std::shared_ptr<Instance> mars      = makePlanet("Mars",      3.389e6,    3.93f,  &*sun);
+    std::shared_ptr<Instance> jupiter   = makePlanet("Jupiter",   69.911e6,   1.33f,  &*sun);
+    std::shared_ptr<Instance> saturn    = makePlanet("Saturn",    58.232e6,   0.687f, &*sun);
+    std::shared_ptr<Instance> uranus    = makePlanet("Uranus",    25.362e6,   1.27f,  &*sun);
+    std::shared_ptr<Instance> neptune   = makePlanet("Neptune",   24.622e6,   1.64f,  &*sun);
 
     mercury->body()->setupOrbit(0.387,  0.206,   48.3,  77.46,  252.3,  7.00, secondsSinceJan1st2000, &*sun->body());
     venus->body()->setupOrbit(  0.723,  0.007,   76.7,  131.6,  182.0,  3.39, secondsSinceJan1st2000, &*sun->body());
@@ -66,7 +66,7 @@ SolarSystemScene::SolarSystemScene() :
     neptune->body()->setupRotation( 0.67, 0.0,  299.36,  43.46);
 
     auto setupMaterial = [](
-            std::shared_ptr<Object> body,
+            std::shared_ptr<Instance> body,
             const std::string& name,
             const glm::vec3& defaultAlbedo,
             const glm::vec3& defaultEmission = glm::vec3(),
@@ -89,17 +89,17 @@ SolarSystemScene::SolarSystemScene() :
     setupMaterial(uranus,   "uranus",   glm::vec3(0.1, 0.5, 0.8));
     setupMaterial(neptune,  "neptune",  glm::vec3(0.1, 0.1, 0.7));
 
-    _objects.push_back(mercury);
-    _objects.push_back(venus);
-    _objects.push_back(earth);
-    _objects.push_back(mars);
-    _objects.push_back(jupiter);
-    _objects.push_back(saturn);
-    _objects.push_back(uranus);
-    _objects.push_back(neptune);
+    _instances.push_back(mercury);
+    _instances.push_back(venus);
+    _instances.push_back(earth);
+    _instances.push_back(mars);
+    _instances.push_back(jupiter);
+    _instances.push_back(saturn);
+    _instances.push_back(uranus);
+    _instances.push_back(neptune);
 
     // Moons
-    std::shared_ptr<Object> moon = makePlanet("Moon", 1.738e6, 3.344, &*earth);
+    std::shared_ptr<Instance> moon = makePlanet("Moon", 1.738e6, 3.344, &*earth);
 
     moon->body()->setupOrbit(0.00257, 0.0554, 125.08, 83.23, 135.27, 5.16, secondsSinceJan1st2000, &*earth->body());
 
@@ -107,7 +107,7 @@ SolarSystemScene::SolarSystemScene() :
 
     setupMaterial(moon, "moon", glm::dvec3(0.5, 0.5, 0.5));
 
-    _objects.push_back(moon);
+    _instances.push_back(moon);
 }
 
 }

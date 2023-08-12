@@ -1,6 +1,6 @@
 #include "scene.h"
 
-#include "object.h"
+#include "instance.h"
 #include "material.h"
 #include "body.h"
 #include "sky.h"

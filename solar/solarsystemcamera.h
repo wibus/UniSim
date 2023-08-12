@@ -52,7 +52,7 @@ protected:
     const Scene& _scene;
 
     Mode _mode;
-    int _objectId;
+    int _instanceId;
 
     glm::dvec3 _position;
     glm::dvec3 _direction;
