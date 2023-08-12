@@ -59,6 +59,8 @@ private:
     GLuint _trianglesSSBO;
     GLuint _verticesPosSSBO;
     GLuint _verticesDataSSBO;
+
+    PathTracerModulePtr _intersectionModule;
 };
 
 

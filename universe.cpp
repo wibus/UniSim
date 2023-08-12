@@ -374,17 +374,23 @@ void Universe::ui()
                 if(ImGui::SliderFloat("Time of Day", &timeOfDay, 0, SkyLocalization::MAX_TIME_OF_DAY))
                     local.setTimeOfDay(timeOfDay);
 
-                //if(ImGui::Button("Reset Graphics"))
-                //{
-                //    bool ok = _graphic.initialize(
-                //        _project->scene(),
-                //        _project->cameraMan().camera());
-                //
-                //    if(!ok)
-                //    {
-                //        std::cerr << "Failed to reinitialize graphic systems\n";
-                //    }
-                //}
+                if(ImGui::Button("Reload Shaders"))
+                {
+                    std::cout << "\n** Reloading shaders ** \n\n";
+
+                    bool ok = _graphic.reloadShaders(
+                        _project->scene(),
+                        _project->cameraMan().camera());
+
+                    if(!ok)
+                    {
+                        std::cerr << "Failed to reload some shaders\n\n";
+                    }
+                    else
+                    {
+                        std::cout << "\n** Shaders reloaded ** \n" << std::endl;
+                    }
+                }
 
                 ImGui::EndTabItem();
             }

@@ -23,7 +23,7 @@ const ResourceId Invalid_ResourceId = ~0x0;
 
 #define ResourceName(name) ResourceId_##name
 #define DeclareResource(name) extern ResourceId ResourceName(name)
-#define DefineResource(name) ResourceId ResourceName(name) = ResourceManager::registerResource(#name)
+#define DefineResource(name) ResourceId ResourceName(name) = ResourceManager::registerStaticResource(#name)
 
 
 class GpuResource
@@ -156,6 +156,8 @@ public:
     GLuint grabTextureUnit();
     void resetTextureUnits();
 
+    bool isValid() const { return _programId != 0; }
+
 private:
     GLuint _programId;
     GLuint _nextTextureUnit;
@@ -174,7 +176,7 @@ public:
     PathTracerProvider();
     virtual ~PathTracerProvider();
 
-    std::vector<GLuint> pathTracerModules() const { return _pathTracerModules; }
+    virtual std::vector<GLuint> pathTracerModules() const;
 
     virtual bool definePathTracerModules(GraphicContext& context);
 
@@ -202,7 +204,6 @@ public:
     }
 
 protected:
-    std::vector<GLuint> _pathTracerModules;
     uint64_t _hash;
 };
 
@@ -213,7 +214,8 @@ public:
     ResourceManager();
     ~ResourceManager();
 
-    static ResourceId registerResource(const std::string& name);
+    static ResourceId registerStaticResource(const std::string& name);
+    ResourceId registerDynamicResource(const std::string& name);
 
     void initialize();
 
@@ -230,8 +232,11 @@ public:
     uint64_t pathTracerHash() const;
 
 private:
-    static unsigned int _resourceCount;
-    static std::vector<std::string> _names;
+    static unsigned int _staticResourceCount;
+    static std::vector<std::string> _staticNames;
+
+    unsigned int _resourceCount;
+    std::vector<std::string> _names;
 
     std::vector<std::shared_ptr<GpuResource>> _resources;
 

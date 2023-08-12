@@ -14,46 +14,7 @@ namespace unisim
 
 class Scene;
 class Camera;
-class Lighting;
 class MaterialDatabase;
-class BVH;
-class PathTracer;
-class ColorGrading;
-class Ui;
-
-
-std::string loadSource(const std::string& fileName);
-
-bool generateVertexShader(
-        GLuint& shaderId,
-        const std::string& fileName,
-        const std::vector<std::string>& defines = {});
-
-bool generateFragmentShader(
-        GLuint& shaderId,
-        const std::string& fileName,
-        const std::vector<std::string>& defines = {});
-
-bool generateComputerShader(
-        GLuint& shaderId,
-        const std::string& fileName,
-        const std::vector<std::string>& defines = {});
-
-bool generateGraphicProgram(
-        GLuint& programId,
-        const std::string& vertexFileName,
-        const std::string& fragmentFileName,
-        const std::vector<std::string>& defines = {});
-
-bool generateComputeProgram(
-        GLuint& programId,
-        const std::string& computeFileName,
-        const std::vector<std::string>& defines = {});
-
-bool generateComputeProgram(
-        GLuint& programId,
-        const std::string programName,
-        const std::vector<GLuint>& shaders);
 
 
 struct GraphicSettings
@@ -70,6 +31,54 @@ struct GraphicContext
     const GraphicSettings& settings;
 };
 
+class GraphicProgram
+{
+    GraphicProgram(const GraphicProgram&) = delete;
+
+    friend class GraphicTask;
+    GraphicProgram(const std::string& name);
+public:
+    ~GraphicProgram();
+
+    bool isValid() const { return _programId != 0; }
+
+    std::string name() const { return _name; }
+
+    GLuint programId() const { return _programId; }
+
+    void reset(GLuint programId, const std::vector<GLuint>& shaders);
+
+private:
+    std::string _name;
+    GLuint _programId;
+    std::vector<GLuint> _shaders;
+};
+
+using GraphicProgramPtr = std::shared_ptr<GraphicProgram>;
+
+class PathTracerModule
+{
+    PathTracerModule(const PathTracerModule&) = delete;
+
+    friend class GraphicTask;
+    PathTracerModule(const std::string& name);
+
+public:
+    ~PathTracerModule();
+
+    GLuint shaderId() const { return _shaderId; }
+
+    std::string name() const { return _name; }
+
+    void reset(GLuint shaderId);
+
+private:
+    std::string _name;
+    GLuint _shaderId;
+};
+
+using PathTracerModulePtr = std::shared_ptr<PathTracerModule>;
+
 class GraphicTask : public PathTracerProvider
 {
 public:
@@ -78,23 +87,46 @@ public:
 
     const std::string& name() const { return _name; }
 
+    std::shared_ptr<GraphicProgram> registerProgram(const std::string& name);
+    std::shared_ptr<PathTracerModule> registerPathTracerModule(const std::string& name);
+
+    std::vector<GLuint> pathTracerModules() const override;
+
     virtual void registerDynamicResources(GraphicContext& context) {}
+    virtual bool defineShaders(GraphicContext& context) { return true; }
     virtual bool defineResources(GraphicContext& context) { return true; }
 
     virtual void update(GraphicContext& context) {}
     virtual void render(GraphicContext& context) {}
 
 protected:
-    bool addPathTracerModule(GLuint shaderId);
+    bool generateGraphicProgram(
+            GraphicProgram& program,
+            const std::string& vertexFileName,
+            const std::string& fragmentFileName,
+            const std::vector<std::string>& defines = {});
+
+    bool generateComputeProgram(
+            GraphicProgram& program,
+            const std::string& computeFileName,
+            const std::vector<std::string>& defines = {});
+
+    bool generateComputeProgram(
+            GraphicProgram& program,
+            const std::string programName,
+            const std::vector<GLuint>& shaders);
 
     bool addPathTracerModule(
-            GLuint& shaderId,
+            PathTracerModule& module,
             const GraphicSettings& settings,
             const std::string& computeFileName,
             const std::vector<std::string>& defines = {});
 
 private:
     std::string _name;
+
+    std::vector<std::shared_ptr<GraphicProgram>> _programs;
+    std::vector<std::shared_ptr<PathTracerModule>> _modules;
 };
 
 
@@ -113,6 +145,8 @@ public:
     GraphicTaskGraph();
 
     bool initialize(const Scene& scene, const Camera& camera);
+
+    bool reloadShaders(const Scene& scene, const Camera& camera);
 
     void execute(const Scene& scene, const Camera& camera);
 

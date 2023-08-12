@@ -89,7 +89,7 @@ struct GpuVertexData
 BVH::BVH() :
     GraphicTask("BVH")
 {
-
+    _intersectionModule = registerPathTracerModule("Instersection");
 }
 
 void BVH::registerDynamicResources(GraphicContext& context)
@@ -99,8 +99,7 @@ void BVH::registerDynamicResources(GraphicContext& context)
 
 bool BVH::definePathTracerModules(GraphicContext& context)
 {
-    GLuint moduleId = 0;
-    if(!addPathTracerModule(moduleId, context.settings, "shaders/common/intersection.glsl"))
+    if(!addPathTracerModule(*_intersectionModule, context.settings, "shaders/common/intersection.glsl"))
         return false;
 
     return true;

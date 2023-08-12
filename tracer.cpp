@@ -37,6 +37,10 @@ PathTracer::PathTracer() :
     _frameIndex(0),
     _pathTracerHash(0)
 {
+    _utilsModule = registerPathTracerModule("Utils");
+    _pathTraceModule = registerPathTracerModule("Path Trace");
+    _pathTracerProgram = registerProgram("Path Tracer");
+
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
     {
         double* sample = halton(i, 4);
@@ -51,20 +55,32 @@ void PathTracer::registerDynamicResources(GraphicContext& context)
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
     {
-        _blueNoiseTextureResourceIds[i] = resources.registerResource("Blue Noise Texture " + std::to_string(i));
-        _blueNoiseBindlessResourceIds[i] = resources.registerResource("Blue Noise Bindless " + std::to_string(i));
+        _blueNoiseTextureResourceIds[i] = resources.registerDynamicResource("Blue Noise Texture " + std::to_string(i));
+        _blueNoiseBindlessResourceIds[i] = resources.registerDynamicResource("Blue Noise Bindless " + std::to_string(i));
     }
 }
 
 bool PathTracer::definePathTracerModules(GraphicContext& context)
 {
-    if(!addPathTracerModule(_computePathTraceShaderId, context.settings, "shaders/pathtrace.glsl"))
+    if(!addPathTracerModule(*_pathTraceModule, context.settings, "shaders/pathtrace.glsl"))
         return false;
 
-    if(!addPathTracerModule(_pathTraceUtilsShaderId, context.settings, "shaders/common/utils.glsl"))
+    if(!addPathTracerModule(*_utilsModule, context.settings, "shaders/common/utils.glsl"))
         return false;
 
     return true;
+}
+
+bool PathTracer::defineShaders(GraphicContext &context)
+{
+    // Generate programs
+    std::vector<GLuint> pathTracerModules = context.resources.pathTracerModules();
+    if(!generateComputeProgram(*_pathTracerProgram, "pathtracer", pathTracerModules))
+        return false;
+
+    _pathTracerInterface.reset(new PathTracerInterface(_pathTracerProgram->programId()));
+
+    return _pathTracerInterface->isValid();
 }
 
 bool PathTracer::defineResources(GraphicContext& context)
@@ -72,14 +88,6 @@ bool PathTracer::defineResources(GraphicContext& context)
     bool ok = true;
 
     ResourceManager& resources = context.resources;
-
-    std::vector<GLuint> pathTracerModules = context.resources.pathTracerModules();
-
-    // Generate programs
-    if(!generateComputeProgram(_computePathTraceProgramId, "pathtracer", pathTracerModules))
-        return false;
-
-    _pathTracerInterface.reset(new PathTracerInterface(_computePathTraceProgramId));
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
     {
@@ -120,8 +128,8 @@ bool PathTracer::defineResources(GraphicContext& context)
                     _pathTraceFormat});
 
     _pathTraceUnit = 0;
-    _pathTraceLoc = glGetUniformLocation(_computePathTraceProgramId, "result");
-    glProgramUniform1i(_computePathTraceProgramId, _pathTraceLoc, _pathTraceUnit);
+    _pathTraceLoc = glGetUniformLocation(_pathTracerProgram->programId(), "result");
+    glProgramUniform1i(_pathTracerProgram->programId(), _pathTraceLoc, _pathTraceUnit);
 
     _pathTracerHash = context.resources.pathTracerHash();
 
@@ -190,13 +198,19 @@ void PathTracer::render(GraphicContext& context)
 {
     ProfileGpu(PathTracer);
 
+    if(!_pathTracerProgram->isValid())
+        return;
+
+    if(!_pathTracerInterface)
+        return;
+
     ResourceManager& resources = context.resources;
 
     GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTracerResult)).texId;
 
     if(_frameIndex < MAX_FRAME_COUNT)
     {
-        glUseProgram(_computePathTraceProgramId);
+        glUseProgram(_pathTracerProgram->programId());
 
         // Set uniforms for sub-systems
         resources.setPathTracerResources(context, *_pathTracerInterface);

@@ -141,6 +141,8 @@ private:
                 const GraphicContext& context) const;
 
         std::shared_ptr<Texture> _texture;
+
+        PathTracerModulePtr _sphericalSkyModule;
     };
 
     std::shared_ptr<GraphicTask> _task;
@@ -169,8 +171,10 @@ private:
                 DirectionalLight& moon,
                 const std::shared_ptr<Texture>& stars);
 
-        bool definePathTracerModules(GraphicContext& context) override;
+        std::vector<GLuint> pathTracerModules() const override;
 
+        bool definePathTracerModules(GraphicContext& context) override;
+        bool defineShaders(GraphicContext& context) override;
         bool defineResources(GraphicContext& context) override;
 
         void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
@@ -190,7 +194,8 @@ private:
         glm::mat4 _moonTransform;
         glm::vec4 _moonQuaternion;
 
-        GLuint _lightingProgramId;
+        GraphicProgramPtr _moonLightProgram;
+        PathTracerModulePtr _physicalSkyModule;
 
         GLuint _paramsUbo;
 

@@ -497,10 +497,10 @@ void MaterialDatabase::registerDynamicResources(GraphicContext& context)
     for(std::size_t i = 0; i < _materials.size(); ++i)
     {
         _materialsResourceIds.push_back({
-            resources.registerResource(_materials[i]->name() + "_texture_albedo"),
-            resources.registerResource(_materials[i]->name() + "_texture_specular"),
-            resources.registerResource(_materials[i]->name() + "_bindless_albedo"),
-            resources.registerResource(_materials[i]->name() + "_bindless_specular"),
+            resources.registerDynamicResource(_materials[i]->name() + "_texture_albedo"),
+            resources.registerDynamicResource(_materials[i]->name() + "_texture_specular"),
+            resources.registerDynamicResource(_materials[i]->name() + "_bindless_albedo"),
+            resources.registerDynamicResource(_materials[i]->name() + "_bindless_specular"),
         });
     }
 }

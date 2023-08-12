@@ -157,7 +157,11 @@ bool generateShader(
     shaderId = glCreateShader(shaderType);
     glShaderSource(shaderId, shaderSrc.size(), &shaderSrc[0], NULL);
     if(!compileShader(shaderId, shaderName))
+    {
+        glDeleteShader(shaderId);
+        shaderId = 0;
         return false;
+    }
     else
         return true;
 }
@@ -189,68 +193,62 @@ bool generateComputerShader(
     return generateShader(shaderId, GL_COMPUTE_SHADER, fileName, {src}, defines);
 }
 
-bool generateGraphicProgram(
-        GLuint& programId,
-        const std::string& vertexFileName,
-        const std::string& fragmentFileName,
-        const std::vector<std::string>& defines)
+
+GraphicProgram::GraphicProgram(const std::string& name) :
+    _name(name),
+    _programId(0),
+    _shaders()
 {
-    GLuint vs = 0;
-    if(!generateVertexShader(vs, vertexFileName, defines))
-        return false;
-
-    GLuint fs = 0;
-    if(!generateFragmentShader(fs, fragmentFileName, defines))
-        return false;
-
-    programId = glCreateProgram();
-    glAttachShader(programId, fs);
-    glAttachShader(programId, vs);
-    glLinkProgram(programId);
-
-    if(!validateProgram(programId, vertexFileName + " - " + fragmentFileName))
-        return false;
-
-    return true;
+    std::cout << "Creating program '" << _name << "'\n";
 }
 
-bool generateComputeProgram(
-        GLuint& programId,
-        const std::string& computeFileName,
-        const std::vector<std::string>& defines)
+GraphicProgram::~GraphicProgram()
 {
-    GLuint cs = 0;
-    if(!generateComputerShader(cs, computeFileName, defines))
-        return false;
+    std::cout << "Destroying program '" << _name << "'\n";
 
-    programId = glCreateProgram();
+    for(GLuint shader : _shaders)
+        glDeleteShader(shader);
 
-    glAttachShader(programId, cs);
-    glLinkProgram(programId);
-
-    if(!validateProgram(programId, computeFileName))
-        return false;
-
-    return true;
+    glDeleteProgram(_programId);
 }
 
-bool generateComputeProgram(
-        GLuint& programId,
-        const std::string programName,
-        const std::vector<GLuint>& shaders)
+void GraphicProgram::reset(GLuint programId, const std::vector<GLuint>& shaders)
 {
-    programId = glCreateProgram();
+    std::cout << "Resetting program '" << _name << "'\n";
 
-    for(GLuint shader : shaders)
-        glAttachShader(programId, shader);
+    for(GLuint shader : _shaders)
+        glDeleteShader(shader);
 
-    glLinkProgram(programId);
+    glDeleteProgram(_programId);
 
-    if(!validateProgram(programId, programName))
-        return false;
-
-    return true;
+    _programId = programId;
+    _shaders = shaders;
 }
+
+
+PathTracerModule::PathTracerModule(const std::string& name) :
+    _name(name),
+    _shaderId(0)
+{
+    std::cout << "Creating path tracer module '" << _name << "'\n";
+}
+
+PathTracerModule::~PathTracerModule()
+{
+    std::cout << "Destroying path tracer module '" << _name << "'\n";
+
+    glDeleteShader(_shaderId);
+}
+
+void PathTracerModule::reset(GLuint shaderId)
+{
+    std::cout << "Resetting path tracer module '" << _name << "'\n";
+
+    glDeleteShader(_shaderId);
+
+    _shaderId = shaderId;
+}
+
 
 GraphicTask::GraphicTask(const std::string& name) :
     _name(name)
@@ -261,14 +259,121 @@ GraphicTask::~GraphicTask()
 {
 }
 
-bool GraphicTask::addPathTracerModule(GLuint shaderId)
+std::shared_ptr<GraphicProgram> GraphicTask::registerProgram(const std::string& name)
 {
-    _pathTracerModules.push_back(shaderId);
+    _programs.emplace_back(new GraphicProgram(name));
+    return _programs.back();
+}
+
+std::shared_ptr<PathTracerModule> GraphicTask::registerPathTracerModule(const std::string& name)
+{
+    _modules.emplace_back(new PathTracerModule(name));
+    return _modules.back();
+}
+
+std::vector<GLuint> GraphicTask::pathTracerModules() const
+{
+    std::vector<GLuint> shaders;
+    for(const auto& module : _modules)
+        shaders.push_back(module->shaderId());
+    return shaders;
+}
+
+bool GraphicTask::generateGraphicProgram(
+        GraphicProgram& program,
+        const std::string& vertexFileName,
+        const std::string& fragmentFileName,
+        const std::vector<std::string>& defines)
+{
+    GLuint vertexId = 0;
+    if(!generateVertexShader(vertexId, vertexFileName, defines))
+        return false;
+
+    GLuint fragmentId = 0;
+    if(!generateFragmentShader(fragmentId, fragmentFileName, defines))
+        return false;
+
+    GLuint programId = glCreateProgram();
+    glAttachShader(programId, vertexId);
+    glAttachShader(programId, fragmentId);
+    glLinkProgram(programId);
+
+    if(!validateProgram(programId, vertexFileName + " - " + fragmentFileName))
+    {
+        glDeleteProgram(programId);
+        programId = 0;
+
+        glDeleteShader(vertexId);
+        vertexId = 0;
+
+        glDeleteShader(fragmentId);
+        fragmentId = 0;
+
+        return false;
+    }
+
+    program.reset(programId, {vertexId, fragmentId});
+
+    return true;
+}
+
+bool GraphicTask::generateComputeProgram(
+        GraphicProgram& program,
+        const std::string& computeFileName,
+        const std::vector<std::string>& defines)
+{
+    GLuint shaderId = 0;
+    if(!generateComputerShader(shaderId, computeFileName, defines))
+        return false;
+
+    GLuint programId = glCreateProgram();
+
+    glAttachShader(programId, shaderId);
+    glLinkProgram(programId);
+
+    if(!validateProgram(programId, computeFileName))
+    {
+        glDeleteProgram(programId);
+        programId = 0;
+
+        glDeleteShader(shaderId);
+        shaderId = 0;
+
+        return false;
+    }
+
+    program.reset(programId, {shaderId});
+
+    return true;
+}
+
+bool GraphicTask::generateComputeProgram(
+        GraphicProgram& program,
+        const std::string programName,
+        const std::vector<GLuint>& shaders)
+{
+    GLuint programId = glCreateProgram();
+
+    for(GLuint shader : shaders)
+        glAttachShader(programId, shader);
+
+    glLinkProgram(programId);
+
+    if(!validateProgram(programId, programName))
+    {
+        glDeleteProgram(programId);
+        programId = 0;
+
+        return false;
+    }
+
+    program.reset(programId, {});
+
     return true;
 }
 
 bool GraphicTask::addPathTracerModule(
-        GLuint& shaderId,
+        PathTracerModule& module,
         const GraphicSettings& settings,
         const std::string& computeFileName,
         const std::vector<std::string>& defines)
@@ -288,12 +393,13 @@ bool GraphicTask::addPathTracerModule(
     std::vector<std::string> allSrcs = g_PathTracerCommonSrcs;
     allSrcs.push_back(loadSource(computeFileName));
 
-    bool success = generateShader(shaderId, GL_COMPUTE_SHADER, computeFileName, allSrcs, allDefines);
+    GLuint shaderId = 0;
+    if(!generateShader(shaderId, GL_COMPUTE_SHADER, computeFileName, allSrcs, allDefines))
+        return false;
 
-    if(success)
-        _pathTracerModules.push_back(shaderId);
+    module.reset(shaderId);
 
-    return success;
+    return true;
 }
 
 
@@ -336,6 +442,7 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 
     g_GlslExtensions += "#extension GL_ARB_bindless_texture : require\n";
 
+    g_PathTracerCommonSrcs.clear();
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/constants.glsl"));
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/data.glsl"));
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
@@ -347,7 +454,7 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 
         if(!ok)
         {
-            std::cerr << task->name() << " path tracer module definition failed\n";
+            std::cerr << "'" << task->name() << "' path tracer module definition failed\n";
             return false;
         }
 
@@ -356,11 +463,59 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 
     for(const auto& task : _tasks)
     {
+        bool ok = task->defineShaders(context);
+
+        if(!ok)
+        {
+            std::cerr << "'" << task->name() << "' shader definition failed\n";
+            return false;
+        }
+    }
+
+    for(const auto& task : _tasks)
+    {
         bool ok = task->defineResources(context);
 
         if(!ok)
         {
-            std::cerr << task->name() << " resource definition failed\n";
+            std::cerr << "'" << task->name() << "' resource definition failed\n";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool GraphicTaskGraph::reloadShaders(const Scene& scene, const Camera& camera)
+{
+    g_PathTracerCommonSrcs.clear();
+    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/constants.glsl"));
+    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/data.glsl"));
+    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
+    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
+
+    GraphicContext context = {scene, camera, _resources, *_materials, _settings};
+
+    for(const auto& task : _tasks)
+    {
+        bool ok = task->definePathTracerModules(context);
+
+        if(!ok)
+        {
+            std::cerr << "'" << task->name() << "' path tracer module definition failed\n";
+            return false;
+        }
+
+        _resources.registerPathTracerProvider(std::dynamic_pointer_cast<PathTracerProvider>(task));
+    }
+
+    for(const auto& task : _tasks)
+    {
+        bool ok = task->defineShaders(context);
+
+        if(!ok)
+        {
+            std::cerr << "'" << task->name() << "' shader definition failed\n";
             return false;
         }
     }

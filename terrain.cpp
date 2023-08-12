@@ -46,16 +46,6 @@ NoTerrain::Task::Task() :
 
 }
 
-bool NoTerrain::Task::definePathTracerModules(GraphicContext& context)
-{
-    return true;
-}
-
-bool NoTerrain::Task::defineResources(GraphicContext& context)
-{
-    return true;
-}
-
 
 FlatTerrain::FlatTerrain(float uvScale) :
     _height(0)
@@ -95,16 +85,6 @@ FlatTerrain::Task::Task() :
     GraphicTask("Flat Terrain")
 {
 
-}
-
-bool FlatTerrain::Task::definePathTracerModules(GraphicContext& context)
-{
-    return true;
-}
-
-bool FlatTerrain::Task::defineResources(GraphicContext& context)
-{
-    return true;
 }
 
 }

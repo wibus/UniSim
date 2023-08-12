@@ -49,10 +49,6 @@ private:
     {
     public:
         Task();
-
-        bool definePathTracerModules(GraphicContext& context) override;
-
-        bool defineResources(GraphicContext& context) override;
     };
 
     std::shared_ptr<Task> _task;
@@ -76,10 +72,6 @@ private:
     {
     public:
         Task();
-
-        bool definePathTracerModules(GraphicContext& context) override;
-
-        bool defineResources(GraphicContext& context) override;
 };
 
     double _height;

@@ -11,6 +11,7 @@ class ColorGrading : public GraphicTask
 public:
     ColorGrading();
 
+    bool defineShaders(GraphicContext& context) override;
     bool defineResources(GraphicContext& context) override;
 
     void render(GraphicContext& context) override;
@@ -18,7 +19,7 @@ public:
 private:
     GLuint _vbo;
     GLuint _vao;
-    GLuint _colorGradingId;
+    GraphicProgramPtr _colorGradingProgram;
 };
 
 }

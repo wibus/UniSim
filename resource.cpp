@@ -177,6 +177,7 @@ PathTracerInterface::PathTracerInterface(GLuint programId) :
     }
     else
     {
+        _programId = 0;
         std::cerr << "Could not declare path tracer input binding points" << std::endl;
         assert(false);
     }
@@ -275,6 +276,11 @@ PathTracerProvider::~PathTracerProvider()
 {
 }
 
+std::vector<GLuint> PathTracerProvider::pathTracerModules() const
+{
+    return {};
+}
+
 bool PathTracerProvider::definePathTracerModules(GraphicContext& context)
 {
     return true;
@@ -284,10 +290,12 @@ void PathTracerProvider::setPathTracerResources(GraphicContext& context, PathTra
 {
 }
 
-unsigned int ResourceManager::_resourceCount = 0;
-std::vector<std::string> ResourceManager::_names;
+unsigned int ResourceManager::_staticResourceCount = 0;
+std::vector<std::string> ResourceManager::_staticNames;
 
-ResourceManager::ResourceManager()
+ResourceManager::ResourceManager() :
+    _resourceCount(_staticResourceCount),
+    _names(_staticNames)
 {
 }
 
@@ -296,7 +304,13 @@ ResourceManager::~ResourceManager()
     _resources.clear();
 }
 
-ResourceId ResourceManager::registerResource(const std::string& name)
+ResourceId ResourceManager::registerStaticResource(const std::string& name)
+{
+    _staticNames.push_back(name);
+    return _staticResourceCount++;
+}
+
+ResourceId ResourceManager::registerDynamicResource(const std::string& name)
 {
     _names.push_back(name);
     return _resourceCount++;

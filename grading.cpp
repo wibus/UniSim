@@ -15,14 +15,19 @@ DeclareResource(PathTracerResult);
 ColorGrading::ColorGrading() :
     GraphicTask("Color Grading")
 {
+    _colorGradingProgram = registerProgram("Color Grading");
+}
 
+bool ColorGrading::defineShaders(GraphicContext& context)
+{
+    if(!generateGraphicProgram(*_colorGradingProgram, "shaders/fullscreen.vert", "shaders/colorgrade.frag"))
+        return false;
+
+    return true;
 }
 
 bool ColorGrading::defineResources(GraphicContext& context)
 {
-    if(!generateGraphicProgram(_colorGradingId, "shaders/fullscreen.vert", "shaders/colorgrade.frag"))
-        return false;
-
     float points[] = {
       -1.0f, -1.0f,  0.0f,
        3.0f, -1.0f,  0.0f,
@@ -46,11 +51,14 @@ void ColorGrading::render(GraphicContext& context)
 {
     ProfileGpu(ColorGrading);
 
+    if(!_colorGradingProgram->isValid())
+        return;
+
     ResourceManager& resources = context.resources;
 
     GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTracerResult)).texId;
 
-    glUseProgram(_colorGradingId);
+    glUseProgram(_colorGradingProgram->programId());
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, pathTraceTexId);

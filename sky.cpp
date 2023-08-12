@@ -208,13 +208,12 @@ SkySphere::Task::Task(const std::shared_ptr<Texture>& texture) :
     GraphicTask("SkySphere"),
     _texture(texture)
 {
-
+    _sphericalSkyModule = registerPathTracerModule("Spherical Sky");
 }
 
 bool SkySphere::Task::definePathTracerModules(GraphicContext& context)
 {
-    GLuint moduleId = 0;
-    if(!addPathTracerModule(moduleId, context.settings, "shaders/sphericalsky.glsl"))
+    if(!addPathTracerModule(*_sphericalSkyModule, context.settings, "shaders/sphericalsky.glsl"))
         return false;
 
     return true;
@@ -476,22 +475,35 @@ PhysicalSky::Task::Task(
     _params(params),
     _sun(sun),
     _moon(moon),
-    _lightingProgramId(0),
     _moonLightingDimensions(1024),
     _moonHash(0),
     _moonIsDirty(true),
     _starsTexture(stars)
 {
+    _moonLightProgram = registerProgram("Moon Light");
+    _physicalSkyModule = registerPathTracerModule("Physical Sky");
+}
 
+std::vector<GLuint> PhysicalSky::Task::pathTracerModules() const
+{
+    std::vector<GLuint> modules = GraphicTask::pathTracerModules();
+    modules.push_back(_model.shader());
+
+    return modules;
 }
 
 bool PhysicalSky::Task::definePathTracerModules(GraphicContext& context)
 {
-    GLuint moduleId = 0;
-    if(!addPathTracerModule(moduleId, context.settings, "shaders/physicalsky.glsl"))
+    if(!addPathTracerModule(*_physicalSkyModule, context.settings, "shaders/physicalsky.glsl"))
         return false;
 
-    addPathTracerModule(_model.shader());
+    return true;
+}
+
+bool PhysicalSky::Task::defineShaders(GraphicContext &context)
+{
+    if(!generateComputeProgram(*_moonLightProgram, "shaders/moonlight.glsl"))
+        return false;
 
     return true;
 }
@@ -502,9 +514,6 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
 
     ResourceManager& resources = context.resources;
 
-    if(!generateComputeProgram(_lightingProgramId, "shaders/moonlight.glsl"))
-        return false;
-
     _moonAlbedo.reset(Texture::load("textures/moonAlbedo2d.png"));
     ok = ok && resources.define<GpuTextureResource>(ResourceName(MoonAlbedo), {*_moonAlbedo});
 
@@ -512,14 +521,14 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
     ok = ok && resources.define<GpuImageResource>(ResourceName(MoonLighting),
         {_moonLightingDimensions, _moonLightingDimensions, _lightingFormat});
 
-    _albedoLoc = glGetUniformLocation(_lightingProgramId, "albedo");
-    _lightingLoc = glGetUniformLocation(_lightingProgramId, "lighting");
+    _albedoLoc = glGetUniformLocation(_moonLightProgram->programId(), "albedo");
+    _lightingLoc = glGetUniformLocation(_moonLightProgram->programId(), "lighting");
 
     _albedoUnit = 0;
     _lightingUnit = 0;
 
-    glProgramUniform1i(_lightingProgramId, _albedoLoc, _albedoUnit);
-    glProgramUniform1i(_lightingProgramId, _lightingLoc, _lightingUnit);
+    glProgramUniform1i(_moonLightProgram->programId(), _albedoLoc, _albedoUnit);
+    glProgramUniform1i(_moonLightProgram->programId(), _lightingLoc, _lightingUnit);
 
     glGenBuffers(1, &_paramsUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, _paramsUbo);
@@ -634,14 +643,17 @@ void PhysicalSky::Task::update(GraphicContext& context)
 
 void PhysicalSky::Task::render(GraphicContext& context)
 {
-    ResourceManager& resources = context.resources;
-
     ProfileGpu(PhysicalSky);
+
+    if(!_moonLightProgram->isValid())
+        return;
 
     if(!_moonIsDirty)
         return;
 
-    glUseProgram(_lightingProgramId);
+    ResourceManager& resources = context.resources;
+
+    glUseProgram(_moonLightProgram->programId());
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, _paramsUbo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(PhysicalSkyCommonParams), _gpuParams.get(), GL_STREAM_DRAW);

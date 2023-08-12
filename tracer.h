@@ -24,6 +24,7 @@ public:
 
     void registerDynamicResources(GraphicContext& context) override;
     bool definePathTracerModules(GraphicContext& context) override;
+    bool defineShaders(GraphicContext& context) override;
     bool defineResources(GraphicContext& context) override;
 
     void setPathTracerResources(
@@ -52,9 +53,9 @@ private:
     GLuint _pathTraceUnit;
     GLint _pathTraceFormat;
 
-    GLuint _pathTraceUtilsShaderId;
-    GLuint _computePathTraceShaderId;
-    GLuint _computePathTraceProgramId;
+    PathTracerModulePtr _utilsModule;
+    PathTracerModulePtr _pathTraceModule;
+    GraphicProgramPtr _pathTracerProgram;
 
     unsigned int _frameIndex;
     uint64_t _pathTracerHash;
