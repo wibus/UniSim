@@ -32,6 +32,10 @@ DefineProfilePoint(SwapBuffers);
 
 DefineProfilePointGpu(SwapBuffers);
 
+DeclareProfilePoint(Frame);
+DeclareProfilePointGpu(Frame);
+DeclareProfilePointGpu(PathTracer);
+
 Universe& Universe::getInstance()
 {
     static Universe g_Instance;
@@ -373,6 +377,19 @@ void Universe::ui()
                 float timeOfDay = local.timeOfDay();
                 if(ImGui::SliderFloat("Time of Day", &timeOfDay, 0, SkyLocalization::MAX_TIME_OF_DAY))
                     local.setTimeOfDay(timeOfDay);
+
+                ImGui::Separator();
+
+                ImGui::Text("CPU Time %.3gms   (Sync %.3gms)",
+                            Profiler::GetInstance().getCpuPointNs(PID_CPU(Frame)) * 1e-6,
+                            Profiler::GetInstance().getCpuSyncNs() * 1e-6);
+                ImGui::Text("GPU Time %.3gms   (Sync %.3gms)",
+                            Profiler::GetInstance().getGpuPointNs(PID_GPU(Frame)) * 1e-6,
+                            Profiler::GetInstance().getGpuSyncNs() * 1e-6);
+                ImGui::Text("Path Tracer %.3gms",
+                            Profiler::GetInstance().getGpuPointNs(PID_GPU(PathTracer)) * 1e-6);
+
+                ImGui::Separator();
 
                 if(ImGui::Button("Reload Shaders"))
                 {

@@ -14,20 +14,21 @@ typedef unsigned int ProfileIdCpu;
 typedef unsigned int ProfileIdGpu;
 
 
-struct CPUProfilePoint;
-struct GPUProfilePoint;
+struct CpuProfilePoint;
+struct GpuProfilePoint;
 
 class Profiler
 {
     struct ProfileNode
     {
-        int profileId;
+        unsigned int profileId;
         int parent;
         std::vector<unsigned int> children;
     };
 
     struct ResolvedPoint
     {
+        unsigned int profileId;
         const char* name;
         uint64_t recStartNs;
         uint64_t recStopNs;
@@ -53,6 +54,12 @@ public:
     void startGpuPoint(ProfileIdGpu id);
     void stopGpuPoint(ProfileIdGpu id);
 
+    float getCpuPointNs(ProfileIdCpu id) const;
+    float getGpuPointNs(ProfileIdGpu id) const;
+
+    float getCpuSyncNs() const;
+    float getGpuSyncNs() const;
+
     void ui();
 
 private:
@@ -63,8 +70,8 @@ private:
     bool _initialized;
     unsigned int _frame;
 
-    std::vector<CPUProfilePoint> _cpuPoints;
-    std::vector<GPUProfilePoint> _gpuPoints;
+    std::vector<CpuProfilePoint> _cpuPoints;
+    std::vector<GpuProfilePoint> _gpuPoints;
 
     ResolvedPoint _renderedSyncPt;
 
@@ -113,11 +120,13 @@ private:
 };
 
 #define PID_CPU(name) ProfileIdCpu_##name
-#define DefineProfilePoint(name) static ProfileIdCpu PID_CPU(name) = Profiler::GetInstance().registerCpuPoint(#name)
+#define DefineProfilePoint(name) ProfileIdCpu PID_CPU(name) = Profiler::GetInstance().registerCpuPoint(#name)
+#define DeclareProfilePoint(name) extern ProfileIdCpu PID_CPU(name);
 #define Profile(name) ScoppedCpuPoint profilePoint_##name(PID_CPU(name))
 
 #define PID_GPU(name) ProfileIdGpu_##name
-#define DefineProfilePointGpu(name) static ProfileIdGpu PID_GPU(name) = Profiler::GetInstance().registerGpuPoint(#name)
+#define DefineProfilePointGpu(name) ProfileIdGpu PID_GPU(name) = Profiler::GetInstance().registerGpuPoint(#name)
+#define DeclareProfilePointGpu(name) extern ProfileIdGpu PID_GPU(name);
 #define ProfileGpu(name) ScoppedGpuPoint profilePointGpu_##name(PID_GPU(name))
 
 }
