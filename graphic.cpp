@@ -381,7 +381,7 @@ bool GraphicTask::addPathTracerModule(
     std::vector<std::string> allDefines = defines;
 
     if(settings.unbiased)
-        allDefines.push_back("UNBIASED");
+        allDefines.push_back("IS_UNBIASED");
 
     for(int t = 0; t < Primitive::Type_Count; ++t)
     {

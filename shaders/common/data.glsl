@@ -94,7 +94,7 @@ struct Ray
     vec3 origin;
     vec3 direction;
     vec3 throughput;
-#ifndef UNBIASED
+#ifndef IS_UNBIASED
     float diffusivity;
 #endif
     uint depth;

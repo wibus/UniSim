@@ -440,7 +440,7 @@ Ray scatter(Ray rayIn, HitInfo hitInfo)
         rayOut.direction = reflectionDirection;
         rayOut.bsdfPdf = hitInfo.specularA == 0 ? DELTA : pdf;
         rayOut.throughput = rayIn.throughput * specularAlbedo / r;
-#ifndef UNBIASED
+#ifndef IS_UNBIASED
         rayOut.throughput *= mix(1 - rayIn.diffusivity, 1, min(1, hitInfo.specularA));
         rayOut.diffusivity = mix(rayIn.diffusivity, 1, min(1, hitInfo.specularA));
 #endif
@@ -452,7 +452,7 @@ Ray scatter(Ray rayIn, HitInfo hitInfo)
         rayOut.direction = normalize(dir.x * T + dir.y * B + dir.z * N);
         rayOut.bsdfPdf = cosineHemispherePdf(dir.z);
         rayOut.throughput = rayIn.throughput * hitInfo.diffuseAlbedo * (1 - f) / (1 - r);
-#ifndef UNBIASED
+#ifndef IS_UNBIASED
         rayOut.diffusivity = 1;
 #endif
     }
