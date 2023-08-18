@@ -21,40 +21,16 @@ vec4 rayTriangleIntersection(
 
 bool rayAABBIntersection(Ray ray, vec3 aabbMin, vec3 aabbMax)
 {
-    float tmin = (aabbMin.x - ray.origin.x) / ray.direction.x;
-    float tmax = (aabbMax.x - ray.origin.x) / ray.direction.x;
+    vec3 tmin = (aabbMin - ray.origin) * ray.invDirection;
+    vec3 tmax = (aabbMax - ray.origin) * ray.invDirection;
 
-    if (tmin > tmax) swap(tmin, tmax);
+    vec3 trueMin = min(tmin, tmax);
+    vec3 trueMax = max(tmin, tmax);
 
-    float tymin = (aabbMin.y - ray.origin.y) / ray.direction.y;
-    float tymax = (aabbMax.y - ray.origin.y) / ray.direction.y;
+    float tNear = max(max(trueMin.x, trueMin.y), trueMin.y);
+    float tFar  = min(min(trueMax.x, trueMax.y), trueMax.y);
 
-    if (tymin > tymax) swap(tymin, tymax);
-
-    if ((tmin > tymax) || (tymin > tmax))
-        return false;
-
-    if (tymin > tmin)
-        tmin = tymin;
-
-    if (tymax < tmax)
-        tmax = tymax;
-
-    float tzmin = (aabbMin.z - ray.origin.z) / ray.direction.z;
-    float tzmax = (aabbMax.z - ray.origin.z) / ray.direction.z;
-
-    if (tzmin > tzmax) swap(tzmin, tzmax);
-
-    if ((tmin > tzmax) || (tzmin > tmax))
-        return false;
-
-    if (tzmin > tmin)
-        tmin = tzmin;
-
-    if (tzmax < tmax)
-        tmax = tzmax;
-
-    return true;
+    return (tNear <= tFar) && (tFar > 0);
 }
 
 Intersection intersectMesh(Ray ray, uint meshId, uint materialId)
@@ -167,7 +143,7 @@ Intersection intersectPlane(Ray ray, uint planeId, uint materialId)
     Plane plane = planes[planeId];
 
     Intersection intersection;
-    intersection.t = -ray.origin.z / ray.direction.z;
+    intersection.t = -ray.origin.z * ray.invDirection.z;
     intersection.materialId = materialId;
     intersection.normal = vec3(0, 0, intersection.t >= 0 ? 1 : -1);
     intersection.uv = plane.invScale * (ray.origin + ray.direction * intersection.t).xy;

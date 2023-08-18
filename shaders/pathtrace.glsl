@@ -46,6 +46,7 @@ Intersection raycast(in Ray ray)
         Ray instanceRay;
         instanceRay.origin = rotate(instance.quaternion, ray.origin - instance.position.xyz);
         instanceRay.direction = rotate(instance.quaternion, ray.direction);
+        instanceRay.invDirection = 1 / instanceRay.direction;
 
         for(uint p = instance.primitiveBegin; p < instance.primitiveEnd; ++p)
         {
@@ -89,6 +90,7 @@ bool shadowcast(in Ray ray, float tMax)
         Ray instanceRay;
         instanceRay.origin = rotate(instance.quaternion, ray.origin - instance.position.xyz);
         instanceRay.direction = rotate(instance.quaternion, ray.direction);
+        instanceRay.invDirection = 1 / instanceRay.direction;
 
         for(uint p = instance.primitiveBegin; p < instance.primitiveEnd; ++p)
         {
