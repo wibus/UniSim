@@ -71,6 +71,7 @@ struct GpuTriangle
     uint v0;
     uint v1;
     uint v2;
+    GLfloat inv2Area;
 };
 
 struct GpuVertexPos
@@ -368,10 +369,17 @@ uint64_t BVH::toGpu(
 
                 for(const Triangle& tri : mesh.triangles())
                 {
+                    const glm::vec3& A = mesh.vertices()[tri.v[0]].position;
+                    const glm::vec3& B = mesh.vertices()[tri.v[1]].position;
+                    const glm::vec3& C = mesh.vertices()[tri.v[2]].position;
+
+                    float inv2Area = glm::length(glm::cross(B-A, C-A));
+
                     gpuTriangles.push_back({
                         vertexOffset + tri.v[0],
                         vertexOffset + tri.v[1],
-                        vertexOffset + tri.v[2]
+                        vertexOffset + tri.v[2],
+                        inv2Area
                     });
                 }
             }

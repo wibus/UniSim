@@ -48,9 +48,7 @@ struct BvhNode
 
 struct Triangle
 {
-    uint v0;
-    uint v1;
-    uint v2;
+    uvec4 v;
 };
 
 struct VertexPos

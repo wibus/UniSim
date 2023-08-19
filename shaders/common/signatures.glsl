@@ -1,4 +1,12 @@
 // Basics
+float asfloat(uint f);
+
+float asfloat(int f);
+
+float asint(float i);
+
+float asuint(float u);
+
 float max3(float a, float b, float c);
 
 float max4(float a, float b, float c, float d);

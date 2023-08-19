@@ -1,4 +1,24 @@
 // Basics
+float asfloat(uint f)
+{
+    return uintBitsToFloat(f);
+}
+
+float asfloat(int f)
+{
+    return intBitsToFloat(f);
+}
+
+float asint(float i)
+{
+    return floatBitsToInt(i);
+}
+
+float asuint(float u)
+{
+    return floatBitsToUint(u);
+}
+
 float max3(float a, float b, float c)
 {
     return max(max(a, b), c);

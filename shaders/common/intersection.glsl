@@ -1,10 +1,9 @@
 vec4 rayTriangleIntersection(
     Probe probe,
     vec3 A, vec3 B, vec3 C,
-    out float inv2Area)
+    float inv2Area)
 {
     vec3 crossABC = cross(B-A, C-A);
-    inv2Area = 1 / length(crossABC);
     vec3 normal = crossABC * inv2Area;
 
     float t = dot(A-probe.origin, normal) / dot(normal, probe.direction);
@@ -50,22 +49,22 @@ bool intersectMesh(inout Intersection intersection, Probe probe, uint meshId, ui
     uint triEnd = triBegin + bvhNode.triCount;
     for(uint t = triBegin; t < triEnd; ++t)
     {
-        float inv2Area;
+        Triangle tri = triangles[t];
         vec4 triHit = rayTriangleIntersection(
             probe,
-            verticesPos[triangles[t].v0].position.xyz,
-            verticesPos[triangles[t].v1].position.xyz,
-            verticesPos[triangles[t].v2].position.xyz,
-            inv2Area);
+            verticesPos[tri.v.x].position.xyz,
+            verticesPos[tri.v.y].position.xyz,
+            verticesPos[tri.v.z].position.xyz,
+            asfloat(tri.v.w));
 
         if(triHit.w > 0 && triHit.w < intersection.t)
         {
             intersection.t = triHit.w;
             intersection.materialId = materialId;
 
-            VertexData data0 = verticesData[triangles[t].v0];
-            VertexData data1 = verticesData[triangles[t].v1];
-            VertexData data2 = verticesData[triangles[t].v2];
+            VertexData data0 = verticesData[tri.v.x];
+            VertexData data1 = verticesData[tri.v.y];
+            VertexData data2 = verticesData[tri.v.z];
 
             intersection.normal = normalize(
                 triHit.x * data0.normal.xyz +
@@ -77,7 +76,7 @@ bool intersectMesh(inout Intersection intersection, Probe probe, uint meshId, ui
                 triHit.y * data1.uv +
                 triHit.z * data2.uv;
 
-            intersection.primitiveAreaPdf = triHit.w * triHit.w * inv2Area * 2;
+            intersection.primitiveAreaPdf = triHit.w * triHit.w * asfloat(tri.v.w) * 2;
 
             intersected = true;
         }
