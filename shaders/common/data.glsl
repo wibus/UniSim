@@ -93,13 +93,19 @@ struct Ray
 {
     vec3 origin;
     vec3 direction;
-    vec3 invDirection;
     vec3 throughput;
 #ifndef IS_UNBIASED
     float diffusivity;
 #endif
     uint depth;
     float bsdfPdf;
+};
+
+struct Probe
+{
+    vec3 origin;
+    vec3 direction;
+    vec3 invDirection;
 };
 
 struct Intersection

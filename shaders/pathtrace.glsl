@@ -36,83 +36,80 @@ Ray genRay(uvec2 pixelPos)
 
 Intersection raycast(in Ray ray)
 {
-    Intersection bestIntersection;
-    bestIntersection.t = 1 / 0.0;
+    Intersection intersection;
+    intersection.t = INFINITY;
 
     for(uint i = 0; i < instances.length(); ++i)
     {
         Instance instance = instances[i];
 
-        Ray instanceRay;
-        instanceRay.origin = rotate(instance.quaternion, ray.origin - instance.position.xyz);
-        instanceRay.direction = rotate(instance.quaternion, ray.direction);
-        instanceRay.invDirection = 1 / instanceRay.direction;
+        Probe probe;
+        probe.origin = rotate(instance.quaternion, ray.origin - instance.position.xyz);
+        probe.direction = rotate(instance.quaternion, ray.direction);
+        probe.invDirection = 1 / probe.direction;
 
         for(uint p = instance.primitiveBegin; p < instance.primitiveEnd; ++p)
         {
-            Intersection intersection;
-            intersection.t = -1;
-
             Primitive primitive = primitives[p];
 
+            bool intersected = false;
             if(primitive.type == PRIMITIVE_TYPE_MESH)
             {
-                intersection = intersectMesh(instanceRay, primitive.index, primitive.material);
+                intersected = intersectMesh(intersection, probe, primitive.index, primitive.material);
             }
             else if(primitive.type == PRIMITIVE_TYPE_SPHERE)
             {
-                intersection = intersectSphere(instanceRay, primitive.index, primitive.material);
+                intersected = intersectSphere(intersection, probe, primitive.index, primitive.material);
             }
             else if(primitive.type == PRIMITIVE_TYPE_PLANE)
             {
-                intersection = intersectPlane(instanceRay, primitive.index, primitive.material);
+                intersected = intersectPlane(intersection, probe, primitive.index, primitive.material);
             }
 
-            if(intersection.t > 0 && intersection.t < bestIntersection.t)
+            if(intersected)
             {
-                bestIntersection = intersection;
-                bestIntersection.normal = rotate(
+                intersection.normal = rotate(
                     quatConj(instance.quaternion),
-                    bestIntersection.normal);
+                    intersection.normal);
             }
         }
     }
 
-    return bestIntersection;
+    return intersection;
 }
 
 bool shadowcast(in Ray ray, float tMax)
 {
+    Intersection intersection;
+    intersection.t = INFINITY;
+
     for(uint i = 0; i < instances.length(); ++i)
     {
         Instance instance = instances[i];
 
-        Ray instanceRay;
-        instanceRay.origin = rotate(instance.quaternion, ray.origin - instance.position.xyz);
-        instanceRay.direction = rotate(instance.quaternion, ray.direction);
-        instanceRay.invDirection = 1 / instanceRay.direction;
+        Probe probe;
+        probe.origin = rotate(instance.quaternion, ray.origin - instance.position.xyz);
+        probe.direction = rotate(instance.quaternion, ray.direction);
+        probe.invDirection = 1 / probe.direction;
 
         for(uint p = instance.primitiveBegin; p < instance.primitiveEnd; ++p)
         {
             Primitive primitive = primitives[p];
 
-            Intersection intersection;
-            intersection.t = -1;
-
             if(primitive.type == PRIMITIVE_TYPE_MESH)
             {
-                intersection = intersectMesh(instanceRay, primitive.index, primitive.material);
+                intersectMesh(intersection, probe, primitive.index, primitive.material);
             }
             else if(primitive.type == PRIMITIVE_TYPE_SPHERE)
             {
-                intersection = intersectSphere(instanceRay, primitive.index, primitive.material);
+                intersectSphere(intersection, probe, primitive.index, primitive.material);
             }
             else if(primitive.type == PRIMITIVE_TYPE_PLANE)
             {
-                intersection = intersectPlane(instanceRay, primitive.index, primitive.material);
+                intersectPlane(intersection, probe, primitive.index, primitive.material);
             }
 
-            if(intersection.t > 0 && intersection.t < tMax * 0.99999)
+            if(intersection.t < tMax * 0.99999)
             {
                 return false;
             }
@@ -122,7 +119,7 @@ bool shadowcast(in Ray ray, float tMax)
     return true;
 }
 
-HitInfo probe(in Ray ray, in Intersection intersection)
+HitInfo resolveHit(in Ray ray, in Intersection intersection)
 {
     Material material = materials[intersection.materialId];
 
@@ -479,9 +476,9 @@ void main()
     {
         Intersection bestIntersection = raycast(ray);
 
-        if (bestIntersection.t != 1 / 0.0)
+        if (bestIntersection.t != INFINITY)
         {
-            HitInfo hitInfo = probe(ray, bestIntersection);
+            HitInfo hitInfo = resolveHit(ray, bestIntersection);
             colorAccum += shadeHit(ray, hitInfo);
             ray = scatter(ray, hitInfo);
         }

@@ -1,5 +1,5 @@
 vec4 rayTriangleIntersection(
-    vec3 ray, vec3 rayDir,
+    Probe probe,
     vec3 A, vec3 B, vec3 C,
     out float inv2Area)
 {
@@ -7,8 +7,8 @@ vec4 rayTriangleIntersection(
     inv2Area = 1 / length(crossABC);
     vec3 normal = crossABC * inv2Area;
 
-    float t = dot(A-ray, normal) / dot(normal, rayDir);
-    vec3 Q = ray + rayDir * t; // hit point
+    float t = dot(A-probe.origin, normal) / dot(normal, probe.direction);
+    vec3 Q = probe.origin + probe.direction * t; // hit point
 
     float areaQBC = dot(cross(C-B, Q-B), normal);
     float areaAQC = dot(cross(A-C, Q-C), normal);
@@ -20,10 +20,10 @@ vec4 rayTriangleIntersection(
         vec4(0, 0, 0, -1);
 }
 
-bool rayAABBIntersection(Ray ray, vec3 aabbMin, vec3 aabbMax)
+bool rayAABBIntersection(Probe probe, vec3 aabbMin, vec3 aabbMax)
 {
-    vec3 tmin = (aabbMin - ray.origin) * ray.invDirection;
-    vec3 tmax = (aabbMax - ray.origin) * ray.invDirection;
+    vec3 tmin = (aabbMin - probe.origin) * probe.invDirection;
+    vec3 tmax = (aabbMax - probe.origin) * probe.invDirection;
 
     vec3 trueMin = min(tmin, tmax);
     vec3 trueMax = max(tmin, tmax);
@@ -34,19 +34,17 @@ bool rayAABBIntersection(Ray ray, vec3 aabbMin, vec3 aabbMax)
     return (tNear <= tFar) && (tFar > 0);
 }
 
-Intersection intersectMesh(Ray ray, uint meshId, uint materialId)
+bool intersectMesh(inout Intersection intersection, Probe probe, uint meshId, uint materialId)
 {
     Mesh mesh = meshes[meshId];
 
-    Intersection intersection;
-    intersection.t = 1 / 0.0;
-    intersection.materialId = materialId;
-
     BvhNode bvhNode = bvhNodes[mesh.bvhNode];
-    if(!rayAABBIntersection(ray,
+    if(!rayAABBIntersection(probe,
         vec3(bvhNode.aabbMinX, bvhNode.aabbMinY, bvhNode.aabbMinZ),
         vec3(bvhNode.aabbMaxX, bvhNode.aabbMaxY, bvhNode.aabbMaxZ)))
-        return intersection;
+        return false;
+
+    bool intersected = false;
 
     uint triBegin = bvhNode.leftFirst;
     uint triEnd = triBegin + bvhNode.triCount;
@@ -54,8 +52,7 @@ Intersection intersectMesh(Ray ray, uint meshId, uint materialId)
     {
         float inv2Area;
         vec4 triHit = rayTriangleIntersection(
-            ray.origin,
-            ray.direction,
+            probe,
             verticesPos[triangles[t].v0].position.xyz,
             verticesPos[triangles[t].v1].position.xyz,
             verticesPos[triangles[t].v2].position.xyz,
@@ -64,6 +61,7 @@ Intersection intersectMesh(Ray ray, uint meshId, uint materialId)
         if(triHit.w > 0 && triHit.w < intersection.t)
         {
             intersection.t = triHit.w;
+            intersection.materialId = materialId;
 
             VertexData data0 = verticesData[triangles[t].v0];
             VertexData data1 = verticesData[triangles[t].v1];
@@ -80,75 +78,82 @@ Intersection intersectMesh(Ray ray, uint meshId, uint materialId)
                 triHit.z * data2.uv;
 
             intersection.primitiveAreaPdf = triHit.w * triHit.w * inv2Area * 2;
+
+            intersected = true;
         }
     }
 
-    if(intersection.t == 1 / 0)
-        intersection.t = -1;
-
-    return intersection;
+    return intersected;
 }
 
-Intersection intersectSphere(Ray ray, uint sphereId, uint materialId)
+bool intersectSphere(inout Intersection intersection, Probe probe, uint sphereId, uint materialId)
 {
     Sphere sphere = spheres[sphereId];
 
-    Intersection intersection;
-    intersection.t = -1.0;
-    intersection.materialId = materialId;
-
-    float t_ca = dot(-ray.origin, ray.direction);
+    float t_ca = dot(-probe.origin, probe.direction);
 
     if(t_ca < 0)
-        return intersection;
+        return false;
 
-    float dSqr = (dot(ray.origin, ray.origin) - t_ca*t_ca);
+    float dSqr = (dot(probe.origin, probe.origin) - t_ca*t_ca);
 
     if(dSqr > sphere.radius * sphere.radius)
-        return intersection;
+        return false;
 
     float t_hc = sqrt(sphere.radius * sphere.radius - dSqr);
     float t_0 = t_ca - t_hc;
     float t_1 = t_ca + t_hc;
 
-    if(t_0 > 0)
+    float t = (t_0 > 0) ? t_0 : (t_1 > 0 ? t_1 : -1);
+
+    if(t > 0 && t < intersection.t)
     {
         // Ray origin is outside the sphere
-        intersection.t = t_0;
-        intersection.normal = normalize(ray.origin + ray.direction * t_0);
+        intersection.t = t;
+        intersection.materialId = materialId;
+        intersection.normal = normalize(probe.origin + probe.direction * t);
+
+        if(t_0 == t)
+        {
+            float iRSqr = sphere.radius * sphere.radius;
+            vec3 originToHit = (-probe.origin);
+            float distanceSqr = dot(originToHit, originToHit);
+            float sinThetaMaxSqr = iRSqr / distanceSqr;
+            float cosThetaMax = sqrt(max(0, 1 - sinThetaMaxSqr));
+            float solidAngle = 2 * PI * (1 - cosThetaMax);
+            intersection.primitiveAreaPdf = 1 / solidAngle;
+        }
+        else
+        {
+            intersection.normal = -intersection.normal;
+            intersection.primitiveAreaPdf = 1 / (4 * PI);
+        }
+
         intersection.uv = findUV(intersection.normal);
 
-        float iRSqr = sphere.radius * sphere.radius;
-        vec3 originToHit = (-ray.origin);
-        float distanceSqr = dot(originToHit, originToHit);
-        float sinThetaMaxSqr = iRSqr / distanceSqr;
-        float cosThetaMax = sqrt(max(0, 1 - sinThetaMaxSqr));
-        float solidAngle = 2 * PI * (1 - cosThetaMax);
-        intersection.primitiveAreaPdf = 1 / solidAngle;
+        return true;
 
     }
-    else if(t_1 > 0)
-    {
-        // Ray origin is inside the sphere
-        intersection.t = t_1;
-        intersection.normal = -normalize(ray.origin + ray.direction * t_1);
-        intersection.uv = findUV(-intersection.normal);
-        intersection.primitiveAreaPdf = 1 / (4 * PI);
-    }
 
-    return intersection;
+    return false;
 }
 
-Intersection intersectPlane(Ray ray, uint planeId, uint materialId)
+bool intersectPlane(inout Intersection intersection, Probe probe, uint planeId, uint materialId)
 {
-    Plane plane = planes[planeId];
+    float t = -probe.origin.z * probe.invDirection.z;
 
-    Intersection intersection;
-    intersection.t = -ray.origin.z * ray.invDirection.z;
-    intersection.materialId = materialId;
-    intersection.normal = vec3(0, 0, intersection.t >= 0 ? 1 : -1);
-    intersection.uv = plane.invScale * (ray.origin + ray.direction * intersection.t).xy;
-    intersection.primitiveAreaPdf = 1 / (2 * PI);
+    if(t > 0 && t < intersection.t)
+    {
+        Plane plane = planes[planeId];
 
-    return intersection;
+        intersection.t = t;
+        intersection.materialId = materialId;
+        intersection.normal = vec3(0, 0, -sign(probe.direction.z));
+        intersection.uv = plane.invScale * (probe.origin + probe.direction * t).xy;
+        intersection.primitiveAreaPdf = 1 / (2 * PI);
+
+        return true;
+    }
+
+    return false;
 }

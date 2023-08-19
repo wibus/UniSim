@@ -69,9 +69,9 @@ vec2 sampleUniformDisk(float U1, float U2);
 
 
 // Intersection
-Intersection intersectMesh(Ray ray, uint meshId, uint materialId);
-Intersection intersectSphere(Ray ray, uint sphereId, uint materialId);
-Intersection intersectPlane(Ray ray, uint planeId, uint materialId);
+bool intersectMesh(     inout Intersection intersection, Probe probe, uint meshId, uint materialId);
+bool intersectSphere(   inout Intersection intersection, Probe probe, uint sphereId, uint materialId);
+bool intersectPlane(    inout Intersection intersection, Probe probe, uint planeId, uint materialId);
 
 
 // SYSTEMS //

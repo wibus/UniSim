@@ -165,7 +165,7 @@ int Universe::launch(int argc, char** argv)
     glewExperimental = GL_TRUE;
     glewInit();
 
-    glfwSwapInterval(0);
+    glfwSwapInterval(1);
 
     glViewport(0, 0, _viewport.width, _viewport.height);
 
