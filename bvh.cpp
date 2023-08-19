@@ -373,7 +373,7 @@ uint64_t BVH::toGpu(
                     const glm::vec3& B = mesh.vertices()[tri.v[1]].position;
                     const glm::vec3& C = mesh.vertices()[tri.v[2]].position;
 
-                    float inv2Area = glm::length(glm::cross(B-A, C-A));
+                    float inv2Area = 1.0f / glm::length(glm::cross(B-A, C-A));
 
                     gpuTriangles.push_back({
                         vertexOffset + tri.v[0],
