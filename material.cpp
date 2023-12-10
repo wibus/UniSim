@@ -198,6 +198,8 @@ Texture* Texture::loadJpeg(const std::string& fileName)
 Texture* Texture::loadPng(const std::string& fileName)
 {
     FILE *fp = fopen(fileName.c_str(), "rb");
+    if(!fp)
+        return nullptr;
 
     png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if(!png)

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.2)
 
 project(imgui)
 
+include_directories(../glfw/include)
+
 add_library(imgui
     imgui_demo.cpp
     imgui_internal.h

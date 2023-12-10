@@ -470,7 +470,7 @@ PhysicalSky::Task::Task(
         DirectionalLight& sun,
         DirectionalLight& moon,
         const std::shared_ptr<Texture>& stars) :
-    GraphicTask("PhysicalSphere"),
+    GraphicTask("PhysicalSky"),
     _model(model),
     _params(params),
     _sun(sun),
@@ -515,6 +515,8 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
     ResourceManager& resources = context.resources;
 
     _moonAlbedo.reset(Texture::load("textures/moonAlbedo2d.png"));
+    if(!_moonAlbedo)
+        _moonAlbedo.reset(new Texture(Texture::BLACK_UNORM8));
     ok = ok && resources.define<GpuTextureResource>(ResourceName(MoonAlbedo), {*_moonAlbedo});
 
     _lightingFormat = GL_RGBA32F;
@@ -534,6 +536,8 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
     glBindBuffer(GL_UNIFORM_BUFFER, _paramsUbo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(PhysicalSkyCommonParams), nullptr, GL_STREAM_DRAW);
 
+    if(!_starsTexture)
+        _starsTexture.reset(new Texture(Texture::BLACK_UNORM8));
     ok = ok && resources.define<GpuTextureResource>(ResourceName(SkyMap), {*_starsTexture});
 
     _gpuParams.reset(new PhysicalSkyCommonParams());

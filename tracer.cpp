@@ -1,5 +1,7 @@
 #include "tracer.h"
 
+#include <random>
+
 #include "random.h"
 #include "camera.h"
 #include "profiler.h"
@@ -93,18 +95,36 @@ bool PathTracer::defineResources(GraphicContext& context)
     {
         std::string blueNoiseName = "LDR_RGBA_" + std::to_string(i) + ".png";
 
-        if(Texture* texture = Texture::load("textures/bluenoise64/" + blueNoiseName))
-        {
-            ok = ok && resources.define<GpuTextureResource>(_blueNoiseTextureResourceIds[i], {*texture});
-            GLuint texId = resources.get<GpuTextureResource>(_blueNoiseTextureResourceIds[i]).texId;
-            ok = ok && resources.define<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i], {texture, texId});
-        }
-        else
+        Texture* texture = nullptr;
+        if(!(texture = Texture::load("textures/bluenoise64/" + blueNoiseName)))
         {
             std::cerr << "Cannot load blue noise texture. Did you install the texture pack?" << std::endl;
-            _blueNoiseTextureResourceIds[i] = Invalid_ResourceId;
-            _blueNoiseBindlessResourceIds[i] = Invalid_ResourceId;
+
+            texture = new Texture();
+            texture->width = 64;
+            texture->height = 64;
+            texture->format = Texture::UNORM8;
+            texture->numComponents = 4;
+            texture->data.resize(64*64*4);
+
+            std::seed_seq seed{i};
+            std::mt19937 eng(seed);
+            std::uniform_real_distribution<double> urd(0, 1);
+
+            for(unsigned int j = 0; j < 64*64; ++j)
+            {
+                texture->data[j*4] = glm::clamp<unsigned char>(urd(eng) * 255, 0, 255);
+                texture->data[j*4+1] = glm::clamp<unsigned char>(urd(eng) * 255, 0, 255);
+                texture->data[j*4+2] = glm::clamp<unsigned char>(urd(eng) * 255, 0, 255);
+                texture->data[j*4+3] = glm::clamp<unsigned char>(urd(eng) * 255, 0, 255);
+            }
         }
+
+        ok = ok && resources.define<GpuTextureResource>(_blueNoiseTextureResourceIds[i], {*texture});
+        GLuint texId = resources.get<GpuTextureResource>(_blueNoiseTextureResourceIds[i]).texId;
+        ok = ok && resources.define<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i], {texture, texId});
+
+        delete texture;
     }
 
     GpuPathTracerCommonParams gpuCommonParams;
