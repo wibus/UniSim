@@ -1,0 +1,3 @@
+[submodule "PilsCore"]
+	path = PilsCore
+	url = git@github.com:wibus/PilsCore.git

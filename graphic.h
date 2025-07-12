@@ -3,9 +3,6 @@
 
 #include <string>
 #include <vector>
-#include <functional>
-#include <string_view>
-
 #include "resource.h"
 
 

@@ -28,12 +28,22 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(ots)
 add_subdirectory(textures)
+add_subdirectory(PilsCore/PilsCore)
 
-include_directories(${OTS_INCLUDE_DIRS})
+set(UNISIM_INCLUDE_DIRS
+    ${OTS_INCLUDE_DIRS}
+    ${PILS_CORE_INCLUDE_DIRS})
+message( STATUS "UniSim Includes ${UNISIM_INCLUDE_DIRS}" )
 
-message( STATUS "UniSim Includes ${GLEW_INCLUDE_DIRS}" )
-message( STATUS "UniSim Libraries ${GLEW_LIBRARIES}" )
+set(UNISIM_LIBRARIES
+    ${GLEW_LIBRARIES}
+    ${OTS_LIBRARIES}
+    ${PILS_CORE_LIBRARIES}
+    PilsCore)
+message( STATUS "UniSim Libraries ${UNISIM_LIBRARIES}" )
 
+
+include_directories(${UNISIM_INCLUDE_DIRS})
 
 # Engine files
 set(EngineFile
@@ -120,16 +130,20 @@ set(PathTracerSystemFiles
     pathtracer/pathtracercamera.h
     pathtracer/pathtracercamera.cpp)
 
+# tests
+set(PilsCoreTest
+    PilsCore/test/gpu_tests.cpp)
+
 add_executable(UniSim
     main.cpp
     ${EngineFile}
     ${ShaderFiles}
     ${SolarSystemFiles}
-    ${PathTracerSystemFiles})
+    ${PathTracerSystemFiles}
+    ${PilsCoreTest})
 
 # Set executable dependency libraries
-target_link_libraries(UniSim
-    ${OTS_LIBRARIES})
+target_link_libraries(UniSim ${UNISIM_LIBRARIES})
 
 # Add target to run executable 
 add_custom_target(run-ex1

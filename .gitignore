@@ -36,3 +36,6 @@
 
 # ImGui
 imgui.ini
+
+# Logs
+*_log.txt
