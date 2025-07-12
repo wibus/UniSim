@@ -35,7 +35,7 @@ SolarSystemCameraMan::SolarSystemCameraMan(Scene& scene, Viewport viewport) :
     _pan(0, 0, 0, 1),
     _tilt(0, 0, 0, 1),
     _roam(0, 0, 0, 1),
-    _autoExpose(true)
+    _autoExpose(false)
 {
     _camera.setViewport(viewport);
     _camera.setEV(15);

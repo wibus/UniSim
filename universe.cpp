@@ -8,13 +8,11 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 
-#include "units.h"
 #include "scene.h"
 #include "project.h"
 #include "profiler.h"
 #include "terrain.h"
 #include "sky.h"
-#include "ui.h"
 
 #include "solar/solarsystemproject.h"
 #include "pathtracer/pathtracerproject.h"

@@ -19,7 +19,7 @@ class Project
 {
 public:
     Project();
-    ~Project();
+    virtual ~Project();
 
     Scene& scene();
     const Scene& scene() const;

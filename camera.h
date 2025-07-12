@@ -113,6 +113,7 @@ public:
     enum class Mode {Static, Orbit, Ground};
 
     CameraMan(Viewport viewport);
+    virtual ~CameraMan();
 
     Camera& camera();
     const Camera& camera() const;

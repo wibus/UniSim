@@ -1,7 +1,6 @@
 #ifndef UNIVERSE_H
 #define UNIVERSE_H
 
-#include <vector>
 #include <chrono>
 #include <memory>
 

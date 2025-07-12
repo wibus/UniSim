@@ -216,6 +216,11 @@ CameraMan::CameraMan(Viewport viewport) :
 {
 }
 
+CameraMan::~CameraMan()
+{
+
+}
+
 void CameraMan::setViewport(Viewport viewport)
 {
     _camera.setViewport(viewport);

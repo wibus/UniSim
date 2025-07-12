@@ -301,13 +301,8 @@ bool GraphicTask::generateGraphicProgram(
     if(!validateProgram(programId, vertexFileName + " - " + fragmentFileName))
     {
         glDeleteProgram(programId);
-        programId = 0;
-
         glDeleteShader(vertexId);
-        vertexId = 0;
-
         glDeleteShader(fragmentId);
-        fragmentId = 0;
 
         return false;
     }
