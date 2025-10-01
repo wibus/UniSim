@@ -47,51 +47,58 @@ include_directories(${UNISIM_INCLUDE_DIRS})
 
 # Engine files
 set(EngineFile
-    units.h
-    universe.h
-    universe.cpp
-    input.h
-    input.cpp
-    grading.h
-    grading.cpp
-    gravity.h
-    gravity.cpp
-    engine.h
-    engine.cpp
-    graphic.h
-    graphic.cpp
-    light.h
-    light.cpp
-    material.h
-    material.cpp
-    camera.h
-    camera.cpp
-    instance.h
-    instance.cpp
-    body.h
-    body.cpp
-    primitive.h
-    primitive.cpp
-    bvh.h
-    bvh.cpp
-    scene.h
-    scene.cpp
-    profiler.h
-    profiler.cpp
-    project.h
-    project.cpp
-    random.h
-    random.cpp
-    resource.h
-    resource.cpp
-    sky.h
-    sky.cpp
-    terrain.h
-    terrain.cpp
-    tracer.h
-    tracer.cpp
-    ui.h
-    ui.cpp
+    engine/context.h
+    engine/context.cpp
+    engine/input.h
+    engine/input.cpp
+    engine/engine.h
+    engine/engine.cpp
+    engine/grading.h
+    engine/grading.cpp
+    engine/gravity.h
+    engine/gravity.cpp
+    engine/graphic.h
+    engine/graphic_gl.h
+    engine/graphic_vk.h
+    engine/graphic.cpp
+    engine/graphic_gl.cpp
+    engine/graphic_vk.cpp
+    engine/light.h
+    engine/light.cpp
+    engine/material.h
+    engine/material.cpp
+    engine/camera.h
+    engine/camera.cpp
+    engine/instance.h
+    engine/instance.cpp
+    engine/body.h
+    engine/body.cpp
+    engine/primitive.h
+    engine/primitive.cpp
+    engine/bvh.h
+    engine/bvh.cpp
+    engine/scene.h
+    engine/scene.cpp
+    engine/pathtracer.h
+    engine/pathtracer.cpp
+    engine/profiler.h
+    engine/profiler.cpp
+    engine/project.h
+    engine/project.cpp
+    engine/random.h
+    engine/random.cpp
+    engine/resource.h
+    engine/resource.cpp
+    engine/sky.h
+    engine/sky.cpp
+    engine/taskgraph.h
+    engine/taskgraph.cpp
+    engine/terrain.h
+    engine/terrain.cpp
+    engine/tracer.h
+    engine/tracer.cpp
+    engine/ui.h
+    engine/ui.cpp
 )
 
 # Shaders
@@ -114,21 +121,21 @@ set(ShaderFiles
 
 # Solar System
 set(SolarSystemFiles
-    solar/solarsystemproject.h
-    solar/solarsystemproject.cpp
-    solar/solarsystemscene.h
-    solar/solarsystemscene.cpp
-    solar/solarsystemcamera.h
-    solar/solarsystemcamera.cpp)
+    projects/solar/solarsystemproject.h
+    projects/solar/solarsystemproject.cpp
+    projects/solar/solarsystemscene.h
+    projects/solar/solarsystemscene.cpp
+    projects/solar/solarsystemcamera.h
+    projects/solar/solarsystemcamera.cpp)
 
 # Path Tracer
 set(PathTracerSystemFiles
-    pathtracer/pathtracerproject.h
-    pathtracer/pathtracerproject.cpp
-    pathtracer/pathtracerscene.h
-    pathtracer/pathtracerscene.cpp
-    pathtracer/pathtracercamera.h
-    pathtracer/pathtracercamera.cpp)
+    projects/pathtracer/pathtracerproject.h
+    projects/pathtracer/pathtracerproject.cpp
+    projects/pathtracer/pathtracerscene.h
+    projects/pathtracer/pathtracerscene.cpp
+    projects/pathtracer/pathtracercamera.h
+    projects/pathtracer/pathtracercamera.cpp)
 
 # tests
 set(PilsCoreTest
@@ -136,6 +143,8 @@ set(PilsCoreTest
 
 add_executable(UniSim
     main.cpp
+    universe.h
+    universe.cpp
     ${EngineFile}
     ${ShaderFiles}
     ${SolarSystemFiles}
@@ -144,6 +153,8 @@ add_executable(UniSim
 
 # Set executable dependency libraries
 target_link_libraries(UniSim ${UNISIM_LIBRARIES})
+target_compile_definitions(UniSim PUBLIC UNISIM_GRAPHIC_BACKEND_GL)
+#target_compile_definitions(UniSim PUBLIC UNISIM_GRAPHIC_BACKEND_VK)
 
 # Add target to run executable 
 add_custom_target(run-ex1

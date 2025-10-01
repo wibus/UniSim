@@ -8,14 +8,14 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 
-#include "scene.h"
-#include "project.h"
-#include "profiler.h"
-#include "terrain.h"
-#include "sky.h"
+#include "engine/scene.h"
+#include "engine/project.h"
+#include "engine/profiler.h"
+#include "engine/terrain.h"
+#include "engine/sky.h"
 
-#include "solar/solarsystemproject.h"
-#include "pathtracer/pathtracerproject.h"
+#include "projects/solar/solarsystemproject.h"
+#include "projects/pathtracer/pathtracerproject.h"
 
 
 namespace unisim

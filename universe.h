@@ -4,13 +4,10 @@
 #include <chrono>
 #include <memory>
 
-// To prevent glfw3.h from including gl.h
-#include <GL/glew.h>
-
-#include "camera.h"
-#include "input.h"
-#include "graphic.h"
-#include "engine.h"
+#include "engine/camera.h"
+#include "engine/input.h"
+#include "engine/taskgraph.h"
+#include "engine/engine.h"
 
 
 class GLFWwindow;

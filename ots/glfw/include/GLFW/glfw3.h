@@ -235,7 +235,8 @@ extern "C" {
 
  #else /*__APPLE__*/
 
-  #include <GL/gl.h>
+  // wbussiere local edit, include glew instead of gl.h to prevent include mis ordering
+  #include <GL/glew.h>
   #if defined(GLFW_INCLUDE_GLEXT)
    #include <GL/glext.h>
   #endif
