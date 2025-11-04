@@ -2,11 +2,11 @@
 #define RADIATION_H
 
 #include <vector>
+#include <string>
 
 #include <GLM/glm.hpp>
 
-#include "graphic.h"
-#include "taskgraph.h"
+#include "graphictask.h"
 
 
 
@@ -55,17 +55,17 @@ class Lighting : public GraphicTask
 public:
     Lighting();
 
-    bool defineResources(Context& context) override;
+    bool defineResources(GraphicContext& context) override;
 
     void setPathTracerResources(
-        Context& context,
+        GraphicContext& context,
             PathTracerInterface& interface) const override;
 
-    void update(Context& context) override;
+    void update(GraphicContext& context) override;
 
 private:
     uint64_t toGpu(
-        Context& context,
+        GraphicContext& context,
             std::vector<GpuEmitter>& gpuEmitters,
             std::vector<GpuDirectionalLight>& gpuDirectionalLights);
 };

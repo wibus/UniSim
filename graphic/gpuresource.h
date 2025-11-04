@@ -13,7 +13,7 @@ namespace unisim
 {
 
 class Texture;
-class Context;
+class GraphicContext;
 class PathTracerModule;
 class PathTracerInterface;
 class PathTracerProvider;
@@ -24,7 +24,7 @@ const ResourceId Invalid_ResourceId = ~0x0;
 
 #define ResourceName(name) ResourceId_##name
 #define DeclareResource(name) extern ResourceId ResourceName(name)
-#define DefineResource(name) ResourceId ResourceName(name) = ResourceManager::registerStaticResource(#name)
+#define DefineResource(name) ResourceId ResourceName(name) = GpuResourceManager::registerStaticResource(#name)
 
 
 class GpuResource
@@ -141,11 +141,11 @@ struct GPUBindlessTexture
 };
 
 
-class ResourceManager
+class GpuResourceManager
 {
 public:
-    ResourceManager();
-    ~ResourceManager();
+    GpuResourceManager();
+    ~GpuResourceManager();
 
     static ResourceId registerStaticResource(const std::string& name);
     ResourceId registerDynamicResource(const std::string& name);
@@ -160,7 +160,7 @@ public:
 
     void registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider);
     std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const;
-    void setPathTracerResources(Context& context, PathTracerInterface& interface) const;
+    void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
 
     uint64_t pathTracerHash() const;
 
@@ -177,7 +177,7 @@ private:
 };
 
 template<typename Resource>
-bool ResourceManager::define(ResourceId id, const typename Resource::Definition& definition)
+bool GpuResourceManager::define(ResourceId id, const typename Resource::Definition& definition)
 {
     assert(id < _resourceCount);
 
@@ -187,7 +187,7 @@ bool ResourceManager::define(ResourceId id, const typename Resource::Definition&
 }
 
 template<typename Resource>
-const Resource& ResourceManager::get(ResourceId id) const
+const Resource& GpuResourceManager::get(ResourceId id) const
 {
     assert(id < _resourceCount);
     assert(_resources[id].get() != nullptr);

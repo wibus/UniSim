@@ -4,7 +4,7 @@
 
 #include <imgui/imgui_impl_opengl3.h>
 
-#include "profiler.h"
+#include "../system/profiler.h"
 
 
 namespace unisim
@@ -20,7 +20,7 @@ Ui::Ui() :
 
 }
 
-void Ui::render(Context& context)
+void Ui::render(GraphicContext& context)
 {
     Profile(ImGui_Render);
     ProfileGpu(ImGui_Render);

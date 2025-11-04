@@ -13,8 +13,9 @@ namespace unisim
 {
 
 class GraphicProgram;
-class Context;
-class PathTracerModule;
+class GraphicContext;
+
+extern std::vector<std::string> g_PathTracerCommonSrcs;
 
 
 class PathTracerInterface
@@ -47,6 +48,31 @@ private:
 };
 
 
+class PathTracerModule
+{
+    PathTracerModule(const PathTracerModule&) = delete;
+
+    friend class GraphicTask;
+    PathTracerModule(const std::string& name);
+
+public:
+    PathTracerModule(const std::string& name, const std::shared_ptr<GraphicShader>& shader);
+    ~PathTracerModule();
+
+    std::shared_ptr<GraphicShader> shader() const { return _shader; }
+
+    std::string name() const { return _name; }
+
+    void reset(const std::shared_ptr<GraphicShader>& shader);
+
+private:
+    std::string _name;
+    std::shared_ptr<GraphicShader> _shader;
+};
+
+using PathTracerModulePtr = std::shared_ptr<PathTracerModule>;
+
+
 class PathTracerProvider
 {
 public:
@@ -55,9 +81,9 @@ public:
 
     virtual std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const;
 
-    virtual bool definePathTracerModules(Context& context);
+    virtual bool definePathTracerModules(GraphicContext& context);
 
-    virtual void setPathTracerResources(Context& context, PathTracerInterface& interface) const;
+    virtual void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
 
     uint64_t hash() const { return _hash; }
 

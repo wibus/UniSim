@@ -7,8 +7,6 @@
 
 #include <GLM/glm.hpp>
 
-#include "units.h"
-
 
 namespace unisim
 {

@@ -4,12 +4,14 @@
 
 #include "GLM/gtc/constants.hpp"
 
+#include "../system/profiler.h"
+
+#include "../resource/material.h"
+#include "../resource/primitive.h"
+
 #include "sky.h"
 #include "scene.h"
 #include "instance.h"
-#include "primitive.h"
-#include "material.h"
-#include "profiler.h"
 
 
 namespace unisim
@@ -79,11 +81,11 @@ glm::vec3 toLinear(const glm::vec3& sRGB)
     return glm::mix(higher, lower, cutoff);
 }
 
-bool Lighting::defineResources(Context& context)
+bool Lighting::defineResources(GraphicContext& context)
 {
     bool ok = true;
 
-    ResourceManager& resources = context.resources;
+    GpuResourceManager& resources = context.resources;
 
     std::vector<GpuEmitter> gpuEmitters;
     std::vector<GpuDirectionalLight> gpuDirectionalLights;
@@ -109,10 +111,10 @@ bool Lighting::defineResources(Context& context)
 }
 
 void Lighting::setPathTracerResources(
-    Context &context,
+    GraphicContext &context,
         PathTracerInterface &interface) const
 {
-    ResourceManager& resources = context.resources;
+    GpuResourceManager& resources = context.resources;
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("Emitters"),
                      resources.get<GpuStorageResource>(ResourceName(Emitters)).bufferId);
@@ -122,11 +124,11 @@ void Lighting::setPathTracerResources(
 
 }
 
-void Lighting::update(Context& context)
+void Lighting::update(GraphicContext& context)
 {
     Profile(Lighting);
 
-    ResourceManager& resources = context.resources;
+    GpuResourceManager& resources = context.resources;
 
     std::vector<GpuEmitter> gpuEmitters;
     std::vector<GpuDirectionalLight> gpuDirectionalLights;
@@ -155,7 +157,7 @@ void Lighting::update(Context& context)
 }
 
 uint64_t Lighting::toGpu(
-    Context& context,
+    GraphicContext& context,
         std::vector<GpuEmitter>& gpuEmitters,
         std::vector<GpuDirectionalLight>& gpuDirectionalLights)
 {

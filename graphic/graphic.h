@@ -16,8 +16,6 @@
 namespace unisim
 {
 
-class MaterialDatabase;
-
 enum class ShaderType {Vertex, Fragment, Compute};
 
 
@@ -71,41 +69,10 @@ public:
     ~GraphicProgramScope();
 };
 
-
-class PathTracerModule
-{
-    PathTracerModule(const PathTracerModule&) = delete;
-
-    friend class GraphicTask;
-    PathTracerModule(const std::string& name);
-
-public:
-    PathTracerModule(const std::string& name, const std::shared_ptr<GraphicShader>& shader);
-    ~PathTracerModule();
-
-    std::shared_ptr<GraphicShader> shader() const { return _shader; }
-
-    std::string name() const { return _name; }
-
-    void reset(const std::shared_ptr<GraphicShader>& shader);
-
-private:
-    std::string _name;
-    std::shared_ptr<GraphicShader> _shader;
-};
-
-using PathTracerModulePtr = std::shared_ptr<PathTracerModule>;
-
-
 extern const std::string GLSL_VERSION__HEADER;
 extern std::string g_GlslExtensions;
-extern std::vector<std::string> g_PathTracerCommonSrcs;
-
 
 std::string loadSource(const std::string& fileName);
-
-bool validateProgram(GLuint programId, const std::string& name);
-
 
 bool generateShader(
     std::shared_ptr<GraphicShader>& shader,
@@ -143,7 +110,7 @@ bool generateComputeProgram(
 bool generateComputeProgram(
     GraphicProgram& program,
     const std::string programName,
-    const std::vector<std::shared_ptr<PathTracerModule>>& pathTracerModules);
+    const std::vector<std::shared_ptr<GraphicShader>>& shaders);
 
 }
 

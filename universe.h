@@ -4,10 +4,11 @@
 #include <chrono>
 #include <memory>
 
+#include "system/input.h"
+
 #include "engine/camera.h"
-#include "engine/input.h"
-#include "engine/taskgraph.h"
-#include "engine/engine.h"
+#include "engine/enginetask.h"
+#include "engine/graphictask.h"
 
 
 class GLFWwindow;

@@ -45,54 +45,69 @@ message( STATUS "UniSim Libraries ${UNISIM_LIBRARIES}" )
 
 include_directories(${UNISIM_INCLUDE_DIRS})
 
+# System files
+set(SystemFiles
+    system/input.h
+    system/input.cpp
+    system/profiler.h
+    system/profiler.cpp
+    system/random.h
+    system/random.cpp
+    system/units.h
+)
+
+# Resource files
+set(ResourceFiles
+    resource/body.h
+    resource/body.cpp
+    resource/material.h
+    resource/material.cpp
+    resource/primitive.h
+    resource/primitive.cpp
+    resource/texture.h
+    resource/texture.cpp
+)
+
+# Graphic files
+set(GraphicFiles
+    graphic/gpuresource.h
+    graphic/gpuresource.cpp
+    graphic/graphic.h
+    graphic/graphic.cpp
+    graphic/graphic_gl.h
+    graphic/graphic_gl.cpp
+    graphic/graphic_vk.h
+    graphic/graphic_vk.cpp
+    graphic/pathtracer.h
+    graphic/pathtracer.cpp
+)
+
 # Engine files
-set(EngineFile
-    engine/context.h
-    engine/context.cpp
-    engine/input.h
-    engine/input.cpp
-    engine/engine.h
-    engine/engine.cpp
+set(EngineFiles
+    engine/bvh.h
+    engine/bvh.cpp
+    engine/enginetask.h
+    engine/enginetask.cpp
     engine/grading.h
     engine/grading.cpp
+    engine/graphictask.h
+    engine/graphictask.cpp
     engine/gravity.h
     engine/gravity.cpp
-    engine/graphic.h
-    engine/graphic_gl.h
-    engine/graphic_vk.h
-    engine/graphic.cpp
-    engine/graphic_gl.cpp
-    engine/graphic_vk.cpp
     engine/light.h
     engine/light.cpp
-    engine/material.h
-    engine/material.cpp
+    engine/materialdatabase.h
+    engine/materialdatabase.cpp
     engine/camera.h
     engine/camera.cpp
     engine/instance.h
     engine/instance.cpp
-    engine/body.h
-    engine/body.cpp
-    engine/primitive.h
-    engine/primitive.cpp
-    engine/bvh.h
-    engine/bvh.cpp
     engine/scene.h
     engine/scene.cpp
-    engine/pathtracer.h
-    engine/pathtracer.cpp
-    engine/profiler.h
-    engine/profiler.cpp
     engine/project.h
     engine/project.cpp
-    engine/random.h
-    engine/random.cpp
-    engine/resource.h
-    engine/resource.cpp
     engine/sky.h
     engine/sky.cpp
-    engine/taskgraph.h
-    engine/taskgraph.cpp
     engine/terrain.h
     engine/terrain.cpp
     engine/tracer.h
@@ -145,7 +160,10 @@ add_executable(UniSim
     main.cpp
     universe.h
     universe.cpp
-    ${EngineFile}
+    ${SystemFiles}
+    ${ResourceFiles}
+    ${GraphicFiles}
+    ${EngineFiles}
     ${ShaderFiles}
     ${SolarSystemFiles}
     ${PathTracerSystemFiles}

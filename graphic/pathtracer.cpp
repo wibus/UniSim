@@ -9,6 +9,11 @@
 namespace unisim
 {
 
+std::vector<std::string> g_PathTracerCommonSrcs;
+
+
+// INTERFACE //
+
 PathTracerInterface::PathTracerInterface(const std::shared_ptr<GraphicProgram>& program) :
     _program(program),
     _nextTextureUnit(0),
@@ -39,7 +44,6 @@ PathTracerInterface::PathTracerInterface(const std::shared_ptr<GraphicProgram>& 
         assert(false);
     }
 }
-
 
 bool PathTracerInterface::declareUbo(const std::string& blockName)
 {
@@ -112,7 +116,6 @@ GLuint PathTracerInterface::getSsboBindPoint(const std::string& blockName) const
     return GL_INVALID_INDEX;
 }
 
-
 GLuint PathTracerInterface::grabTextureUnit()
 {
     return _nextTextureUnit++;
@@ -128,6 +131,36 @@ bool PathTracerInterface::isValid() const
     return _program && _program->isValid();
 }
 
+
+// MODULE //
+
+PathTracerModule::PathTracerModule(const std::string& name) :
+    _name(name)
+{
+    std::cout << "Creating path tracer module '" << _name << "'" << std::endl;
+}
+
+PathTracerModule::PathTracerModule(const std::string& name, const std::shared_ptr<GraphicShader>& shader) :
+    _name(name),
+    _shader(shader)
+{
+    std::cout << "Creating path tracer module '" << _name << "' from shader '" << shader->name() << "'" << std::endl;
+}
+
+PathTracerModule::~PathTracerModule()
+{
+    std::cout << "Destroying path tracer module '" << _name << "'" << std::endl;
+}
+
+void PathTracerModule::reset(const std::shared_ptr<GraphicShader>& shader)
+{
+    std::cout << "Resetting path tracer module '" << _name << "'" << std::endl;
+
+    _shader = shader;
+}
+
+
+// PROVIDER //
 PathTracerProvider::PathTracerProvider() :
     _hash(0)
 {
@@ -142,12 +175,12 @@ std::vector<std::shared_ptr<PathTracerModule>> PathTracerProvider::pathTracerMod
     return {};
 }
 
-bool PathTracerProvider::definePathTracerModules(Context& context)
+bool PathTracerProvider::definePathTracerModules(GraphicContext& context)
 {
     return true;
 }
 
-void PathTracerProvider::setPathTracerResources(Context& context, PathTracerInterface& interface) const
+void PathTracerProvider::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
 }
 

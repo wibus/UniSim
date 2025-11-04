@@ -1,19 +1,21 @@
-#include "taskgraph.h"
+#include "graphictask.h"
 
 #include <algorithm>
 #include <iostream>
 
-#include "profiler.h"
+#include "../system/profiler.h"
+
+#include "../resource/primitive.h"
+
 #include "light.h"
 #include "scene.h"
 #include "sky.h"
-#include "primitive.h"
 #include "bvh.h"
 #include "grading.h"
 #include "tracer.h"
 #include "ui.h"
 #include "camera.h"
-#include "material.h"
+#include "materialdatabase.h"
 #include "terrain.h"
 
 namespace unisim
@@ -84,7 +86,7 @@ ClearSwapChain::ClearSwapChain() :
 
 DefineProfilePointGpu(Clear);
 
-void ClearSwapChain::render(Context& context)
+void ClearSwapChain::render(GraphicContext& context)
 {
     ProfileGpu(Clear);
 
@@ -104,7 +106,7 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 {
     createTaskGraph(scene);
 
-    Context context = {scene, camera, _resources, _settings};
+    GraphicContext context = {scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -167,7 +169,7 @@ bool GraphicTaskGraph::reloadShaders(const Scene& scene, const Camera& camera)
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
 
-    Context context = {scene, camera, _resources, _settings};
+    GraphicContext context = {scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -198,7 +200,7 @@ bool GraphicTaskGraph::reloadShaders(const Scene& scene, const Camera& camera)
 
 void GraphicTaskGraph::execute(const Scene& scene, const Camera& camera)
 {
-    Context context = {scene, camera, _resources, _settings};
+    GraphicContext context = {scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {

@@ -1,10 +1,12 @@
 #include "gravity.h"
 
-#include "units.h"
+#include "../system/profiler.h"
+#include "../system/units.h"
+
+#include "../resource/body.h"
+
 #include "scene.h"
 #include "instance.h"
-#include "body.h"
-#include "profiler.h"
 
 
 namespace unisim

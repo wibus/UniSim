@@ -1,6 +1,6 @@
 #include "grading.h"
 
-#include "profiler.h"
+#include "../system/profiler.h"
 
 
 namespace unisim
@@ -17,7 +17,7 @@ ColorGrading::ColorGrading() :
     _colorGradingProgram = registerProgram("Color Grading");
 }
 
-bool ColorGrading::defineShaders(Context& context)
+bool ColorGrading::defineShaders(GraphicContext& context)
 {
     if(!generateGraphicProgram(*_colorGradingProgram, "shaders/fullscreen.vert", "shaders/colorgrade.frag"))
         return false;
@@ -25,7 +25,7 @@ bool ColorGrading::defineShaders(Context& context)
     return true;
 }
 
-bool ColorGrading::defineResources(Context& context)
+bool ColorGrading::defineResources(GraphicContext& context)
 {
     float points[] = {
       -1.0f, -1.0f,  0.0f,
@@ -46,14 +46,14 @@ bool ColorGrading::defineResources(Context& context)
     return true;
 }
 
-void ColorGrading::render(Context& context)
+void ColorGrading::render(GraphicContext& context)
 {
     ProfileGpu(ColorGrading);
 
     if(!_colorGradingProgram->isValid())
         return;
-
-    ResourceManager& resources = context.resources;
+    
+    GpuResourceManager& resources = context.resources;
 
     GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTracerResult)).texId;
 

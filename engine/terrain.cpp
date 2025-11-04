@@ -1,11 +1,13 @@
 #include "terrain.h"
 
+#include "../system/units.h"
+
+#include "../resource/body.h"
+#include "../resource/material.h"
+#include "../resource/primitive.h"
+
 #include "scene.h"
-#include "body.h"
 #include "instance.h"
-#include "primitive.h"
-#include "material.h"
-#include "profiler.h"
 
 
 namespace unisim

@@ -5,8 +5,7 @@
 
 #include <GLM/glm.hpp>
 
-#include "graphic.h"
-#include "taskgraph.h"
+#include "graphictask.h"
 
 
 namespace unisim
@@ -22,17 +21,17 @@ class PathTracer : public GraphicTask
 public:
     PathTracer();
     
-    void registerDynamicResources(Context& context) override;
-    bool definePathTracerModules(Context& context) override;
-    bool defineShaders(Context& context) override;
-    bool defineResources(Context& context) override;
+    void registerDynamicResources(GraphicContext& context) override;
+    bool definePathTracerModules(GraphicContext& context) override;
+    bool defineShaders(GraphicContext& context) override;
+    bool defineResources(GraphicContext& context) override;
 
     void setPathTracerResources(
-        Context& context,
+        GraphicContext& context,
             PathTracerInterface& interface) const override;
     
-    void update(Context& context) override;
-    void render(Context& context) override;
+    void update(GraphicContext& context) override;
+    void render(GraphicContext& context) override;
 
 
     static const unsigned int BLUE_NOISE_TEX_COUNT = 64;
@@ -41,7 +40,7 @@ public:
 
 private:
     uint64_t toGpu(
-        Context& context,
+        GraphicContext& context,
             GpuPathTracerCommonParams& gpuCommonParams);
 
     ResourceId _blueNoiseTextureResourceIds[BLUE_NOISE_TEX_COUNT];

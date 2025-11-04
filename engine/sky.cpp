@@ -6,15 +6,18 @@
 #include <GLM/gtx/transform.hpp>
 #include <GLM/gtx/quaternion.hpp>
 
+#include "../system/profiler.h"
+#include "../system/units.h"
+
+#include "../graphic/graphic.h"
+#include "../graphic/pathtracer.h"
+
+#include "../resource/body.h"
+#include "../resource/texture.h"
+
 #include "camera.h"
-#include "material.h"
 #include "scene.h"
-#include "body.h"
-#include "units.h"
-#include "profiler.h"
 #include "light.h"
-#include "pathtracer.h"
-#include "graphic.h"
 
 #include <bruneton/model.h>
 #include <bruneton/definitions.h>
@@ -213,7 +216,7 @@ SkySphere::Task::Task(const std::shared_ptr<Texture>& texture) :
     _sphericalSkyModule = registerPathTracerModule("Spherical Sky");
 }
 
-bool SkySphere::Task::definePathTracerModules(Context& context)
+bool SkySphere::Task::definePathTracerModules(GraphicContext& context)
 {
     if(!addPathTracerModule(*_sphericalSkyModule, context.settings, "shaders/sphericalsky.glsl"))
         return false;
@@ -221,11 +224,11 @@ bool SkySphere::Task::definePathTracerModules(Context& context)
     return true;
 }
 
-bool SkySphere::Task::defineResources(Context& context)
+bool SkySphere::Task::defineResources(GraphicContext& context)
 {
     bool ok = true;
-
-    ResourceManager& resources = context.resources;
+    
+    GpuResourceManager& resources = context.resources;
     ok = ok && resources.define<GpuTextureResource>(ResourceName(SkyMap), {*_texture});
 
     _hash = toGpu(context);
@@ -233,10 +236,10 @@ bool SkySphere::Task::defineResources(Context& context)
     return ok;
 }
 
-void SkySphere::Task::setPathTracerResources(Context& context, PathTracerInterface& interface) const
+void SkySphere::Task::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
     SkySphere& sky = *dynamic_cast<SkySphere*>(context.scene.sky().get());
-    ResourceManager& resources = context.resources;
+    GpuResourceManager& resources = context.resources;
 
     GLuint skyMapUnit = interface.grabTextureUnit();
     glActiveTexture(GL_TEXTURE0 + skyMapUnit);
@@ -249,13 +252,13 @@ void SkySphere::Task::setPathTracerResources(Context& context, PathTracerInterfa
     glUniform1f(glGetUniformLocation(interface.program()->handle(), "skyExposure"), sky.exposure());
 }
 
-void SkySphere::Task::update(Context& context)
+void SkySphere::Task::update(GraphicContext& context)
 {
     _hash = toGpu(context);
 }
 
 u_int64_t SkySphere::Task::toGpu(
-    const Context& context) const
+    const GraphicContext& context) const
 {
     const SkySphere& sky = static_cast<SkySphere&>(*context.scene.sky());
 
@@ -497,7 +500,7 @@ std::vector<std::shared_ptr<PathTracerModule>> PhysicalSky::Task::pathTracerModu
     return modules;
 }
 
-bool PhysicalSky::Task::definePathTracerModules(Context& context)
+bool PhysicalSky::Task::definePathTracerModules(GraphicContext& context)
 {
     if(!addPathTracerModule(*_physicalSkyModule, context.settings, "shaders/physicalsky.glsl"))
         return false;
@@ -505,7 +508,7 @@ bool PhysicalSky::Task::definePathTracerModules(Context& context)
     return true;
 }
 
-bool PhysicalSky::Task::defineShaders(Context &context)
+bool PhysicalSky::Task::defineShaders(GraphicContext &context)
 {
     if(!generateComputeProgram(*_moonLightProgram, "shaders/moonlight.glsl"))
         return false;
@@ -513,11 +516,11 @@ bool PhysicalSky::Task::defineShaders(Context &context)
     return true;
 }
 
-bool PhysicalSky::Task::defineResources(Context& context)
+bool PhysicalSky::Task::defineResources(GraphicContext& context)
 {
     bool ok = true;
-
-    ResourceManager& resources = context.resources;
+    
+    GpuResourceManager& resources = context.resources;
 
     _moonAlbedo.reset(Texture::load("textures/moonAlbedo2d.png"));
     if(!_moonAlbedo)
@@ -552,10 +555,10 @@ bool PhysicalSky::Task::defineResources(Context& context)
     return ok;
 }
 
-void PhysicalSky::Task::setPathTracerResources(Context& context, PathTracerInterface& interface) const
+void PhysicalSky::Task::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
     PhysicalSky& sky = *dynamic_cast<PhysicalSky*>(context.scene.sky().get());
-    ResourceManager& resources = context.resources;
+    GpuResourceManager& resources = context.resources;
 
     GLuint textureUnits[] = {
         interface.grabTextureUnit(),
@@ -600,7 +603,7 @@ void PhysicalSky::Task::setPathTracerResources(Context& context, PathTracerInter
     glUniform1f(glGetUniformLocation(interface.program()->handle(), "starsExposure"), sky.exposure());
 }
 
-void PhysicalSky::Task::update(Context& context)
+void PhysicalSky::Task::update(GraphicContext& context)
 {
     Profile(PhysicalSky);
 
@@ -650,7 +653,7 @@ void PhysicalSky::Task::update(Context& context)
     _hash = hash;
 }
 
-void PhysicalSky::Task::render(Context& context)
+void PhysicalSky::Task::render(GraphicContext& context)
 {
     ProfileGpu(PhysicalSky);
 
@@ -659,8 +662,8 @@ void PhysicalSky::Task::render(Context& context)
 
     if(!_moonIsDirty)
         return;
-
-    ResourceManager& resources = context.resources;
+    
+    GpuResourceManager& resources = context.resources;
 
     glUseProgram(_moonLightProgram->handle());
 
@@ -678,7 +681,7 @@ void PhysicalSky::Task::render(Context& context)
 }
 
 uint64_t PhysicalSky::Task::toGpu(
-    const Context& context,
+    const GraphicContext& context,
         PhysicalSkyCommonParams& params) const
 {
     const PhysicalSky& sky = static_cast<PhysicalSky&>(*context.scene.sky());

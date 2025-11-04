@@ -2,13 +2,8 @@
 
 #include <imgui/imgui.h>
 
-#include "GLM/gtc/constants.hpp"
-#include "GLM/gtx/transform.hpp"
-
-#include "units.h"
-
-#include "body.h"
-#include "primitive.h"
+#include "../resource/body.h"
+#include "../resource/primitive.h"
 
 
 namespace unisim

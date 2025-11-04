@@ -2,12 +2,15 @@
 
 #include <iostream>
 
+#include "../system/profiler.h"
+#include "../system/units.h"
+
+#include "../resource/body.h"
+#include "../resource/primitive.h"
+
 #include "scene.h"
 #include "instance.h"
-#include "body.h"
-#include "primitive.h"
-#include "material.h"
-#include "profiler.h"
+#include "materialdatabase.h"
 
 
 namespace unisim
@@ -95,12 +98,12 @@ BVH::BVH() :
     _intersectionModule = registerPathTracerModule("Instersection");
 }
 
-void BVH::registerDynamicResources(Context& context)
+void BVH::registerDynamicResources(GraphicContext& context)
 {
 
 }
 
-bool BVH::definePathTracerModules(Context& context)
+bool BVH::definePathTracerModules(GraphicContext& context)
 {
     if(!addPathTracerModule(*_intersectionModule, context.settings, "shaders/common/intersection.glsl"))
         return false;
@@ -108,7 +111,7 @@ bool BVH::definePathTracerModules(Context& context)
     return true;
 }
 
-bool BVH::defineResources(Context& context)
+bool BVH::defineResources(GraphicContext& context)
 {
     std::vector<GpuPrimitive> gpuPrimitives;
     std::vector<GpuMesh> gpuMeshes;
@@ -130,8 +133,8 @@ bool BVH::defineResources(Context& context)
           gpuTriangles,
           gpuVerticesPos,
           gpuVerticesData);
-
-    ResourceManager& resources = context.resources;
+    
+    GpuResourceManager& resources = context.resources;
 
     bool ok = true;
 
@@ -193,10 +196,10 @@ bool BVH::defineResources(Context& context)
 }
 
 void BVH::setPathTracerResources(
-    Context& context,
+    GraphicContext& context,
         PathTracerInterface& interface) const
 {
-    ResourceManager& resources = context.resources;
+    GpuResourceManager& resources = context.resources;
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("Primitives"),
                      resources.get<GpuStorageResource>(ResourceName(Primitives)).bufferId);
@@ -226,7 +229,7 @@ void BVH::setPathTracerResources(
                      resources.get<GpuStorageResource>(ResourceName(VerticesData)).bufferId);
 }
 
-void BVH::update(Context& context)
+void BVH::update(GraphicContext& context)
 {
     Profile(BVH);
 
@@ -255,8 +258,8 @@ void BVH::update(Context& context)
         return;
 
     _hash = hash;
-
-    ResourceManager& resources = context.resources;
+    
+    GpuResourceManager& resources = context.resources;
 
     resources.get<GpuStorageResource>(
         ResourceName(Primitives)).update({
@@ -313,12 +316,12 @@ void BVH::update(Context& context)
             gpuVerticesData.data()});
 }
 
-void BVH::render(Context& context)
+void BVH::render(GraphicContext& context)
 {
 }
 
 uint64_t BVH::toGpu(
-    const Context& context,
+    const GraphicContext& context,
         std::vector<GpuPrimitive>& gpuPrimitives,
         std::vector<GpuMesh>& gpuMeshes,
         std::vector<GpuSphere>& gpuSpheres,

@@ -5,8 +5,7 @@
 
 #include <GLM/glm.hpp>
 
-#include "graphic.h"
-#include "taskgraph.h"
+#include "graphictask.h"
 
 
 namespace atmosphere
@@ -127,17 +126,17 @@ private:
     public:
         Task(const std::shared_ptr<Texture>& texture);
 
-        bool definePathTracerModules(Context& context) override;
+        bool definePathTracerModules(GraphicContext& context) override;
 
-        bool defineResources(Context& context) override;
+        bool defineResources(GraphicContext& context) override;
 
-        void setPathTracerResources(Context& context, PathTracerInterface& interface) const override;
+        void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
 
-        void update(Context& context) override;
+        void update(GraphicContext& context) override;
 
     private:
         u_int64_t toGpu(
-            const Context& context) const;
+            const GraphicContext& context) const;
 
         std::shared_ptr<Texture> _texture;
 
@@ -172,18 +171,18 @@ private:
 
         std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const override;
 
-        bool definePathTracerModules(Context& context) override;
-        bool defineShaders(Context& context) override;
-        bool defineResources(Context& context) override;
+        bool definePathTracerModules(GraphicContext& context) override;
+        bool defineShaders(GraphicContext& context) override;
+        bool defineResources(GraphicContext& context) override;
 
-        void setPathTracerResources(Context& context, PathTracerInterface& interface) const override;
+        void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
 
-        void update(Context& context) override;
-        void render(Context& context) override;
+        void update(GraphicContext& context) override;
+        void render(GraphicContext& context) override;
 
     private:
         uint64_t toGpu(
-            const Context& context,
+            const GraphicContext& context,
                 PhysicalSkyCommonParams& params) const;
 
         Model& _model;

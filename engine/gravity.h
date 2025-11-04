@@ -1,10 +1,7 @@
 #ifndef GRAVITY_H
 #define GRAVITY_H
 
-#include <vector>
-#include <memory>
-
-#include "engine.h"
+#include "enginetask.h"
 
 
 namespace unisim

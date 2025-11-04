@@ -7,7 +7,7 @@
 
 #include <imgui/imgui.h>
 
-#include "graphic.h"
+#include "../graphic/gpuresource.h"
 
 
 namespace unisim

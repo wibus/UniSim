@@ -2,7 +2,7 @@
 
 #include <imgui/imgui.h>
 
-#include "material.h"
+#include "../resource/material.h"
 
 
 namespace unisim

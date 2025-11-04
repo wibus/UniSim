@@ -1,14 +1,29 @@
-#ifndef TASKGRAPH_H
-#define TASKGRAPH_H
+#ifndef GRAPHICTASK_H
+#define GRAPHICTASK_H
 
-#include "graphic.h"
-#include "context.h"
-#include "resource.h"
-#include "pathtracer.h"
+#include "../graphic/graphic.h"
+#include "../graphic/gpuresource.h"
+#include "../graphic/pathtracer.h"
 
 
 namespace unisim
 {
+
+class Scene;
+class Camera;
+
+struct GraphicSettings
+{
+    bool unbiased;
+};
+
+struct GraphicContext
+{
+    const Scene& scene;
+    const Camera& camera;
+    GpuResourceManager& resources;
+    const GraphicSettings& settings;
+};
 
 class GraphicTask : public PathTracerProvider
 {
@@ -23,12 +38,12 @@ public:
 
     std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const override;
 
-    virtual void registerDynamicResources(Context& context) {}
-    virtual bool defineShaders(Context& context) { return true; }
-    virtual bool defineResources(Context& context) { return true; }
+    virtual void registerDynamicResources(GraphicContext& context) {}
+    virtual bool defineShaders(GraphicContext& context) { return true; }
+    virtual bool defineResources(GraphicContext& context) { return true; }
 
-    virtual void update(Context& context) {}
-    virtual void render(Context& context) {}
+    virtual void update(GraphicContext& context) {}
+    virtual void render(GraphicContext& context) {}
 
 protected:
     bool addPathTracerModule(
@@ -50,7 +65,7 @@ class ClearSwapChain : public GraphicTask
 public:
     ClearSwapChain();
 
-    void render(Context& context) override;
+    void render(GraphicContext& context) override;
 };
 
 
@@ -64,18 +79,18 @@ public:
     bool reloadShaders(const Scene& scene, const Camera& camera);
 
     void execute(const Scene& scene, const Camera& camera);
-
-    const ResourceManager& resources() const { return _resources; }
+    
+    const GpuResourceManager& resources() const { return _resources; }
 
 private:
     void createTaskGraph(const Scene& scene);
     void addTask(const std::shared_ptr<GraphicTask>& task);
 
     GraphicSettings _settings;
-    ResourceManager _resources;
+    GpuResourceManager _resources;
     std::vector<std::shared_ptr<GraphicTask>> _tasks;
 };
 
 }
 
-#endif // TASKGRAPH_H
+#endif // GRAPHICTASK_H

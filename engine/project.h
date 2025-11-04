@@ -11,8 +11,6 @@ namespace unisim
 {
 
 class Scene;
-class CameraMan;
-class UiEngineTask;
 
 
 class Project

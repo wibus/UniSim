@@ -1,10 +1,12 @@
 #include "solarsystemscene.h"
 
-#include "../engine/units.h"
+#include "../system/units.h"
+
+#include "../resource/body.h"
+#include "../resource/material.h"
+#include "../resource/primitive.h"
+
 #include "../engine/instance.h"
-#include "../engine/body.h"
-#include "../engine/primitive.h"
-#include "../engine/material.h"
 #include "../engine/sky.h"
 
 

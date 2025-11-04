@@ -1,4 +1,4 @@
-#include "engine.h"
+#include "enginetask.h"
 
 #include <iostream>
 
@@ -38,7 +38,7 @@ EngineTaskGraph::EngineTaskGraph()
 bool EngineTaskGraph::initialize(
         Scene& scene,
         Camera& camera,
-        const ResourceManager& resources)
+    const GpuResourceManager& resources)
 {
     createTaskGraph(scene);
 
@@ -62,7 +62,7 @@ void EngineTaskGraph::execute(
         double dt,
         Scene& scene,
         Camera& camera,
-        const ResourceManager& resources)
+    const GpuResourceManager& resources)
 {
     EngineContext context = {dt, scene, camera, resources, _settings};
 

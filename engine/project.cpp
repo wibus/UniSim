@@ -1,7 +1,6 @@
 #include "project.h"
 
 #include "scene.h"
-#include "ui.h"
 
 
 namespace unisim

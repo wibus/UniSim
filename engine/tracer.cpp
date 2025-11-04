@@ -3,11 +3,14 @@
 #include <iostream>
 #include <random>
 
-#include "random.h"
+#include "../system/profiler.h"
+#include "../system/random.h"
+
+#include "../resource/texture.h"
+
+#include "../graphic/graphic.h"
+
 #include "camera.h"
-#include "profiler.h"
-#include "material.h"
-#include "graphic.h"
 
 
 namespace unisim
@@ -53,9 +56,9 @@ PathTracer::PathTracer() :
     }
 }
 
-void PathTracer::registerDynamicResources(Context& context)
+void PathTracer::registerDynamicResources(GraphicContext& context)
 {
-    ResourceManager& resources = context.resources;
+    GpuResourceManager& resources = context.resources;
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
     {
@@ -64,7 +67,7 @@ void PathTracer::registerDynamicResources(Context& context)
     }
 }
 
-bool PathTracer::definePathTracerModules(Context& context)
+bool PathTracer::definePathTracerModules(GraphicContext& context)
 {
     if(!addPathTracerModule(*_pathTraceModule, context.settings, "shaders/pathtrace.glsl"))
         return false;
@@ -75,11 +78,19 @@ bool PathTracer::definePathTracerModules(Context& context)
     return true;
 }
 
-bool PathTracer::defineShaders(Context &context)
+bool PathTracer::defineShaders(GraphicContext &context)
 {
     // Generate programs
-    std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules = context.resources.pathTracerModules();
-    if(!generateComputeProgram(*_pathTracerProgram, "pathtracer", pathTracerModules))
+    std::vector<std::shared_ptr<GraphicShader>> shaders;
+    for (const auto& module : context.resources.pathTracerModules())
+    {
+        if (module)
+        {
+            shaders.push_back(module->shader());
+        }
+    }
+
+    if(!generateComputeProgram(*_pathTracerProgram, "pathtracer", shaders))
         return false;
 
     _pathTracerInterface.reset(new PathTracerInterface(_pathTracerProgram));
@@ -87,11 +98,11 @@ bool PathTracer::defineShaders(Context &context)
     return _pathTracerInterface->isValid();
 }
 
-bool PathTracer::defineResources(Context& context)
+bool PathTracer::defineResources(GraphicContext& context)
 {
     bool ok = true;
-
-    ResourceManager& resources = context.resources;
+    
+    GpuResourceManager& resources = context.resources;
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
     {
@@ -105,7 +116,7 @@ bool PathTracer::defineResources(Context& context)
             texture = new Texture();
             texture->width = 64;
             texture->height = 64;
-            texture->format = Texture::UNORM8;
+            texture->format = TextureFormat::UNORM8;
             texture->numComponents = 4;
             texture->data.resize(64*64*4);
 
@@ -159,22 +170,22 @@ bool PathTracer::defineResources(Context& context)
 }
 
 void PathTracer::setPathTracerResources(
-    Context &context,
+    GraphicContext &context,
         PathTracerInterface &interface) const
 {
-    ResourceManager& resources = context.resources;
+    GpuResourceManager& resources = context.resources;
 
     glBindBufferBase(GL_UNIFORM_BUFFER, interface.getUboBindPoint("PathTracerCommonParams"),
                      resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)).bufferId);
 }
 
-void PathTracer::update(Context& context)
+void PathTracer::update(GraphicContext& context)
 {
     Profile(PathTracer);
 
     const Camera& camera = context.camera;
     const Viewport& viewport = camera.viewport();
-    ResourceManager& resources = context.resources;
+    GpuResourceManager& resources = context.resources;
 
     if(*_viewport != viewport)
     {
@@ -216,7 +227,7 @@ void PathTracer::update(Context& context)
                     &gpuCommonParams});
 }
 
-void PathTracer::render(Context& context)
+void PathTracer::render(GraphicContext& context)
 {
     ProfileGpu(PathTracer);
 
@@ -225,8 +236,8 @@ void PathTracer::render(Context& context)
 
     if(!_pathTracerInterface)
         return;
-
-    ResourceManager& resources = context.resources;
+    
+    GpuResourceManager& resources = context.resources;
 
     GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTracerResult)).texId;
 
@@ -246,10 +257,10 @@ void PathTracer::render(Context& context)
 }
 
 uint64_t PathTracer::toGpu(
-    Context& context,
+    GraphicContext& context,
         GpuPathTracerCommonParams& gpuCommonParams)
 {
-    ResourceManager& resources = context.resources;
+    GpuResourceManager& resources = context.resources;
 
     const Camera& camera = context.camera;
 

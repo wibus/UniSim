@@ -3,7 +3,7 @@
 
 #include <GLM/glm.hpp>
 
-#include "taskgraph.h"
+#include "graphictask.h"
 
 
 namespace unisim
@@ -25,20 +25,20 @@ class BVH : public GraphicTask
 public:
     BVH();
     
-    void registerDynamicResources(Context& context) override;
-    bool definePathTracerModules(Context& context) override;
-    bool defineResources(Context& context) override;
+    void registerDynamicResources(GraphicContext& context) override;
+    bool definePathTracerModules(GraphicContext& context) override;
+    bool defineResources(GraphicContext& context) override;
 
     void setPathTracerResources(
-        Context& context,
+        GraphicContext& context,
             PathTracerInterface& interface) const override;
     
-    void update(Context& context) override;
-    void render(Context& context) override;
+    void update(GraphicContext& context) override;
+    void render(GraphicContext& context) override;
 
 private:
     uint64_t toGpu(
-        const Context& context,
+        const GraphicContext& context,
             std::vector<GpuPrimitive>& gpuPrimitives,
             std::vector<GpuMesh>& gpuMeshes,
             std::vector<GpuSphere>& gpuSpheres,

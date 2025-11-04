@@ -1,11 +1,9 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <vector>
-
 #include "GLM/glm.hpp"
 
-#include "input.h"
+#include "../system/input.h"
 
 
 namespace unisim

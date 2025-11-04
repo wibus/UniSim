@@ -8,7 +8,6 @@
 namespace unisim
 {
 
-
 GraphicShaderHandle::GraphicShaderHandle(GraphicShaderHandle&& other) :
     _shaderId(other._shaderId)
 {
@@ -322,12 +321,12 @@ bool generateComputeProgram(
 bool generateComputeProgram(
     GraphicProgram& program,
     const std::string programName,
-    const std::vector<std::shared_ptr<PathTracerModule>>& pathTracerModules)
+    const std::vector<std::shared_ptr<GraphicShader>>& shaders)
 {
     GLuint programId = glCreateProgram();
 
-    for(const auto& module : pathTracerModules)
-        glAttachShader(programId, module->shader()->handle());
+    for(const auto& shader : shaders)
+        glAttachShader(programId, shader->handle());
 
     glLinkProgram(programId);
 

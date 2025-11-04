@@ -4,9 +4,8 @@
 
 #include "sky.h"
 #include "terrain.h"
-#include "material.h"
+#include "materialdatabase.h"
 #include "instance.h"
-#include "ui.h"
 
 
 namespace unisim

@@ -1,8 +1,9 @@
-#include "resource.h"
+#include "gpuresource.h"
 
 #include <algorithm>
 
-#include "material.h"
+#include "../resource/texture.h"
+
 #include "pathtracer.h"
 
 
@@ -34,11 +35,11 @@ GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
     GLenum type = 0;
     switch(def.texture.format)
     {
-    case Texture::UNORM8 :
+    case TextureFormat::UNORM8 :
         internalFormat = def.texture.numComponents == 3 ? GL_RGB8 : GL_RGBA8;
         type = GL_UNSIGNED_BYTE;
         break;
-    case Texture::Float32:
+    case TextureFormat::Float32:
         internalFormat = GL_RGBA32F;
         type = GL_FLOAT;
         break;
@@ -94,10 +95,10 @@ GpuBindlessResource::GpuBindlessResource(ResourceId id, Definition def) :
     {
         switch(def.texture->format)
         {
-        case Texture::UNORM8:
+        case TextureFormat::UNORM8:
             format = def.texture->numComponents == 3 ? GL_RGB8 : GL_RGBA8;
             break;
-        case Texture::Float32:
+        case TextureFormat::Float32:
             format = def.texture->numComponents == 3 ? GL_RGB32F : GL_RGBA32F;
             break;
         }
@@ -153,43 +154,43 @@ void GpuConstantResource::update(const Definition& def) const
 }
 
 
-unsigned int ResourceManager::_staticResourceCount = 0;
-std::vector<std::string> ResourceManager::_staticNames;
+unsigned int GpuResourceManager::_staticResourceCount = 0;
+std::vector<std::string> GpuResourceManager::_staticNames;
 
-ResourceManager::ResourceManager() :
+GpuResourceManager::GpuResourceManager() :
     _resourceCount(_staticResourceCount),
     _names(_staticNames)
 {
 }
 
-ResourceManager::~ResourceManager()
+GpuResourceManager::~GpuResourceManager()
 {
     _resources.clear();
 }
 
-ResourceId ResourceManager::registerStaticResource(const std::string& name)
+ResourceId GpuResourceManager::registerStaticResource(const std::string& name)
 {
     _staticNames.push_back(name);
     return _staticResourceCount++;
 }
 
-ResourceId ResourceManager::registerDynamicResource(const std::string& name)
+ResourceId GpuResourceManager::registerDynamicResource(const std::string& name)
 {
     _names.push_back(name);
     return _resourceCount++;
 }
 
-void ResourceManager::initialize()
+void GpuResourceManager::initialize()
 {
     _resources.resize(_resourceCount);
 }
 
-void ResourceManager::registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider)
+void GpuResourceManager::registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider)
 {
     _providers.push_back(provider);
 }
 
-std::vector<std::shared_ptr<PathTracerModule>> ResourceManager::pathTracerModules() const
+std::vector<std::shared_ptr<PathTracerModule>> GpuResourceManager::pathTracerModules() const
 {
     std::vector<std::shared_ptr<PathTracerModule>> modules;
     auto appendShaders = [&](const std::vector<std::shared_ptr<PathTracerModule>>& s)
@@ -208,13 +209,13 @@ std::vector<std::shared_ptr<PathTracerModule>> ResourceManager::pathTracerModule
     return modules;
 }
 
-void ResourceManager::setPathTracerResources(Context& context, PathTracerInterface& interface) const
+void GpuResourceManager::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
     for(const auto& provider : _providers)
         provider->setPathTracerResources(context, interface);
 }
 
-uint64_t ResourceManager::pathTracerHash() const
+uint64_t GpuResourceManager::pathTracerHash() const
 {
     uint64_t hash;
     for(const auto& provider : _providers)

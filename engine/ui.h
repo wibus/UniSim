@@ -1,8 +1,7 @@
 #ifndef UI_H
 #define UI_H
 
-#include "engine.h"
-#include "taskgraph.h"
+#include "graphictask.h"
 
 
 namespace unisim
@@ -13,7 +12,7 @@ class Ui : public GraphicTask
 public:
     Ui();
     
-    void render(Context& context) override;
+    void render(GraphicContext& context) override;
 };
 
 }

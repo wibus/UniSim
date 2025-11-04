@@ -5,7 +5,7 @@
 
 #include <GLM/glm.hpp>
 
-#include "taskgraph.h"
+#include "graphictask.h"
 
 
 namespace unisim

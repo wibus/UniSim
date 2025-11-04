@@ -11,7 +11,7 @@ namespace unisim
 
 class Scene;
 class Camera;
-class ResourceManager;
+class GpuResourceManager;
 
 class UiEngineTask;
 class Gravity;
@@ -28,7 +28,7 @@ struct EngineContext
     const double dt;
     Scene& scene;
     Camera& camera;
-    const ResourceManager& resources;
+    const GpuResourceManager& resources;
     const EngineSettings& settings;
 };
 
@@ -57,13 +57,13 @@ public:
 
     bool initialize(Scene& scene,
             Camera& camera,
-            const ResourceManager& resources);
+                    const GpuResourceManager& resources);
 
     void execute(
             double dt,
             Scene& scene,
             Camera& camera,
-            const ResourceManager& resources);
+        const GpuResourceManager& resources);
 
 private:
     void createTaskGraph(const Scene& scene);

@@ -8,9 +8,10 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 
+#include "system/profiler.h"
+
 #include "engine/scene.h"
 #include "engine/project.h"
-#include "engine/profiler.h"
 #include "engine/terrain.h"
 #include "engine/sky.h"
 
