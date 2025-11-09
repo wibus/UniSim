@@ -45,11 +45,6 @@ std::shared_ptr<Instance> makeCube(const std::string& name, double length, float
     return instance;
 }
 
-void PathTracerScene::initializeCamera(Camera& camera)
-{
-    camera.setEV(-0.4);
-}
-
 PathTracerScene::PathTracerScene() :
     Scene("Path Tracer")
 {

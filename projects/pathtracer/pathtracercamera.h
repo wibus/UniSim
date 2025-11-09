@@ -10,7 +10,7 @@ namespace unisim
 class PathTracerCameraMan : public CameraMan
 {
 public:
-    PathTracerCameraMan(Scene &scene, Viewport viewport);
+    PathTracerCameraMan(Scene &scene, View& view);
 
     void update(const Inputs& inputs, float dt) override;
 

@@ -6,34 +6,32 @@
 
 #include "system/input.h"
 
-#include "engine/camera.h"
+#include "graphic/window.h"
+
 #include "engine/enginetask.h"
 #include "engine/graphictask.h"
 
+#include "engine/project.h"
 
-class GLFWwindow;
 
 namespace unisim
 {
 
+class Window;
 class Project;
 
 
-class Universe
+class Universe : public WindowEventListener
 {
-private:
-    Universe();
-
 public:
-    static Universe& getInstance();
+    Universe();
+    int launch();
 
-    int launch(int argc, char ** argv);
-
-    void handleWindowResize(GLFWwindow* window, int width, int height);
-    void handleKeyboard(const KeyboardEvent& event);
-    void handleMouseMove(const MouseMoveEvent& event);
-    void handleMouseButton(const MouseButtonEvent& event);
-    void handleMouseScroll(const MouseScrollEvent& event);
+    void onWindowResize(const Window& window, int width, int height) override;
+    void onWindowKeyboard(const Window& window, const KeyboardEvent& event) override;
+    void onWindowMouseMove(const Window& window, const MouseMoveEvent& event) override;
+    void onWindowMouseButton(const Window& window, const MouseButtonEvent& event) override;
+    void onWindowMouseScroll(const Window& window, const MouseScrollEvent& event) override;
 
     bool setup();
     void update();
@@ -41,9 +39,8 @@ public:
     void ui();
 
 public:
-    int _argc;
-    char** _argv;
-    GLFWwindow* window;
+    std::shared_ptr<Window> _mainWindow;
+    std::shared_ptr<View> _mainView;
 
     // Inputs
     Inputs _inputs;
@@ -56,9 +53,6 @@ public:
     double _dt;
     double _timeFactor;
     std::chrono::time_point<std::chrono::high_resolution_clock> _lastTime;
-
-    // Viewport
-    Viewport _viewport;
 
     // Projet
     std::unique_ptr<Project> _project;

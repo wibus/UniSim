@@ -16,7 +16,7 @@ class SolarSystemProject : public Project
 public:
     SolarSystemProject();
 
-    int addView(Viewport viewport) override;
+    int addView(const std::shared_ptr<View>& view) override;
 };
 
 // IMPLEMENTATION //

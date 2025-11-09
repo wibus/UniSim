@@ -10,7 +10,7 @@ namespace unisim
 class SolarSystemCameraMan : public CameraMan
 {
 public:
-    SolarSystemCameraMan(Scene &scene, Viewport viewport);
+    SolarSystemCameraMan(Scene &scene, View& view);
 
     void update(const Inputs& inputs, float dt) override;
 

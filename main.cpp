@@ -28,5 +28,6 @@ int main(int argc, char ** argv)
         return -1;
     }
 
-    return unisim::Universe::getInstance().launch(argc, argv);
+    unisim::Universe universe;
+    return universe.launch();
 }

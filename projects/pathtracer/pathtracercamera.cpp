@@ -15,8 +15,8 @@ const float PathTracerCameraMan::EV_INC = 0.5;
 const float PathTracerCameraMan::ROTATE_INC = glm::pi<float>() * 0.01;
 const float PathTracerCameraMan::APPROACH_INC = 1.01;
 
-PathTracerCameraMan::PathTracerCameraMan(Scene& scene, Viewport viewport) :
-    CameraMan(viewport),
+PathTracerCameraMan::PathTracerCameraMan(Scene& scene, View& view) :
+    CameraMan(view),
     _scene(scene),
     _position(0, 0, 0),
     _direction(0, 1, 0),
@@ -26,10 +26,10 @@ PathTracerCameraMan::PathTracerCameraMan(Scene& scene, Viewport viewport) :
     _tilt(0, 0, 0, 1),
     _autoExpose(true)
 {
-    _camera.setViewport(viewport);
-
     _position = glm::dvec3(0, -5, 5);
     rotatePrimary(0, 20);
+
+    _camera.setEV(-0.4);
 }
 
 void PathTracerCameraMan::update(const Inputs& inputs, float dt)

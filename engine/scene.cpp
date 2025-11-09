@@ -25,11 +25,6 @@ Scene::~Scene()
 
 }
 
-void Scene::initializeCamera(Camera& camera)
-{
-
-}
-
 void Scene::ui()
 {
     if(ImGui::TreeNode("Sky"))

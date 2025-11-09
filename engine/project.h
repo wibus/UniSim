@@ -22,13 +22,13 @@ public:
     Scene& scene();
     const Scene& scene() const;
 
-    virtual int addView(Viewport viewport) = 0;
+    virtual int addView(const std::shared_ptr<View>& view) = 0;
 
     CameraMan& cameraMan(int index = 0);
     const CameraMan& cameraMan(int index = 0) const;
 
 protected:
-    void reset(Scene* scene);
+    void setScene(Scene* scene);
     int addCameraMan(CameraMan* cameraMan);
 
 private:

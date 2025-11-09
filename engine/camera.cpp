@@ -211,19 +211,16 @@ void Camera::ui()
     ImGui::Separator();
 }
 
-CameraMan::CameraMan(Viewport viewport) :
-    _camera(viewport)
+CameraMan::CameraMan(View& view) :
+    _view(view),
+    _camera(view.viewport())
 {
+    _view.registerEventListener(this);
 }
 
 CameraMan::~CameraMan()
 {
-
-}
-
-void CameraMan::setViewport(Viewport viewport)
-{
-    _camera.setViewport(viewport);
+    _view.unregisterEventListener(this);
 }
 
 void CameraMan::handleKeyboard(const Inputs& inputs, const KeyboardEvent& event)
@@ -244,6 +241,11 @@ void CameraMan::handleMouseButton(const Inputs& inputs, const MouseButtonEvent& 
 void CameraMan::handleMouseScroll(const Inputs& inputs, const MouseScrollEvent& event)
 {
 
+}
+
+void CameraMan::onViewportChanged(const View& view, const Viewport& viewport)
+{
+    _camera.setViewport(viewport);
 }
 
 }

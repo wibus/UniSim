@@ -14,12 +14,6 @@ project(UniSim_CPP)
 set(CMAKE_CXX_STANDARD 17)     
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-#========== Targets Configurations ============#
-
-# Build an executable (Unix-like OSes generates ./openglDemo1, on
-# Windows ./opengDemo1.exe)
-# ..........................................
-
 find_package( OpenGL REQUIRED )
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -80,6 +74,10 @@ set(GraphicFiles
     graphic/graphic_vk.cpp
     graphic/pathtracer.h
     graphic/pathtracer.cpp
+    graphic/view.h
+    graphic/view.cpp
+    graphic/window.h
+    graphic/window.cpp
 )
 
 # Engine files

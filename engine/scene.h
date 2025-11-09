@@ -37,8 +37,6 @@ public:
     std::vector<std::shared_ptr<Instance>>& instances() { return _instances; }
     const std::vector<std::shared_ptr<Instance>>& instances() const { return _instances; }
 
-    virtual void initializeCamera(Camera& camera);
-
     void ui();
 
 protected:

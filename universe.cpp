@@ -5,10 +5,12 @@
 #include <GLFW/glfw3.h>
 
 #include <imgui/imgui.h>
-#include <imgui/imgui_impl_glfw.h>
-#include <imgui/imgui_impl_opengl3.h>
+
+#include <PilsCore/Utils/Logger.h>
 
 #include "system/profiler.h"
+
+#include "graphic/window.h"
 
 #include "engine/scene.h"
 #include "engine/project.h"
@@ -35,50 +37,6 @@ DeclareProfilePoint(Frame);
 DeclareProfilePointGpu(Frame);
 DeclareProfilePointGpu(PathTracer);
 
-Universe& Universe::getInstance()
-{
-    static Universe g_Instance;
-
-    return g_Instance;
-}
-
-void glfWHandleWindowResize(GLFWwindow* window, int width, int height)
-{
-    Universe::getInstance().handleWindowResize(window, width, height);
-}
-
-void glfWHandleKeyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    KeyboardEvent event = {key, scancode, action, mods};
-
-    Universe::getInstance().handleKeyboard(event);
-}
-
-void glfWHandleMouseMove(GLFWwindow*, double xpos, double ypos)
-{
-    MouseMoveEvent event = {xpos, ypos};
-
-    Universe::getInstance().handleMouseMove(event);
-}
-
-void glfWHandleMouseButton(GLFWwindow*, int button, int action, int mods)
-{
-    MouseButtonEvent event = {button, action, mods};
-
-    Universe::getInstance().handleMouseButton(event);
-}
-
-void glfWHandleScroll(GLFWwindow*, double xoffset, double yoffset)
-{
-    MouseScrollEvent event = {xoffset, yoffset};
-
-    Universe::getInstance().handleMouseScroll(event);
-}
-
-void glfwErrorCallback(int error, const char* description)
-{
-    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
-}
 
 Universe::Universe() :
     _timeFactor(0.0),
@@ -86,124 +44,33 @@ Universe::Universe() :
 {
 }
 
-int Universe::launch(int argc, char** argv)
+int Universe::launch()
 {
-    // Copy because glut is taking a pointer
-    _argc = argc;
-    _argv = argv;
+    _mainWindow.reset(new Window());
 
-    glfwSetErrorCallback(glfwErrorCallback);
-    if (!glfwInit())
-        return -1;
-
-    _viewport.width = 1280;
-    _viewport.height = 720;
-
-    int monitorCount;
-    GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
-
-    int monitorScore = -1;
-    const int SMALL_MONITOR_SCORE = 1;
-    const int LARGE_MONITOR_SCORE = 0;
-
-    int viewportX = 0, viewportY = 0;
-    GLFWmonitor* chosenMonitor = nullptr;
-
-    for(int i = 0; i < monitorCount; ++i)
+    if (!_mainWindow->isValid())
     {
-        int xpos, ypos, width, height;
-        glfwGetMonitorWorkarea(monitors[i], &xpos, &ypos, &width, &height);
-
-        if(width <= _viewport.width || height <= 1024)
-        {
-            if(monitorScore < SMALL_MONITOR_SCORE)
-            {
-                chosenMonitor = monitors[i];
-                monitorScore = SMALL_MONITOR_SCORE;
-
-                _viewport.width = width;
-                _viewport.height = height;
-                viewportX = xpos;
-                viewportY = ypos;
-            }
-        }
-        else
-        {
-            if(monitorScore < LARGE_MONITOR_SCORE)
-            {
-                chosenMonitor = monitors[i];
-                monitorScore = LARGE_MONITOR_SCORE;
-
-                viewportX = xpos + (width - _viewport.width) / 2;
-                viewportY = ypos + (height - _viewport.height) / 2;
-            }
-        }
-    }
-
-    if(!chosenMonitor)
-    {
-        return -2;
-    }
-
-    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
-    GLFWwindow* window = glfwCreateWindow(_viewport.width, _viewport.height, "Universe", NULL, NULL);
-
-    if (!window)
-    {
-        glfwTerminate();
+        PILS_ERROR("Could not create window. Exiting.");
         return -1;
     }
 
-    glfwSetWindowPos(window, viewportX, viewportY);
-
-    glfwMakeContextCurrent(window);
-
-    glewExperimental = GL_TRUE;
-    glewInit();
-
-    glfwSwapInterval(1);
-
-    glViewport(0, 0, _viewport.width, _viewport.height);
-
-    glfwSetWindowSizeCallback(window, glfWHandleWindowResize);
-    glfwSetKeyCallback(window, glfWHandleKeyboard);
-    glfwSetCursorPosCallback(window, glfWHandleMouseMove);
-    glfwSetMouseButtonCallback(window, glfWHandleMouseButton);
-    glfwSetScrollCallback(window, glfWHandleScroll);
-
-    // Setup ImGui
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-    ImGui::StyleColorsDark();
-
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    const char* glsl_version = "#version 440";
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    _mainWindow->registerEventListener(this);
 
     bool ok = setup();
 
-    while (!glfwWindowShouldClose(window) && ok)
+    while (!_mainWindow->shouldClose() && ok)
     {
         Profiler::GetInstance().swapFrames();
 
         {
             Profile(PollEvents);
-            glfwPollEvents();
+            _mainWindow->pollEvents();
         }
 
         // Start ImGui frame
         {
             Profile(ImGui_NewFrame);
-            ImGui_ImplOpenGL3_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
+            _mainWindow->ImGuiNewFrame();
         }
 
         update();
@@ -213,27 +80,22 @@ int Universe::launch(int argc, char** argv)
         {
             Profile(SwapBuffers);
             ProfileGpu(SwapBuffers);
-            glfwSwapBuffers(window);
+            _mainWindow->present();
         }
     }
 
-    glfwTerminate();
+    _mainWindow->unregisterEventListener(this);
+    _mainWindow->close();
 
     return 0;
 }
 
-void Universe::handleWindowResize(GLFWwindow* window, int width, int height)
+void Universe::onWindowResize(const Window& window, int width, int height)
 {
-    _viewport.width = width;
-    _viewport.height = height;
 
-    glViewport(0, 0, width, height);
-
-    _viewport = {width, height};
-    _project->cameraMan().setViewport(_viewport);
 }
 
-void Universe::handleKeyboard(const KeyboardEvent& event)
+void Universe::onWindowKeyboard(const Window& window, const KeyboardEvent& event)
 {
     // Open Close ImGui Window
     if(event.action == GLFW_PRESS)
@@ -264,14 +126,14 @@ void Universe::handleKeyboard(const KeyboardEvent& event)
     _project->cameraMan().handleKeyboard(_inputs, event);
 }
 
-void Universe::handleMouseMove(const MouseMoveEvent& event)
+void Universe::onWindowMouseMove(const Window& window, const MouseMoveEvent& event)
 {
     _inputs.handleMouseMove(event);
 
     _project->cameraMan().handleMouseMove(_inputs, event);
 }
 
-void Universe::handleMouseButton(const MouseButtonEvent& event)
+void Universe::onWindowMouseButton(const Window& window, const MouseButtonEvent& event)
 {
     ImGuiIO& io = ImGui::GetIO();
     if(io.WantCaptureMouse)
@@ -282,7 +144,7 @@ void Universe::handleMouseButton(const MouseButtonEvent& event)
     _project->cameraMan().handleMouseButton(_inputs, event);
 }
 
-void Universe::handleMouseScroll(const MouseScrollEvent& event)
+void Universe::onWindowMouseScroll(const Window& window, const MouseScrollEvent& event)
 {
     ImGuiIO& io = ImGui::GetIO();
     if(io.WantCaptureMouse)
@@ -297,10 +159,12 @@ bool Universe::setup()
 {
     Profiler::GetInstance().initize();
 
+    _mainView.reset(new View(*_mainWindow));
+
     //_project.reset(new SolarSystemProject());
     _project.reset(new PathTracerProject());
 
-    _project->addView(_viewport);
+    _project->addView(_mainView);
 
     auto& instances = _project->scene().instances();
     auto addInstnaces = [&](const std::vector<std::shared_ptr<Instance>>& o)

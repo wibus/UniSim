@@ -9,12 +9,12 @@ namespace unisim
 
 SolarSystemProject::SolarSystemProject()
 {
-    reset(new SolarSystemScene());
+    setScene(new SolarSystemScene());
 }
 
-int SolarSystemProject::addView(Viewport viewport)
+int SolarSystemProject::addView(const std::shared_ptr<View>& view)
 {
-    return addCameraMan(new SolarSystemCameraMan(scene(), viewport));
+    return addCameraMan(new SolarSystemCameraMan(scene(), *view));
 }
 
 }

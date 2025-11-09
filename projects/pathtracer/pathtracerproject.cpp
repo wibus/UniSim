@@ -9,14 +9,12 @@ namespace unisim
 
 PathTracerProject::PathTracerProject()
 {
-    reset(new PathTracerScene());
+    setScene(new PathTracerScene());
 }
 
-int PathTracerProject::addView(Viewport viewport)
+int PathTracerProject::addView(const std::shared_ptr<View>& view)
 {
-    int cameraManId = addCameraMan(new PathTracerCameraMan(scene(), viewport));
-    scene().initializeCamera(cameraMan(cameraManId).camera());
-    return cameraManId;
+    return addCameraMan(new PathTracerCameraMan(scene(), *view));
 }
 
 }

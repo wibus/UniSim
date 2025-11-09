@@ -5,29 +5,14 @@
 
 #include "../system/input.h"
 
+#include "../graphic/view.h"
+
 
 namespace unisim
 {
 
 class Body;
 class Scene;
-
-
-struct Viewport
-{
-    int width;
-    int height;
-
-    bool operator==(const Viewport& viewport) const
-    {
-        return viewport.width == width && viewport.height == height;
-    }
-
-    bool operator!=(const Viewport& viewport) const
-    {
-        return !(viewport == *this);
-    }
-};
 
 
 class Camera
@@ -105,18 +90,16 @@ private:
     float _iso;
 };
 
-class CameraMan
+class CameraMan : public ViewEventListener
 {
 public:
     enum class Mode {Static, Orbit, Ground};
 
-    CameraMan(Viewport viewport);
+    CameraMan(View& view);
     virtual ~CameraMan();
 
     Camera& camera();
     const Camera& camera() const;
-
-    void setViewport(Viewport viewport);
 
     virtual void update(const Inputs& inputs, float dt) = 0;
 
@@ -125,7 +108,10 @@ public:
     virtual void handleMouseButton(const Inputs& inputs, const MouseButtonEvent& event);
     virtual void handleMouseScroll(const Inputs& inputs, const MouseScrollEvent& event);
 
+    void onViewportChanged(const View& view, const Viewport& viewport) override;
+
 protected:
+    View& _view;
     Camera _camera;
 };
 

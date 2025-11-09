@@ -16,17 +16,9 @@ Project::~Project()
 
 }
 
-void Project::reset(Scene* scene)
+void Project::setScene(Scene* scene)
 {
     _scene.reset(scene);
-
-    auto oldCameraMen = _cameraMen;
-    _cameraMen.clear();
-
-    for(const auto& cameraMan : oldCameraMen)
-    {
-        addView(cameraMan->camera().viewport());
-    }
 }
 
 int Project::addCameraMan(CameraMan* cameraMan)

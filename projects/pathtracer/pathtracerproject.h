@@ -16,7 +16,7 @@ class PathTracerProject : public Project
 public:
     PathTracerProject();
 
-    int addView(Viewport viewport) override;
+    int addView(const std::shared_ptr<View>& view) override;
 };
 
 // IMPLEMENTATION //

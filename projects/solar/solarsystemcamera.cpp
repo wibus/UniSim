@@ -22,8 +22,8 @@ const float SolarSystemCameraMan::EV_INC = 0.5;
 const float SolarSystemCameraMan::ROTATE_INC = glm::pi<float>() * 0.001;
 const float SolarSystemCameraMan::APPROACH_INC = 1.01;
 
-SolarSystemCameraMan::SolarSystemCameraMan(Scene& scene, Viewport viewport) :
-    CameraMan(viewport),
+SolarSystemCameraMan::SolarSystemCameraMan(Scene& scene, View& view) :
+    CameraMan(view),
     _scene(scene),
     _mode(Mode::Static),
     _position(0, 0, 500e9),
@@ -36,7 +36,6 @@ SolarSystemCameraMan::SolarSystemCameraMan(Scene& scene, Viewport viewport) :
     _roam(0, 0, 0, 1),
     _autoExpose(false)
 {
-    _camera.setViewport(viewport);
     _camera.setEV(15);
     setBodyIndex(3);
     setMode(SolarSystemCameraMan::Mode::Orbit);
