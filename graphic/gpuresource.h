@@ -1,18 +1,23 @@
-#ifndef RESOURCE_H
-#define RESOURCE_H
+#ifndef GPURESOURCE_H
+#define GPURESOURCE_H
 
 #include <vector>
 #include <memory>
 #include <string>
 #include <cassert>
 
-#include "graphic.h"
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+#include "gpuresource_gl.h"
+#endif // UNISIM_GRAPHIC_BACKEND_GL
 
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+#include "gpuresource_vk.h"
+#endif // UNISIM_GRAPHIC_BACKEND_VK
 
 namespace unisim
 {
 
-class Texture;
+struct Texture;
 class GraphicContext;
 class PathTracerModule;
 class PathTracerInterface;
@@ -33,11 +38,8 @@ public:
     GpuResource(ResourceId id);
     virtual ~GpuResource();
 
-    virtual void bind() {}
-
     ResourceId id;
 };
-
 
 class GpuTextureResource : public GpuResource
 {
@@ -50,7 +52,10 @@ public:
     GpuTextureResource(ResourceId id, Definition def);
     ~GpuTextureResource();
 
-    GLuint texId;
+    const GpuTextureResourceHandle& handle() const { return *_handle; }
+
+private:
+    std::unique_ptr<GpuTextureResourceHandle> _handle;
 };
 
 
@@ -67,7 +72,10 @@ public:
     GpuImageResource(ResourceId id, Definition def);
     ~GpuImageResource();
 
-    GLuint texId;
+    const GpuImageResourceHandle& handle() const { return *_handle; }
+
+private:
+    std::unique_ptr<GpuImageResourceHandle> _handle;
 };
 
 
@@ -77,13 +85,16 @@ public:
     struct Definition
     {
         const Texture* texture;
-        GLuint texId;
+        const GpuTextureResource& textureResource;
     };
 
     GpuBindlessResource(ResourceId id, Definition def);
     ~GpuBindlessResource();
 
-    GLuint64 handle;
+    const GpuBindlessResourceHandle& handle() const { return *_handle; }
+
+private:
+    std::unique_ptr<GpuBindlessResourceHandle> _handle;
 };
 
 
@@ -102,7 +113,10 @@ public:
 
     void update(const Definition& def) const;
 
-    GLuint bufferId;
+    const GpuStorageResourceHandle& handle() const { return *_handle; }
+
+private:
+    std::unique_ptr<GpuStorageResourceHandle> _handle;
 };
 
 
@@ -120,26 +134,11 @@ public:
 
     void update(const Definition& def) const;
 
-    GLuint bufferId;
+    const GpuConstantResourceHandle& handle() const { return *_handle; }
+
+private:
+    std::unique_ptr<GpuConstantResourceHandle> _handle;
 };
-
-
-struct GPUBindlessTexture
-{
-    GPUBindlessTexture() :
-        texture(0),
-        padding(0)
-    {}
-
-    GPUBindlessTexture(GLuint64 tex) :
-        texture(tex),
-        padding(0)
-    {}
-
-    GLuint64 texture;
-    GLuint64 padding;
-};
-
 
 class GpuResourceManager
 {
@@ -200,4 +199,4 @@ const Resource& GpuResourceManager::get(ResourceId id) const
 
 }
 
-#endif // RESOURCE_H
+#endif // GPURESOURCE_H

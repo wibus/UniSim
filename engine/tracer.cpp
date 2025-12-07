@@ -33,8 +33,8 @@ struct GpuPathTracerCommonParams
     GLfloat exposure;
 
     GLuint frameIndex;
-
-    GPUBindlessTexture blueNoise[PathTracer::BLUE_NOISE_TEX_COUNT];
+    
+    GpuBindlessTextureDescriptor blueNoise[PathTracer::BLUE_NOISE_TEX_COUNT];
     glm::vec4 halton[PathTracer::HALTON_SAMPLE_COUNT];
 };
 
@@ -134,8 +134,8 @@ bool PathTracer::defineResources(GraphicContext& context)
         }
 
         ok = ok && resources.define<GpuTextureResource>(_blueNoiseTextureResourceIds[i], {*texture});
-        GLuint texId = resources.get<GpuTextureResource>(_blueNoiseTextureResourceIds[i]).texId;
-        ok = ok && resources.define<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i], {texture, texId});
+        const auto& textureResource = resources.get<GpuTextureResource>(_blueNoiseTextureResourceIds[i]);
+        ok = ok && resources.define<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i], {texture, textureResource});
 
         delete texture;
     }
@@ -175,8 +175,8 @@ void PathTracer::setPathTracerResources(
 {
     GpuResourceManager& resources = context.resources;
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, interface.getUboBindPoint("PathTracerCommonParams"),
-                     resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)).bufferId);
+    context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)),
+                              interface.getUboBindPoint("PathTracerCommonParams"));
 }
 
 void PathTracer::update(GraphicContext& context)
@@ -239,7 +239,7 @@ void PathTracer::render(GraphicContext& context)
     
     GpuResourceManager& resources = context.resources;
 
-    GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTracerResult)).texId;
+    const auto& pathTracerResult = resources.get<GpuImageResource>(ResourceName(PathTracerResult));
 
     if(_frameIndex < MAX_FRAME_COUNT)
     {
@@ -248,7 +248,7 @@ void PathTracer::render(GraphicContext& context)
         // Set uniforms for sub-systems
         resources.setPathTracerResources(context, *_pathTracerInterface);
 
-        glBindImageTexture(_pathTraceUnit, pathTraceTexId, 0, false, 0, GL_WRITE_ONLY, _pathTraceFormat);
+        context.device.bindImage(pathTracerResult, _pathTraceUnit);
 
         glDispatchCompute((_viewport->width + 7) / 8, (_viewport->height + 3) / 4, 1);
     }
@@ -258,7 +258,7 @@ void PathTracer::render(GraphicContext& context)
 
 uint64_t PathTracer::toGpu(
     GraphicContext& context,
-        GpuPathTracerCommonParams& gpuCommonParams)
+    GpuPathTracerCommonParams& gpuCommonParams)
 {
     GpuResourceManager& resources = context.resources;
 
@@ -278,7 +278,7 @@ uint64_t PathTracer::toGpu(
     gpuCommonParams.frameIndex = 0; // Must be constant for hasing
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
-        gpuCommonParams.blueNoise[i].texture = resources.get<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i]).handle;
+        gpuCommonParams.blueNoise[i] = resources.get<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i]).handle();
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
         gpuCommonParams.halton[i] = _halton[i];
 

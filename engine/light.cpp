@@ -116,11 +116,8 @@ void Lighting::setPathTracerResources(
 {
     GpuResourceManager& resources = context.resources;
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("Emitters"),
-                     resources.get<GpuStorageResource>(ResourceName(Emitters)).bufferId);
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, interface.getSsboBindPoint("DirectionalLights"),
-                     resources.get<GpuStorageResource>(ResourceName(DirectionalLights)).bufferId);
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Emitters)),          interface.getSsboBindPoint("Emitters"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(DirectionalLights)), interface.getSsboBindPoint("DirectionalLights"));
 
 }
 

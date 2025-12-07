@@ -55,12 +55,11 @@ void ColorGrading::render(GraphicContext& context)
     
     GpuResourceManager& resources = context.resources;
 
-    GLuint pathTraceTexId = resources.get<GpuImageResource>(ResourceName(PathTracerResult)).texId;
+    const auto& pathTracerResult = resources.get<GpuImageResource>(ResourceName(PathTracerResult));
 
     GraphicProgramScope programScope(*_colorGradingProgram);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, pathTraceTexId);
+    context.device.bindTexture(pathTracerResult, 0);
 
     glBindVertexArray(_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 3);

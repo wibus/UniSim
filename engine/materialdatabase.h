@@ -34,7 +34,7 @@ public:
 
     void setPathTracerResources(
         GraphicContext& context,
-            PathTracerInterface& interface) const override;
+        PathTracerInterface& interface) const override;
     
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
@@ -42,8 +42,8 @@ public:
 private:
     uint64_t toGpu(
         const GraphicContext& context,
-            std::vector<GPUBindlessTexture>& textures,
-            std::vector<GpuMaterial>& materials);
+        std::vector<GpuBindlessTextureDescriptor>& textures,
+        std::vector<GpuMaterial>& materials);
 
     std::vector<std::shared_ptr<Material>> _materials;
     std::unordered_map<uint64_t, MaterialId> _materialIds;

@@ -64,8 +64,18 @@ set(ResourceFiles
 
 # Graphic files
 set(GraphicFiles
+    graphic/gpudevice.h
+    graphic/gpudevice.cpp
+    graphic/gpudevice_gl.h
+    graphic/gpudevice_gl.cpp
+    graphic/gpudevice_vk.h
+    graphic/gpudevice_vk.cpp
     graphic/gpuresource.h
     graphic/gpuresource.cpp
+    graphic/gpuresource_gl.h
+    graphic/gpuresource_gl.cpp
+    graphic/gpuresource_vk.h
+    graphic/gpuresource_vk.cpp
     graphic/graphic.h
     graphic/graphic.cpp
     graphic/graphic_gl.h
@@ -78,6 +88,7 @@ set(GraphicFiles
     graphic/view.cpp
     graphic/window.h
     graphic/window.cpp
+    graphic/window_gl.cpp
 )
 
 # Engine files

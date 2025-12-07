@@ -2,8 +2,6 @@
 
 #include <GLFW/glfw3.h>
 
-#include <imgui/imgui_impl_glfw.h>
-#include <imgui/imgui_impl_opengl3.h>
 
 #include <PilsCore/Utils/Assert.h>
 #include <PilsCore/Utils/Logger.h>
@@ -223,18 +221,7 @@ Window::Window(int requestedWidth, int requestedHeight) :
     glfwSetMouseButtonCallback(_glfwWindow, glfWHandleMouseButton);
     glfwSetScrollCallback(_glfwWindow, glfWHandleScroll);
 
-    // Setup ImGui
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-    ImGui::StyleColorsDark();
-
-    ImGui_ImplGlfw_InitForOpenGL(_glfwWindow, true);
-    const char* glsl_version = "#version 440";
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    ImGuiInitNative();
 }
 
 Window::~Window()
@@ -304,9 +291,7 @@ void Window::onMouseScroll(const MouseScrollEvent& event)
 
 void Window::ImGuiNewFrame()
 {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+    ImGuiNewFrameNative();
 }
 
 bool Window::shouldClose()

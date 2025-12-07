@@ -2,6 +2,7 @@
 #define GRAPHICTASK_H
 
 #include "../graphic/graphic.h"
+#include "../graphic/gpudevice.h"
 #include "../graphic/gpuresource.h"
 #include "../graphic/pathtracer.h"
 
@@ -19,6 +20,7 @@ struct GraphicSettings
 
 struct GraphicContext
 {
+    GpuDevice& device;
     const Scene& scene;
     const Camera& camera;
     GpuResourceManager& resources;
@@ -86,6 +88,7 @@ private:
     void createTaskGraph(const Scene& scene);
     void addTask(const std::shared_ptr<GraphicTask>& task);
 
+    GpuDevice _device;
     GraphicSettings _settings;
     GpuResourceManager _resources;
     std::vector<std::shared_ptr<GraphicTask>> _tasks;

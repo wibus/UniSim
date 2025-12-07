@@ -77,6 +77,9 @@ public:
     void close();
 
 private:
+    void ImGuiInitNative();
+    void ImGuiNewFrameNative();
+
     GLFWwindow* _glfwWindow;
     std::set<WindowEventListener*> _eventListeners;
 

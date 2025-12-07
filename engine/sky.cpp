@@ -241,9 +241,9 @@ void SkySphere::Task::setPathTracerResources(GraphicContext& context, PathTracer
     SkySphere& sky = *dynamic_cast<SkySphere*>(context.scene.sky().get());
     GpuResourceManager& resources = context.resources;
 
+    // TODO replace by ConstantBuffer
     GLuint skyMapUnit = interface.grabTextureUnit();
-    glActiveTexture(GL_TEXTURE0 + skyMapUnit);
-    glBindTexture(GL_TEXTURE_2D, resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId);
+    context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(SkyMap)), skyMapUnit);
     glUniform1i(glGetUniformLocation(interface.program()->handle(), "skyMap"), skyMapUnit);
 
     glm::vec4 quaternion = sky.quaternion();
@@ -586,15 +586,13 @@ void PhysicalSky::Task::setPathTracerResources(GraphicContext& context, PathTrac
                 _params.bottom_radius.to(km));
 
     GLuint moonLightingUnit = interface.grabTextureUnit();
-    glActiveTexture(GL_TEXTURE0 + moonLightingUnit);
-    glBindTexture(GL_TEXTURE_2D, resources.get<GpuImageResource>(ResourceName(MoonLighting)).texId);
+    context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(MoonLighting)), moonLightingUnit);
     glUniform1i(glGetUniformLocation(interface.program()->handle(), "moon"), moonLightingUnit);
 
     glUniform4fv(glGetUniformLocation(interface.program()->handle(), "moonQuaternion"), 1, &_moonQuaternion[0]);
 
     GLuint starsUnit = interface.grabTextureUnit();
-    glActiveTexture(GL_TEXTURE0 + starsUnit);
-    glBindTexture(GL_TEXTURE_2D, resources.get<GpuTextureResource>(ResourceName(SkyMap)).texId);
+    context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(SkyMap)), starsUnit);
     glUniform1i(glGetUniformLocation(interface.program()->handle(), "stars"), starsUnit);
 
     glm::vec4 starsQuaternion = sky.quaternion();
@@ -670,10 +668,8 @@ void PhysicalSky::Task::render(GraphicContext& context)
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, _paramsUbo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(PhysicalSkyCommonParams), _gpuParams.get(), GL_STREAM_DRAW);
 
-    glActiveTexture(GL_TEXTURE0 + _albedoUnit);
-    glBindTexture(GL_TEXTURE_2D, resources.get<GpuTextureResource>(ResourceName(MoonAlbedo)).texId);
-
-    glBindImageTexture(_lightingUnit, resources.get<GpuImageResource>(ResourceName(MoonLighting)).texId, 0, false, 0, GL_WRITE_ONLY, _lightingFormat);
+    context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(MoonAlbedo)), _albedoUnit);
+    context.device.bindImage(resources.get<GpuImageResource>(ResourceName(MoonLighting)), _lightingUnit);
 
     glDispatchCompute((_moonLightingDimensions) / 8, _moonLightingDimensions / 8, 1);
 

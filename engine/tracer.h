@@ -41,7 +41,7 @@ public:
 private:
     uint64_t toGpu(
         GraphicContext& context,
-            GpuPathTracerCommonParams& gpuCommonParams);
+        GpuPathTracerCommonParams& gpuCommonParams);
 
     ResourceId _blueNoiseTextureResourceIds[BLUE_NOISE_TEX_COUNT];
     ResourceId _blueNoiseBindlessResourceIds[BLUE_NOISE_TEX_COUNT];

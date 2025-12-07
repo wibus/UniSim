@@ -106,7 +106,7 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
 {
     createTaskGraph(scene);
 
-    GraphicContext context = {scene, camera, _resources, _settings};
+    GraphicContext context = {_device, scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -169,7 +169,7 @@ bool GraphicTaskGraph::reloadShaders(const Scene& scene, const Camera& camera)
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
 
-    GraphicContext context = {scene, camera, _resources, _settings};
+    GraphicContext context = {_device, scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -200,7 +200,7 @@ bool GraphicTaskGraph::reloadShaders(const Scene& scene, const Camera& camera)
 
 void GraphicTaskGraph::execute(const Scene& scene, const Camera& camera)
 {
-    GraphicContext context = {scene, camera, _resources, _settings};
+    GraphicContext context = {_device, scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {
