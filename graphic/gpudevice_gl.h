@@ -23,7 +23,9 @@ public:
     void bindTexture(const GpuTextureResource& resource, unsigned int index);
     void bindTexture(const GpuImageResource& resource, unsigned int index);
     void bindImage(const GpuImageResource& resource, unsigned int index);
-    void bindGeometry(const GpuGeometryResource& resource);
+
+    void dispatch(unsigned int workGroupCountX, unsigned int workGroupCountY = 1, unsigned int workGroupCountZ = 1);
+    void draw(const GpuGeometryResource& resource);
 
     void clearSwapChain();
 private:

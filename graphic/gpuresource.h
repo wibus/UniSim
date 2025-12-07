@@ -148,6 +148,7 @@ class GpuGeometryResource : public GpuResource
 public:
     struct Definition
     {
+        // Assumed to be triangle list
         std::vector<glm::vec3> vertices;
     };
 

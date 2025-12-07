@@ -42,9 +42,7 @@ void ColorGrading::render(GraphicContext& context)
 
     GpuResourceManager& resources = context.resources;
     context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(PathTracerResult)), 0);
-    context.device.bindGeometry(resources.get<GpuGeometryResource>(ResourceName(FullScreenTriangle)));
-
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 3);
+    context.device.draw(resources.get<GpuGeometryResource>(ResourceName(FullScreenTriangle)));
 }
 
 }

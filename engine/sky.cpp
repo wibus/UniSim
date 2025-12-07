@@ -660,10 +660,10 @@ void PhysicalSky::Task::render(GraphicContext& context)
 
     if(!_moonIsDirty)
         return;
-    
-    GpuResourceManager& resources = context.resources;
 
-    glUseProgram(_moonLightProgram->handle());
+    GraphicProgramScope programScope(*_moonLightProgram);
+
+    GpuResourceManager& resources = context.resources;
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, _paramsUbo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(PhysicalSkyCommonParams), _gpuParams.get(), GL_STREAM_DRAW);
@@ -671,7 +671,7 @@ void PhysicalSky::Task::render(GraphicContext& context)
     context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(MoonAlbedo)), _albedoUnit);
     context.device.bindImage(resources.get<GpuImageResource>(ResourceName(MoonLighting)), _lightingUnit);
 
-    glDispatchCompute((_moonLightingDimensions) / 8, _moonLightingDimensions / 8, 1);
+    context.device.dispatch(_moonLightingDimensions / 8, _moonLightingDimensions / 8);
 
     _moonIsDirty = false;
 }

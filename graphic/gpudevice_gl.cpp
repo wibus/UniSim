@@ -55,9 +55,15 @@ void GpuDeviceGl::bindImage(const GpuImageResource& resource, unsigned int index
     glBindImageTexture(index, resource.handle().texId, 0, false, 0, GL_WRITE_ONLY, resource.handle().format);
 }
 
-void GpuDeviceGl::bindGeometry(const GpuGeometryResource& resource)
+void GpuDeviceGl::dispatch(unsigned int workGroupCountX, unsigned int workGroupCountY, unsigned int workGroupCountZ)
+{
+    glDispatchCompute(workGroupCountX, workGroupCountY, workGroupCountZ);
+}
+
+void GpuDeviceGl::draw(const GpuGeometryResource& resource)
 {
     glBindVertexArray(resource.handle().vao);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 void GpuDeviceGl::clearSwapChain()

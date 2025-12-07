@@ -243,17 +243,15 @@ void PathTracer::render(GraphicContext& context)
 
     if(_frameIndex < MAX_FRAME_COUNT)
     {
-        glUseProgram(_pathTracerProgram->handle());
+        GraphicProgramScope programScope(*_pathTracerProgram);
 
         // Set uniforms for sub-systems
         resources.setPathTracerResources(context, *_pathTracerInterface);
 
         context.device.bindImage(pathTracerResult, _pathTraceUnit);
 
-        glDispatchCompute((_viewport->width + 7) / 8, (_viewport->height + 3) / 4, 1);
+        context.device.dispatch((_viewport->width + 7) / 8, (_viewport->height + 3) / 4);
     }
-
-    glUseProgram(0);
 }
 
 uint64_t PathTracer::toGpu(
