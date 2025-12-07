@@ -10,6 +10,7 @@
 namespace unisim
 {
 
+class View;
 class Scene;
 class Camera;
 
@@ -21,8 +22,11 @@ struct GraphicSettings
 struct GraphicContext
 {
     GpuDevice& device;
+
+    const View& view;
     const Scene& scene;
     const Camera& camera;
+
     GpuResourceManager& resources;
     const GraphicSettings& settings;
 };
@@ -76,11 +80,11 @@ class GraphicTaskGraph
 public:
     GraphicTaskGraph();
 
-    bool initialize(const Scene& scene, const Camera& camera);
+    bool initialize(const View& view, const Scene& scene, const Camera& camera);
 
-    bool reloadShaders(const Scene& scene, const Camera& camera);
+    bool reloadShaders(const View& view, const Scene& scene, const Camera& camera);
 
-    void execute(const Scene& scene, const Camera& camera);
+    void execute(const View& view, const Scene& scene, const Camera& camera);
     
     const GpuResourceManager& resources() const { return _resources; }
 

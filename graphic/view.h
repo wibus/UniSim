@@ -5,6 +5,13 @@
 
 #include "window.h"
 
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+#include "view_gl.h"
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+#include "view_vk.h"
+#endif // UNISIM_GRAPHIC_BACKEND_VK
 
 namespace unisim
 {
@@ -52,7 +59,11 @@ public:
     void registerEventListener(ViewEventListener* listener);
     void unregisterEventListener(ViewEventListener* listener);
 
+    void setViewport() const;
+
 private:
+    void setViewportNative() const;
+
     Window& _window;
     Viewport _viewport;
     std::set<ViewEventListener*> _eventListeners;

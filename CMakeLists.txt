@@ -86,6 +86,10 @@ set(GraphicFiles
     graphic/pathtracer.cpp
     graphic/view.h
     graphic/view.cpp
+    graphic/view_gl.h
+    graphic/view_gl.cpp
+    graphic/view_vk.h
+    graphic/view_vk.cpp
     graphic/window.h
     graphic/window.cpp
     graphic/window_gl.cpp

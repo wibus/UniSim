@@ -7,6 +7,8 @@
 
 #include "../resource/primitive.h"
 
+#include "../graphic/view.h"
+
 #include "light.h"
 #include "scene.h"
 #include "sky.h"
@@ -90,6 +92,8 @@ void ClearSwapChain::render(GraphicContext& context)
 {
     ProfileGpu(Clear);
 
+
+    context.view.setViewport();
     const Viewport& viewport = context.camera.viewport();
     glViewport(0, 0, viewport.width, viewport.height);
 
@@ -102,11 +106,11 @@ GraphicTaskGraph::GraphicTaskGraph()
     _settings.unbiased = false;
 }
 
-bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
+bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Camera& camera)
 {
     createTaskGraph(scene);
 
-    GraphicContext context = {_device, scene, camera, _resources, _settings};
+    GraphicContext context = {_device, view, scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -161,7 +165,7 @@ bool GraphicTaskGraph::initialize(const Scene& scene, const Camera& camera)
     return true;
 }
 
-bool GraphicTaskGraph::reloadShaders(const Scene& scene, const Camera& camera)
+bool GraphicTaskGraph::reloadShaders(const View& view, const Scene& scene, const Camera& camera)
 {
     g_PathTracerCommonSrcs.clear();
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/constants.glsl"));
@@ -169,7 +173,7 @@ bool GraphicTaskGraph::reloadShaders(const Scene& scene, const Camera& camera)
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
 
-    GraphicContext context = {_device, scene, camera, _resources, _settings};
+    GraphicContext context = {_device, view, scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -198,9 +202,9 @@ bool GraphicTaskGraph::reloadShaders(const Scene& scene, const Camera& camera)
     return true;
 }
 
-void GraphicTaskGraph::execute(const Scene& scene, const Camera& camera)
+void GraphicTaskGraph::execute(const View& view, const Scene& scene, const Camera& camera)
 {
-    GraphicContext context = {_device, scene, camera, _resources, _settings};
+    GraphicContext context = {_device, view, scene, camera, _resources, _settings};
 
     for(const auto& task : _tasks)
     {

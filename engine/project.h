@@ -24,8 +24,9 @@ public:
 
     virtual int addView(const std::shared_ptr<View>& view) = 0;
 
-    CameraMan& cameraMan(int index = 0);
-    const CameraMan& cameraMan(int index = 0) const;
+    unsigned int cameraManCount() const;
+    CameraMan& cameraMan(unsigned int index = 0);
+    const CameraMan& cameraMan(unsigned int index = 0) const;
 
 protected:
     void setScene(Scene* scene);
@@ -50,12 +51,17 @@ inline const Scene& Project::scene() const
     return *_scene;
 }
 
-inline CameraMan& Project::cameraMan(int index)
+inline unsigned int Project::cameraManCount() const
+{
+    return _cameraMen.size();
+}
+
+inline CameraMan& Project::cameraMan(unsigned int index)
 {
     return *_cameraMen[index];
 }
 
-inline const CameraMan& Project::cameraMan(int index) const
+inline const CameraMan& Project::cameraMan(unsigned int index) const
 {
     return *_cameraMen[index];
 }

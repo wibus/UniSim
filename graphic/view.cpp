@@ -43,7 +43,7 @@ void View::onWindowResize(const Window& window, int width, int height)
     _viewport.width = width;
     _viewport.height = height;
 
-    glViewport(0, 0, _viewport.width, _viewport.height);
+    setViewport();
 
     for(auto listener : _eventListeners)
         listener->onViewportChanged(*this, _viewport);
@@ -59,6 +59,11 @@ void View::unregisterEventListener(ViewEventListener* listener)
 {
     if (listener != nullptr)
         _eventListeners.erase(listener);
+}
+
+void View::setViewport() const
+{
+    setViewportNative();
 }
 
 }

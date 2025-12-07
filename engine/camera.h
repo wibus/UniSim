@@ -98,6 +98,9 @@ public:
     CameraMan(View& view);
     virtual ~CameraMan();
 
+    View& view();
+    const View& view() const;
+
     Camera& camera();
     const Camera& camera() const;
 
@@ -151,6 +154,16 @@ inline glm::dvec3 Camera::up() const
 inline glm::dvec3 Camera::direction() const
 {
     return glm::normalize(_lookAt - _position);
+}
+
+inline View& CameraMan::view()
+{
+    return _view;
+}
+
+inline const View& CameraMan::view() const
+{
+    return _view;
 }
 
 inline Camera& CameraMan::camera()

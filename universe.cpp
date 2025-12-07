@@ -174,6 +174,7 @@ bool Universe::setup()
     bool ok = true;
 
     ok = ok && _graphic.initialize(
+                _project->cameraMan().view(),
                 _project->scene(),
                 _project->cameraMan().camera());
 
@@ -213,6 +214,7 @@ void Universe::draw()
     Profile(Draw);
 
     _graphic.execute(
+        _project->cameraMan().view(),
         _project->scene(),
         _project->cameraMan().camera());
 }
@@ -259,6 +261,7 @@ void Universe::ui()
                     std::cout << "\n** Reloading shaders ** \n\n";
 
                     bool ok = _graphic.reloadShaders(
+                        _project->cameraMan().view(),
                         _project->scene(),
                         _project->cameraMan().camera());
 
