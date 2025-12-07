@@ -29,7 +29,7 @@ View::View(Window& window) :
     _viewport{window.width(), window.height()}
 {
     _window.registerEventListener(this);
-    glViewport(0, 0, _viewport.width, _viewport.height);
+    setViewport();
 }
 
 View::~View()

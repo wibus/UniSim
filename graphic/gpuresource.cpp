@@ -8,6 +8,9 @@
 namespace unisim
 {
 
+DefineResource(FullScreenTriangle);
+
+
 GpuResource::GpuResource(ResourceId id) :
     id(id)
 {
@@ -46,6 +49,12 @@ ResourceId GpuResourceManager::registerDynamicResource(const std::string& name)
 void GpuResourceManager::initialize()
 {
     _resources.resize(_resourceCount);
+
+    std::vector<glm::vec3> fullScreenTriangleVerts;
+    fullScreenTriangleVerts.push_back({-1.0f, -1.0f,  0.0f});
+    fullScreenTriangleVerts.push_back({ 3.0f, -1.0f,  0.0f});
+    fullScreenTriangleVerts.push_back({-1.0f,  3.0f,  0.0f});
+    define<GpuGeometryResource>(ResourceName(FullScreenTriangle), {fullScreenTriangleVerts});
 }
 
 void GpuResourceManager::registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider)

@@ -58,6 +58,15 @@ public:
     GLuint bufferId;
 };
 
+class GpuGeometryResourceHandle
+{
+public:
+    GpuGeometryResourceHandle() : vao(0), vbo(0) {}
+
+    GLuint vao;
+    GLuint vbo;
+};
+
 }
 
 #endif // GPURESOURCE_GL_H

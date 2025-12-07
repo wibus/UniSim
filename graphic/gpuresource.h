@@ -6,6 +6,8 @@
 #include <string>
 #include <cassert>
 
+#include <GLM/glm.hpp>
+
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
 #include "gpuresource_gl.h"
 #endif // UNISIM_GRAPHIC_BACKEND_GL
@@ -139,6 +141,25 @@ public:
 private:
     std::unique_ptr<GpuConstantResourceHandle> _handle;
 };
+
+
+class GpuGeometryResource : public GpuResource
+{
+public:
+    struct Definition
+    {
+        std::vector<glm::vec3> vertices;
+    };
+
+    GpuGeometryResource(ResourceId id, Definition def);
+    ~GpuGeometryResource();
+
+    const GpuGeometryResourceHandle& handle() const { return *_handle; }
+
+private:
+    std::unique_ptr<GpuGeometryResourceHandle> _handle;
+};
+
 
 class GpuResourceManager
 {

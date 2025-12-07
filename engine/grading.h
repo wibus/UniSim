@@ -17,8 +17,6 @@ public:
     void render(GraphicContext& context) override;
 
 private:
-    GLuint _vbo;
-    GLuint _vao;
     GraphicProgramPtr _colorGradingProgram;
 };
 

@@ -9,6 +9,7 @@ class GpuConstantResource;
 class GpuStorageResource;
 class GpuTextureResource;
 class GpuImageResource;
+class GpuGeometryResource;
 
 
 class GpuDeviceGl
@@ -22,6 +23,7 @@ public:
     void bindTexture(const GpuTextureResource& resource, unsigned int index);
     void bindTexture(const GpuImageResource& resource, unsigned int index);
     void bindImage(const GpuImageResource& resource, unsigned int index);
+    void bindGeometry(const GpuGeometryResource& resource);
 
     void clearSwapChain();
 private:

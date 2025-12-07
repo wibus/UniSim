@@ -111,6 +111,15 @@ GpuBindlessResource::~GpuBindlessResource()
 }
 
 
+// BINDLESS DESCRIPTOR //
+GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const unisim::GpuBindlessResourceHandle& bindless) :
+    texture(bindless.handle),
+    padding(0)
+{
+
+}
+
+
 // STORAGE //
 GpuStorageResource::GpuStorageResource(ResourceId id, Definition def) :
     GpuResource(id)
@@ -157,12 +166,27 @@ void GpuConstantResource::update(const Definition& def) const
 }
 
 
-// BINDLESS TEXTURE //
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const unisim::GpuBindlessResourceHandle& bindless) :
-    texture(bindless.handle),
-    padding(0)
+// VERTEX ARRAY //
+GpuGeometryResource::GpuGeometryResource(ResourceId id, Definition def) :
+    GpuResource(id)
 {
+    _handle.reset(new GpuGeometryResourceHandle());
 
+    glGenBuffers(1, &_handle->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, _handle->vbo);
+    glBufferData(GL_ARRAY_BUFFER, def.vertices.size() * sizeof(decltype(def.vertices[0])), &def.vertices[0], GL_STATIC_DRAW);
+
+    glGenVertexArrays(1, &_handle->vao);
+    glBindVertexArray(_handle->vao);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, _handle->vbo);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+}
+
+GpuGeometryResource::~GpuGeometryResource()
+{
+    glDeleteBuffers(1, &_handle->vao);
+    glDeleteBuffers(1, &_handle->vbo);
 }
 
 }
