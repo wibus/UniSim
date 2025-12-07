@@ -23,6 +23,7 @@ public:
     void bindTexture(const GpuImageResource& resource, unsigned int index);
     void bindImage(const GpuImageResource& resource, unsigned int index);
 
+    void clearSwapChain();
 private:
 
 };

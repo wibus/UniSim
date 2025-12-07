@@ -92,12 +92,8 @@ void ClearSwapChain::render(GraphicContext& context)
 {
     ProfileGpu(Clear);
 
-
     context.view.setViewport();
-    const Viewport& viewport = context.camera.viewport();
-    glViewport(0, 0, viewport.width, viewport.height);
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    context.device.clearSwapChain();
 }
 
 

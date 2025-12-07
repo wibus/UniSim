@@ -55,4 +55,9 @@ void GpuDeviceGl::bindImage(const GpuImageResource& resource, unsigned int index
     glBindImageTexture(index, resource.handle().texId, 0, false, 0, GL_WRITE_ONLY, resource.handle().format);
 }
 
+void GpuDeviceGl::clearSwapChain()
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
 }
