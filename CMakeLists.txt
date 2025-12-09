@@ -70,6 +70,12 @@ set(GraphicFiles
     graphic/gpudevice_gl.cpp
     graphic/gpudevice_vk.h
     graphic/gpudevice_vk.cpp
+    graphic/gpuprograminterface.h
+    graphic/gpuprograminterface.cpp
+    graphic/gpuprograminterface_gl.h
+    graphic/gpuprograminterface_gl.cpp
+    graphic/gpuprograminterface_vk.h
+    graphic/gpuprograminterface_vk.cpp
     graphic/gpuresource.h
     graphic/gpuresource.cpp
     graphic/gpuresource_gl.h

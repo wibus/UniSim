@@ -1,0 +1,10 @@
+#ifndef GPUPROGRAMINTERFACE_VK_H
+#define GPUPROGRAMINTERFACE_VK_H
+
+
+namespace unisim
+{
+
+}
+
+#endif // GPUPROGRAMINTERFACE_VK_H

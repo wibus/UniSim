@@ -55,6 +55,8 @@ class Lighting : public GraphicTask
 public:
     Lighting();
 
+    bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
+
     bool defineResources(GraphicContext& context) override;
 
     void setPathTracerResources(

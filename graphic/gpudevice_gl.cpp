@@ -3,6 +3,7 @@
 #include "PilsCore/Utils/Assert.h"
 
 #include "gpuresource.h"
+#include "gpuprograminterface.h"
 
 
 namespace unisim
@@ -18,41 +19,41 @@ GpuDeviceGl::~GpuDeviceGl()
 
 }
 
-void GpuDeviceGl::bindBuffer(const GpuConstantResource& resource, unsigned int bindPoint)
+void GpuDeviceGl::bindBuffer(const GpuConstantResource& resource, const GpuProgramConstantBindPoint& bindPoint)
 {
     PILS_ASSERT(resource.handle().bufferId > 0, "Invalid constant buffer index");
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, bindPoint, resource.handle().bufferId);
+    glBindBufferBase(GL_UNIFORM_BUFFER, bindPoint.bindPoint, resource.handle().bufferId);
 }
 
-void GpuDeviceGl::bindBuffer(const GpuStorageResource& resource, unsigned int bindPoint)
+void GpuDeviceGl::bindBuffer(const GpuStorageResource& resource, const GpuProgramStorageBindPoint& bindPoint)
 {
     PILS_ASSERT(resource.handle().bufferId > 0, "Invalid storage buffer index");
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindPoint, resource.handle().bufferId);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindPoint.bindPoint, resource.handle().bufferId);
 }
 
-void GpuDeviceGl::bindTexture(const GpuTextureResource& resource, unsigned int index)
+void GpuDeviceGl::bindTexture(const GpuTextureResource& resource, const GpuProgramTextureUnit& unit)
 {
     PILS_ASSERT(resource.handle().texId > 0, "Invalid texture index");
 
-    glActiveTexture(GL_TEXTURE0 + index);
+    glActiveTexture(GL_TEXTURE0 + unit.unit);
     glBindTexture(GL_TEXTURE_2D, resource.handle().texId);
 }
 
-void GpuDeviceGl::bindTexture(const GpuImageResource& resource, unsigned int index)
+void GpuDeviceGl::bindTexture(const GpuImageResource& resource, const GpuProgramTextureUnit& unit)
 {
     PILS_ASSERT(resource.handle().texId > 0, "Invalid texture index");
 
-    glActiveTexture(GL_TEXTURE0 + index);
+    glActiveTexture(GL_TEXTURE0 + unit.unit);
     glBindTexture(GL_TEXTURE_2D, resource.handle().texId);
 }
 
-void GpuDeviceGl::bindImage(const GpuImageResource& resource, unsigned int index)
+void GpuDeviceGl::bindImage(const GpuImageResource& resource, const GpuProgramImageUnit& unit)
 {
     PILS_ASSERT(resource.handle().texId > 0, "Invalid image index");
 
-    glBindImageTexture(index, resource.handle().texId, 0, false, 0, GL_WRITE_ONLY, resource.handle().format);
+    glBindImageTexture(unit.unit, resource.handle().texId, 0, false, 0, GL_WRITE_ONLY, resource.handle().format);
 }
 
 void GpuDeviceGl::dispatch(unsigned int workGroupCountX, unsigned int workGroupCountY, unsigned int workGroupCountZ)

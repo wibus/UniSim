@@ -78,6 +78,15 @@ bool PathTracer::definePathTracerModules(GraphicContext& context)
     return true;
 }
 
+bool PathTracer::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+{
+    bool ok = true;
+
+    ok = ok && interface.declareConstant("PathTracerCommonParams");
+
+    return ok;
+}
+
 bool PathTracer::defineShaders(GraphicContext &context)
 {
     // Generate programs
@@ -93,9 +102,7 @@ bool PathTracer::defineShaders(GraphicContext &context)
     if(!generateComputeProgram(*_pathTracerProgram, "pathtracer", shaders))
         return false;
 
-    _pathTracerInterface.reset(new PathTracerInterface(_pathTracerProgram));
-
-    return _pathTracerInterface->isValid();
+    return _pathTracerProgram->isValid();
 }
 
 bool PathTracer::defineResources(GraphicContext& context)
@@ -160,9 +167,9 @@ bool PathTracer::defineResources(GraphicContext& context)
                     _viewport->height,
                     _pathTraceFormat});
 
-    _pathTraceUnit = 0;
+    _pathTraceUnit = GpuProgramImageUnit::first();
     _pathTraceLoc = glGetUniformLocation(_pathTracerProgram->handle(), "result");
-    glProgramUniform1i(_pathTracerProgram->handle(), _pathTraceLoc, _pathTraceUnit);
+    glProgramUniform1i(_pathTracerProgram->handle(), _pathTraceLoc, _pathTraceUnit.unit);
 
     _pathTracerHash = context.resources.pathTracerHash();
 
@@ -176,7 +183,7 @@ void PathTracer::setPathTracerResources(
     GpuResourceManager& resources = context.resources;
 
     context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)),
-                              interface.getUboBindPoint("PathTracerCommonParams"));
+                              interface.getConstantBindPoint("PathTracerCommonParams"));
 }
 
 void PathTracer::update(GraphicContext& context)
@@ -234,7 +241,7 @@ void PathTracer::render(GraphicContext& context)
     if(!_pathTracerProgram->isValid())
         return;
 
-    if(!_pathTracerInterface)
+    if(!_pathTracerInterface->isValid())
         return;
     
     GpuResourceManager& resources = context.resources;
@@ -252,6 +259,12 @@ void PathTracer::render(GraphicContext& context)
 
         context.device.dispatch((_viewport->width + 7) / 8, (_viewport->height + 3) / 4);
     }
+}
+
+std::shared_ptr<PathTracerInterface> PathTracer::initInterface()
+{
+    _pathTracerInterface.reset(new PathTracerInterface(_pathTracerProgram));
+    return _pathTracerInterface;
 }
 
 uint64_t PathTracer::toGpu(

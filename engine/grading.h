@@ -18,6 +18,7 @@ public:
 
 private:
     GraphicProgramPtr _colorGradingProgram;
+    GpuProgramTextureUnit _resultTexUnit;
 };
 
 }

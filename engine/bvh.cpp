@@ -111,6 +111,23 @@ bool BVH::definePathTracerModules(GraphicContext& context)
     return true;
 }
 
+bool BVH::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+{
+    bool ok = true;
+
+    ok = ok && interface.declareStorage("Primitives");
+    ok = ok && interface.declareStorage("Meshes");
+    ok = ok && interface.declareStorage("Spheres");
+    ok = ok && interface.declareStorage("Planes");
+    ok = ok && interface.declareStorage("Instances");
+    ok = ok && interface.declareStorage("BvhNodes");
+    ok = ok && interface.declareStorage("Triangles");
+    ok = ok && interface.declareStorage("VerticesPos");
+    ok = ok && interface.declareStorage("VerticesData");
+
+    return ok;
+}
+
 bool BVH::defineResources(GraphicContext& context)
 {
     std::vector<GpuPrimitive> gpuPrimitives;
@@ -201,15 +218,15 @@ void BVH::setPathTracerResources(
 {
     GpuResourceManager& resources = context.resources;
 
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Primitives)),      interface.getSsboBindPoint("Primitives"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Meshes)),          interface.getSsboBindPoint("Meshes"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Spheres)),         interface.getSsboBindPoint("Spheres"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Planes)),          interface.getSsboBindPoint("Planes"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Instances)),       interface.getSsboBindPoint("Instances"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BvhNodes)),        interface.getSsboBindPoint("BvhNodes"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Triangles)),       interface.getSsboBindPoint("Triangles"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesPos)),     interface.getSsboBindPoint("VerticesPos"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesData)),    interface.getSsboBindPoint("VerticesData"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Primitives)),      interface.getStorageBindPoint("Primitives"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Meshes)),          interface.getStorageBindPoint("Meshes"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Spheres)),         interface.getStorageBindPoint("Spheres"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Planes)),          interface.getStorageBindPoint("Planes"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Instances)),       interface.getStorageBindPoint("Instances"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BvhNodes)),        interface.getStorageBindPoint("BvhNodes"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Triangles)),       interface.getStorageBindPoint("Triangles"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesPos)),     interface.getStorageBindPoint("VerticesPos"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesData)),    interface.getStorageBindPoint("VerticesData"));
 }
 
 void BVH::update(GraphicContext& context)

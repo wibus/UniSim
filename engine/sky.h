@@ -199,10 +199,10 @@ private:
         GLuint _paramsUbo;
 
         GLuint _albedoLoc;
-        GLuint _albedoUnit;
+        GpuProgramTextureUnit _albedoUnit;
 
         GLuint _lightingLoc;
-        GLuint _lightingUnit;
+        GpuProgramImageUnit _lightingUnit;
         GLint _lightingFormat;
 
         std::unique_ptr<Texture> _moonAlbedo;

@@ -81,6 +81,11 @@ std::vector<std::shared_ptr<PathTracerModule>> GpuResourceManager::pathTracerMod
     return modules;
 }
 
+void GpuResourceManager::resetPathTracerProviders()
+{
+    _providers.clear();
+}
+
 void GpuResourceManager::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
     for(const auto& provider : _providers)

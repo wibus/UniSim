@@ -98,6 +98,16 @@ bool MaterialDatabase::definePathTracerModules(GraphicContext& context)
     return true;
 }
 
+bool MaterialDatabase::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+{
+    bool ok = true;
+
+    ok = ok && interface.declareStorage("Textures");
+    ok = ok && interface.declareStorage("Materials");
+
+    return ok;
+}
+
 bool MaterialDatabase::defineResources(GraphicContext& context)
 {
     bool ok = true;
@@ -144,8 +154,8 @@ void MaterialDatabase::setPathTracerResources(
 {
     GpuResourceManager& resources = context.resources;
 
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BindlessTextures)), interface.getSsboBindPoint("Textures"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(MaterialDatabase)), interface.getSsboBindPoint("Materials"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BindlessTextures)), interface.getStorageBindPoint("Textures"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(MaterialDatabase)), interface.getStorageBindPoint("Materials"));
 }
 
 void MaterialDatabase::update(GraphicContext& context)

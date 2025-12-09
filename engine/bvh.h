@@ -27,6 +27,7 @@ public:
     
     void registerDynamicResources(GraphicContext& context) override;
     bool definePathTracerModules(GraphicContext& context) override;
+    bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
     bool defineResources(GraphicContext& context) override;
 
     void setPathTracerResources(

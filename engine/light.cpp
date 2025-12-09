@@ -81,6 +81,16 @@ glm::vec3 toLinear(const glm::vec3& sRGB)
     return glm::mix(higher, lower, cutoff);
 }
 
+bool Lighting::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+{
+    bool ok = true;
+
+    ok = ok && interface.declareStorage("Emitters");
+    ok = ok && interface.declareStorage("DirectionalLights");
+
+    return ok;
+}
+
 bool Lighting::defineResources(GraphicContext& context)
 {
     bool ok = true;
@@ -116,9 +126,8 @@ void Lighting::setPathTracerResources(
 {
     GpuResourceManager& resources = context.resources;
 
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Emitters)),          interface.getSsboBindPoint("Emitters"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(DirectionalLights)), interface.getSsboBindPoint("DirectionalLights"));
-
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Emitters)),          interface.getStorageBindPoint("Emitters"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(DirectionalLights)), interface.getStorageBindPoint("DirectionalLights"));
 }
 
 void Lighting::update(GraphicContext& context)

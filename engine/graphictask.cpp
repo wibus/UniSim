@@ -158,6 +158,19 @@ bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Ca
         }
     }
 
+    std::shared_ptr<PathTracerInterface> pathTracerInterface = _pathTracerTask->initInterface();
+    for(const auto& task : _tasks)
+    {
+        bool ok = task->definePathTracerInterface(context, *pathTracerInterface);
+
+        if(!ok)
+        {
+            std::cerr << "'" << task->name() << "' path tracer interface definition failed\n";
+            return false;
+        }
+    }
+    pathTracerInterface->compile();
+
     return true;
 }
 
@@ -170,6 +183,8 @@ bool GraphicTaskGraph::reloadShaders(const View& view, const Scene& scene, const
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
 
     GraphicContext context = {_device, view, scene, camera, _resources, _settings};
+
+    _resources.resetPathTracerProviders();
 
     for(const auto& task : _tasks)
     {
@@ -195,6 +210,19 @@ bool GraphicTaskGraph::reloadShaders(const View& view, const Scene& scene, const
         }
     }
 
+    std::shared_ptr<PathTracerInterface> pathTracerInterface = _pathTracerTask->initInterface();
+    for(const auto& task : _tasks)
+    {
+        bool ok = task->definePathTracerInterface(context, *pathTracerInterface);
+
+        if(!ok)
+        {
+            std::cerr << "'" << task->name() << "' path tracer interface definition failed\n";
+            return false;
+        }
+    }
+    pathTracerInterface->compile();
+
     return true;
 }
 
@@ -215,6 +243,10 @@ void GraphicTaskGraph::execute(const View& view, const Scene& scene, const Camer
 
 void GraphicTaskGraph::createTaskGraph(const Scene& scene)
 {
+    // Task declaration
+    _pathTracerTask.reset(new PathTracer());
+
+    // Task Graph
     _tasks.clear();
 
     addTask(scene.materials());
@@ -222,7 +254,7 @@ void GraphicTaskGraph::createTaskGraph(const Scene& scene)
     addTask(scene.sky()->graphicTask());
     addTask(scene.terrain()->graphicTask());
     addTask(std::shared_ptr<GraphicTask>(new Lighting()));
-    addTask(std::shared_ptr<GraphicTask>(new PathTracer()));
+    addTask(_pathTracerTask);
     addTask(std::shared_ptr<GraphicTask>(new ClearSwapChain()));
     addTask(std::shared_ptr<GraphicTask>(new ColorGrading()));
     addTask(std::shared_ptr<GraphicTask>(new Ui()));

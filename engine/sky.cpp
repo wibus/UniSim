@@ -242,9 +242,9 @@ void SkySphere::Task::setPathTracerResources(GraphicContext& context, PathTracer
     GpuResourceManager& resources = context.resources;
 
     // TODO replace by ConstantBuffer
-    GLuint skyMapUnit = interface.grabTextureUnit();
-    context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(SkyMap)), skyMapUnit);
-    glUniform1i(glGetUniformLocation(interface.program()->handle(), "skyMap"), skyMapUnit);
+    GpuProgramTextureUnit skyMapTexUnit = interface.grabTextureUnit();
+    context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(SkyMap)), skyMapTexUnit);
+    glUniform1i(glGetUniformLocation(interface.program()->handle(), "skyMap"), skyMapTexUnit.unit);
 
     glm::vec4 quaternion = sky.quaternion();
     glUniform4fv(glGetUniformLocation(interface.program()->handle(), "skyQuaternion"), 1, &quaternion[0]);
@@ -534,11 +534,11 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
     _albedoLoc = glGetUniformLocation(_moonLightProgram->handle(), "albedo");
     _lightingLoc = glGetUniformLocation(_moonLightProgram->handle(), "lighting");
 
-    _albedoUnit = 0;
-    _lightingUnit = 0;
+    _albedoUnit = GpuProgramTextureUnit::first();
+    _lightingUnit = GpuProgramImageUnit::first();
 
-    glProgramUniform1i(_moonLightProgram->handle(), _albedoLoc, _albedoUnit);
-    glProgramUniform1i(_moonLightProgram->handle(), _lightingLoc, _lightingUnit);
+    glProgramUniform1i(_moonLightProgram->handle(), _albedoLoc, _albedoUnit.unit);
+    glProgramUniform1i(_moonLightProgram->handle(), _lightingLoc, _lightingUnit.unit);
 
     glGenBuffers(1, &_paramsUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, _paramsUbo);
@@ -560,14 +560,18 @@ void PhysicalSky::Task::setPathTracerResources(GraphicContext& context, PathTrac
     PhysicalSky& sky = *dynamic_cast<PhysicalSky*>(context.scene.sky().get());
     GpuResourceManager& resources = context.resources;
 
-    GLuint textureUnits[] = {
+    GpuProgramTextureUnit textureUnits[] = {
         interface.grabTextureUnit(),
         interface.grabTextureUnit(),
         interface.grabTextureUnit(),
         interface.grabTextureUnit(),
     };
 
-   _model.SetProgramUniforms(interface.program()->handle(), textureUnits[0], textureUnits[1], textureUnits[2], textureUnits[3]);
+   _model.SetProgramUniforms(interface.program()->handle(),
+                              textureUnits[0].unit,
+                              textureUnits[1].unit,
+                              textureUnits[2].unit,
+                              textureUnits[3].unit);
 
     glm::vec3 sunDirection = _sun.direction();
     glm::vec3 moonDirection = _moon.direction();
@@ -585,15 +589,15 @@ void PhysicalSky::Task::setPathTracerResources(GraphicContext& context, PathTrac
     glUniform1f(glGetUniformLocation(interface.program()->handle(), "groundHeightKM"),
                 _params.bottom_radius.to(km));
 
-    GLuint moonLightingUnit = interface.grabTextureUnit();
+    GpuProgramTextureUnit moonLightingUnit = interface.grabTextureUnit();
     context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(MoonLighting)), moonLightingUnit);
-    glUniform1i(glGetUniformLocation(interface.program()->handle(), "moon"), moonLightingUnit);
+    glUniform1i(glGetUniformLocation(interface.program()->handle(), "moon"), moonLightingUnit.unit);
 
     glUniform4fv(glGetUniformLocation(interface.program()->handle(), "moonQuaternion"), 1, &_moonQuaternion[0]);
 
-    GLuint starsUnit = interface.grabTextureUnit();
+    GpuProgramTextureUnit starsUnit = interface.grabTextureUnit();
     context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(SkyMap)), starsUnit);
-    glUniform1i(glGetUniformLocation(interface.program()->handle(), "stars"), starsUnit);
+    glUniform1i(glGetUniformLocation(interface.program()->handle(), "stars"), starsUnit.unit);
 
     glm::vec4 starsQuaternion = sky.quaternion();
     glUniform4fv(glGetUniformLocation(interface.program()->handle(), "starsQuaternion"), 1, &starsQuaternion[0]);

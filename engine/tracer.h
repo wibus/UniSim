@@ -23,6 +23,7 @@ public:
     
     void registerDynamicResources(GraphicContext& context) override;
     bool definePathTracerModules(GraphicContext& context) override;
+    bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
     bool defineShaders(GraphicContext& context) override;
     bool defineResources(GraphicContext& context) override;
 
@@ -33,6 +34,7 @@ public:
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
 
+    std::shared_ptr<PathTracerInterface> initInterface();
 
     static const unsigned int BLUE_NOISE_TEX_COUNT = 64;
     static const unsigned int HALTON_SAMPLE_COUNT = 64;
@@ -49,7 +51,7 @@ private:
     glm::vec4 _halton[HALTON_SAMPLE_COUNT];
 
     GLuint _pathTraceLoc;
-    GLuint _pathTraceUnit;
+    GpuProgramImageUnit _pathTraceUnit;
     GLint _pathTraceFormat;
 
     PathTracerModulePtr _utilsModule;
@@ -61,7 +63,7 @@ private:
 
     std::unique_ptr<Viewport> _viewport;
 
-    std::unique_ptr<PathTracerInterface> _pathTracerInterface;
+    std::shared_ptr<PathTracerInterface> _pathTracerInterface;
 };
 
 }

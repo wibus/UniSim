@@ -13,6 +13,7 @@ namespace unisim
 class View;
 class Scene;
 class Camera;
+class PathTracer;
 
 struct GraphicSettings
 {
@@ -96,6 +97,8 @@ private:
     GraphicSettings _settings;
     GpuResourceManager _resources;
     std::vector<std::shared_ptr<GraphicTask>> _tasks;
+
+    std::shared_ptr<PathTracer> _pathTracerTask;
 };
 
 }

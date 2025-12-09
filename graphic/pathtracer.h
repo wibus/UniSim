@@ -1,12 +1,12 @@
 #ifndef PATHTRACER_H
 #define PATHTRACER_H
 
-#include <map>
 #include <vector>
 #include <memory>
 #include <string>
 
 #include "graphic.h"
+#include "gpuprograminterface.h"
 
 
 namespace unisim
@@ -18,33 +18,12 @@ class GraphicContext;
 extern std::vector<std::string> g_PathTracerCommonSrcs;
 
 
-class PathTracerInterface
+class PathTracerInterface : public GpuProgramInterface
 {
 public:
     PathTracerInterface(const std::shared_ptr<GraphicProgram>& program);
 
-    const std::shared_ptr<GraphicProgram>& program() const { return _program; }
-
-    bool declareUbo(const std::string& blockName);
-    bool declareSsbo(const std::string& blockName);
-
-    GLuint getUboBindPoint(const std::string& blockName) const;
-    GLuint getSsboBindPoint(const std::string& blockName) const;
-
-    GLuint grabTextureUnit();
-    void resetTextureUnits();
-
-    bool isValid() const;
-
 private:
-    std::shared_ptr<GraphicProgram> _program;
-    GLuint _nextTextureUnit;
-
-    GLuint _nextUboBindPoint;
-    std::map<std::string, GLuint> _uboBindPoints;
-
-    GLuint _nextSsboBindPoint;
-    std::map<std::string, GLuint> _ssboBindPoints;
 };
 
 
@@ -82,6 +61,8 @@ public:
     virtual std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const;
 
     virtual bool definePathTracerModules(GraphicContext& context);
+
+    virtual bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface);
 
     virtual void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
 

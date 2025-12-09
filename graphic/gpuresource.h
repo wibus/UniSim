@@ -181,6 +181,8 @@ public:
 
     void registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider);
     std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const;
+    void resetPathTracerProviders();
+
     void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
 
     uint64_t pathTracerHash() const;
