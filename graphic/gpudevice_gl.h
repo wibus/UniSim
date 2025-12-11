@@ -15,8 +15,8 @@ class GpuGeometryResource;
 
 struct GpuProgramConstantBindPoint;
 struct GpuProgramStorageBindPoint;
-struct GpuProgramTextureUnit;
-struct GpuProgramImageUnit;
+struct GpuProgramTextureBindPoint;
+struct GpuProgramImageBindPoint;
 
 
 class GpuDeviceGl
@@ -27,9 +27,9 @@ public:
     
     void bindBuffer(const GpuConstantResource& resource, const GpuProgramConstantBindPoint& bindPoint);
     void bindBuffer(const GpuStorageResource& resource, const GpuProgramStorageBindPoint& bindPoint);
-    void bindTexture(const GpuTextureResource& resource, const GpuProgramTextureUnit& unit);
-    void bindTexture(const GpuImageResource& resource, const GpuProgramTextureUnit& unit);
-    void bindImage(const GpuImageResource& resource, const GpuProgramImageUnit& unit);
+    void bindTexture(const GpuTextureResource& resource, const GpuProgramTextureBindPoint& unit);
+    void bindTexture(const GpuImageResource& resource, const GpuProgramTextureBindPoint& unit);
+    void bindImage(const GpuImageResource& resource, const GpuProgramImageBindPoint& unit);
 
     void dispatch(unsigned int workGroupCountX, unsigned int workGroupCountY = 1, unsigned int workGroupCountZ = 1);
     void draw(const GpuGeometryResource& resource);

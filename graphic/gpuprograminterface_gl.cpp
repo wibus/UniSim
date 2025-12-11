@@ -46,50 +46,50 @@ GpuProgramStorageBindPoint GpuProgramStorageBindPoint::next(const GpuProgramStor
 
 // Texture //
 
-GpuProgramTextureUnit GpuProgramTextureUnit::first()
+GpuProgramTextureBindPoint GpuProgramTextureBindPoint::first()
 {
     return {0};
 }
 
-GpuProgramTextureUnit GpuProgramTextureUnit::invalid()
+GpuProgramTextureBindPoint GpuProgramTextureBindPoint::invalid()
 {
     return {GL_INVALID_INDEX};
 }
 
-GpuProgramTextureUnit GpuProgramTextureUnit::next(const GpuProgramTextureUnit& current)
+GpuProgramTextureBindPoint GpuProgramTextureBindPoint::next(const GpuProgramTextureBindPoint& current)
 {
-    return {current.unit + 1};
+    return {current.bindPoint + 1};
 }
 
 
 // Image //
 
-GpuProgramImageUnit GpuProgramImageUnit::first()
+GpuProgramImageBindPoint GpuProgramImageBindPoint::first()
 {
     return {0};
 }
 
-GpuProgramImageUnit GpuProgramImageUnit::invalid()
+GpuProgramImageBindPoint GpuProgramImageBindPoint::invalid()
 {
     return {GL_INVALID_INDEX};
 }
 
-GpuProgramImageUnit GpuProgramImageUnit::next(const GpuProgramImageUnit& current)
+GpuProgramImageBindPoint GpuProgramImageBindPoint::next(const GpuProgramImageBindPoint& current)
 {
-    return {current.unit + 1};
+    return {current.bindPoint + 1};
 }
 
 
 // Interface //
 
-bool GpuProgramInterface::declareConstant(const std::string& blockName)
+bool GpuProgramInterface::declareConstant(const std::string& name)
 {
     if (_declFailed)
         return false;
 
-    PILS_ASSERT(_uboBindPoints.find(blockName) == _uboBindPoints.end(), "Constant buffer already declared: ", blockName);
+    PILS_ASSERT(_constantBindPoints.find(name) == _constantBindPoints.end(), "Constant buffer already declared: ", name);
 
-    GLuint location = glGetProgramResourceIndex(_program->handle(), GL_UNIFORM_BLOCK, blockName.c_str());
+    GLuint location = glGetProgramResourceIndex(_program->handle(), GL_UNIFORM_BLOCK, name.c_str());
 
     if(location == GL_INVALID_ENUM)
     {
@@ -100,26 +100,26 @@ bool GpuProgramInterface::declareConstant(const std::string& blockName)
 
     if(location == GL_INVALID_INDEX)
     {
-        PILS_ERROR("Could not find constant block named ", blockName);
+        PILS_ERROR("Could not find constant block named ", name);
         _declFailed = true;
         return false;
     }
 
-    glUniformBlockBinding(_program->handle(), location, _nextUboBindPoint.bindPoint);
-    _uboBindPoints[blockName] = _nextUboBindPoint;
-    _nextUboBindPoint = GpuProgramConstantBindPoint::next(_nextUboBindPoint);
+    glUniformBlockBinding(_program->handle(), location, _nextConstantBindPoint.bindPoint);
+    _constantBindPoints[name] = _nextConstantBindPoint;
+    _nextConstantBindPoint = GpuProgramConstantBindPoint::next(_nextConstantBindPoint);
 
     return true;
 }
 
-bool GpuProgramInterface::declareStorage(const std::string& blockName)
+bool GpuProgramInterface::declareStorage(const std::string& name)
 {
     if (_declFailed)
         return false;
 
-    PILS_ASSERT(_ssboBindPoints.find(blockName) == _ssboBindPoints.end(), "Storage buffer already declared: ", blockName);
+    PILS_ASSERT(_storageBindPoints.find(name) == _storageBindPoints.end(), "Storage buffer already declared: ", name);
 
-    GLuint location = glGetProgramResourceIndex(_program->handle(), GL_SHADER_STORAGE_BLOCK, blockName.c_str());
+    GLuint location = glGetProgramResourceIndex(_program->handle(), GL_SHADER_STORAGE_BLOCK, name.c_str());
 
     if(location == GL_INVALID_ENUM)
     {
@@ -130,14 +130,74 @@ bool GpuProgramInterface::declareStorage(const std::string& blockName)
 
     if(location == GL_INVALID_INDEX)
     {
-        PILS_ERROR("Could not find storage block named ", blockName);
+        PILS_ERROR("Could not find storage block named ", name);
         _declFailed = true;
         return false;
     }
 
-    glShaderStorageBlockBinding(_program->handle(), location, _nextSsboBindPoint.bindPoint);
-    _ssboBindPoints[blockName] = _nextSsboBindPoint;
-    _nextSsboBindPoint = GpuProgramStorageBindPoint::next(_nextSsboBindPoint);
+    glShaderStorageBlockBinding(_program->handle(), location, _nextStorageBindPoint.bindPoint);
+    _storageBindPoints[name] = _nextStorageBindPoint;
+    _nextStorageBindPoint = GpuProgramStorageBindPoint::next(_nextStorageBindPoint);
+
+    return true;
+}
+
+bool GpuProgramInterface::declareTexture(const std::string& name)
+{
+    if (_declFailed)
+        return false;
+
+    PILS_ASSERT(_textureBindPoints.find(name) == _textureBindPoints.end(), "Texture already declared: ", name);
+
+    GLuint location = glGetUniformLocation(_program->handle(), name.c_str());
+
+    if(location == GL_INVALID_ENUM)
+    {
+        PILS_ERROR("Invalid enum while trying to read uniform location\n");
+        _declFailed = true;
+        return false;
+    }
+
+    if(location == GL_INVALID_INDEX)
+    {
+        PILS_ERROR("Could not find texture named ", name);
+        _declFailed = true;
+        return false;
+    }
+
+    glProgramUniform1i(_program->handle(), location, _nextTextureBindPoint.bindPoint);
+    _textureBindPoints[name] = _nextTextureBindPoint;
+    _nextTextureBindPoint = GpuProgramTextureBindPoint::next(_nextTextureBindPoint);
+
+    return true;
+}
+
+bool GpuProgramInterface::declareImage(const std::string& name)
+{
+    if (_declFailed)
+        return false;
+
+    PILS_ASSERT(_imageBindPoints.find(name) == _imageBindPoints.end(), "Image already declared: ", name);
+
+    GLuint location = glGetUniformLocation(_program->handle(), name.c_str());
+
+    if(location == GL_INVALID_ENUM)
+    {
+        PILS_ERROR("Invalid enum while trying to read uniform location\n");
+        _declFailed = true;
+        return false;
+    }
+
+    if(location == GL_INVALID_INDEX)
+    {
+        PILS_ERROR("Could not find image named ", name);
+        _declFailed = true;
+        return false;
+    }
+
+    glProgramUniform1i(_program->handle(), location, _nextImageBindPoint.bindPoint);
+    _imageBindPoints[name] = _nextImageBindPoint;
+    _nextImageBindPoint = GpuProgramImageBindPoint::next(_nextImageBindPoint);
 
     return true;
 }

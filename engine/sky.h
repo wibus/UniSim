@@ -128,6 +128,8 @@ private:
 
         bool definePathTracerModules(GraphicContext& context) override;
 
+        bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
+
         bool defineResources(GraphicContext& context) override;
 
         void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
@@ -172,6 +174,7 @@ private:
         std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const override;
 
         bool definePathTracerModules(GraphicContext& context) override;
+        bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
         bool defineShaders(GraphicContext& context) override;
         bool defineResources(GraphicContext& context) override;
 
@@ -199,10 +202,10 @@ private:
         GLuint _paramsUbo;
 
         GLuint _albedoLoc;
-        GpuProgramTextureUnit _albedoUnit;
+        GpuProgramTextureBindPoint _albedoUnit;
 
         GLuint _lightingLoc;
-        GpuProgramImageUnit _lightingUnit;
+        GpuProgramImageBindPoint _lightingUnit;
         GLint _lightingFormat;
 
         std::unique_ptr<Texture> _moonAlbedo;

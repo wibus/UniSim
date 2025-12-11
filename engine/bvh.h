@@ -50,17 +50,6 @@ private:
             std::vector<GpuVertexPos>& gpuVertPos,
             std::vector<GpuVertexData>& gpuVertData);
 
-    GLuint _primitivesSSBO;
-    GLuint _meshesSSBO;
-    GLuint _spheresSSBO;
-    GLuint _planesSSBO;
-    GLuint _instanceSSBO;
-    GLuint _bvhNodesSSBO;
-
-    GLuint _trianglesSSBO;
-    GLuint _verticesPosSSBO;
-    GLuint _verticesDataSSBO;
-
     PathTracerModulePtr _intersectionModule;
 };
 

@@ -50,10 +50,6 @@ private:
 
     glm::vec4 _halton[HALTON_SAMPLE_COUNT];
 
-    GLuint _pathTraceLoc;
-    GpuProgramImageUnit _pathTraceUnit;
-    GLint _pathTraceFormat;
-
     PathTracerModulePtr _utilsModule;
     PathTracerModulePtr _pathTraceModule;
     GraphicProgramPtr _pathTracerProgram;

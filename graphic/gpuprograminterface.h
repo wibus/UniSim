@@ -29,28 +29,34 @@ public:
 
     bool isValid() const;
 
-    bool declareConstant(const std::string& blockName);
-    bool declareStorage(const std::string& blockName);
+    bool declareConstant(const std::string& name);
+    bool declareStorage(const std::string& name);
+    bool declareTexture(const std::string& name);
+    bool declareImage(const std::string& name);
     bool compile();
 
-    GpuProgramConstantBindPoint getConstantBindPoint(const std::string& blockName) const;
-    GpuProgramStorageBindPoint getStorageBindPoint(const std::string& blockName) const;
-
-    GpuProgramTextureUnit grabTextureUnit();
-    void resetTextureUnits();
+    GpuProgramConstantBindPoint getConstantBindPoint(const std::string& name) const;
+    GpuProgramStorageBindPoint  getStorageBindPoint(const std::string& name) const;
+    GpuProgramTextureBindPoint  getTextureBindPoint(const std::string& name) const;
+    GpuProgramImageBindPoint    getImageBindPoint(const std::string& name) const;
 
 private:
     bool _isCompiled;
     bool _declFailed;
 
     std::shared_ptr<GraphicProgram> _program;
-    GpuProgramTextureUnit _nextTextureUnit;
 
-    GpuProgramConstantBindPoint _nextUboBindPoint;
-    std::map<std::string, GpuProgramConstantBindPoint> _uboBindPoints;
+    GpuProgramConstantBindPoint _nextConstantBindPoint;
+    std::map<std::string, GpuProgramConstantBindPoint> _constantBindPoints;
 
-    GpuProgramStorageBindPoint _nextSsboBindPoint;
-    std::map<std::string, GpuProgramStorageBindPoint> _ssboBindPoints;
+    GpuProgramStorageBindPoint _nextStorageBindPoint;
+    std::map<std::string, GpuProgramStorageBindPoint> _storageBindPoints;
+
+    GpuProgramTextureBindPoint _nextTextureBindPoint;
+    std::map<std::string, GpuProgramTextureBindPoint> _textureBindPoints;
+
+    GpuProgramImageBindPoint _nextImageBindPoint;
+    std::map<std::string, GpuProgramImageBindPoint> _imageBindPoints;
 };
 
 }

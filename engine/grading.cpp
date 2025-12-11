@@ -28,7 +28,7 @@ bool ColorGrading::defineShaders(GraphicContext& context)
 
 bool ColorGrading::defineResources(GraphicContext& context)
 {
-    _resultTexUnit = GpuProgramTextureUnit::first();
+    _resultTexUnit = GpuProgramTextureBindPoint::first();
 
     return true;
 }

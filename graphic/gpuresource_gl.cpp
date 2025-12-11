@@ -12,14 +12,15 @@ GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
     GpuResource(id)
 {
     _handle.reset(new GpuTextureResourceHandle());
+    _handle->dimension = GL_TEXTURE_2D;
 
     glGenTextures(1, &_handle->texId);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _handle->texId);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glBindTexture(  _handle->dimension, _handle->texId);
+    glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(_handle->dimension, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(_handle->dimension, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     GLint internalFormat = 0;
     GLenum type = 0;
@@ -38,7 +39,7 @@ GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
     GLenum format = def.texture.numComponents == 3 ? GL_RGB : GL_RGBA;
 
     glTexImage2D(
-        GL_TEXTURE_2D,
+        _handle->dimension,
         0, // mip level
         internalFormat,
         def.texture.width,
@@ -52,7 +53,7 @@ GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
     Texture& texNoConst = const_cast<Texture&>(def.texture);
     texNoConst.handle = _handle->texId;
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(_handle->dimension, 0);
 }
 
 GpuTextureResource::~GpuTextureResource()
@@ -67,12 +68,13 @@ GpuImageResource::GpuImageResource(ResourceId id, Definition def) :
 {
     _handle.reset(new GpuImageResourceHandle());
     _handle->format = def.format;
+    _handle->dimension = GL_TEXTURE_2D;
 
     glGenTextures(1, &_handle->texId);
 
-    glBindTexture(GL_TEXTURE_2D, _handle->texId);
-    glTexStorage2D(GL_TEXTURE_2D, 1, def.format, def.width, def.height);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(_handle->dimension, _handle->texId);
+    glTexStorage2D(_handle->dimension, 1, def.format, def.width, def.height);
+    glBindTexture(_handle->dimension, 0);
 }
 
 GpuImageResource::~GpuImageResource()

@@ -26,22 +26,22 @@ struct GpuProgramStorageBindPoint
     static GpuProgramStorageBindPoint next(const GpuProgramStorageBindPoint& current);
 };
 
-struct GpuProgramTextureUnit
+struct GpuProgramTextureBindPoint
 {
-    GLuint unit;
+    GLuint bindPoint;
 
-    static GpuProgramTextureUnit first();
-    static GpuProgramTextureUnit invalid();
-    static GpuProgramTextureUnit next(const GpuProgramTextureUnit& current);
+    static GpuProgramTextureBindPoint first();
+    static GpuProgramTextureBindPoint invalid();
+    static GpuProgramTextureBindPoint next(const GpuProgramTextureBindPoint& current);
 };
 
-struct GpuProgramImageUnit
+struct GpuProgramImageBindPoint
 {
-    GLuint unit;
+    GLuint bindPoint;
 
-    static GpuProgramImageUnit first();
-    static GpuProgramImageUnit invalid();
-    static GpuProgramImageUnit next(const GpuProgramImageUnit& current);
+    static GpuProgramImageBindPoint first();
+    static GpuProgramImageBindPoint invalid();
+    static GpuProgramImageBindPoint next(const GpuProgramImageBindPoint& current);
 };
 
 }

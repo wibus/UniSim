@@ -13,6 +13,7 @@ public:
     GpuTextureResourceHandle() : texId(0) {}
 
     GLuint texId;
+    GLenum dimension;
 };
 
 class GpuImageResourceHandle
@@ -22,6 +23,7 @@ public:
 
     GLuint texId;
     GLint format;
+    GLenum dimension;
 };
 
 class GpuBindlessResourceHandle

@@ -83,6 +83,7 @@ bool PathTracer::definePathTracerInterface(GraphicContext& context, PathTracerIn
     bool ok = true;
 
     ok = ok && interface.declareConstant("PathTracerCommonParams");
+    ok = ok && interface.declareImage("result");
 
     return ok;
 }
@@ -160,16 +161,11 @@ bool PathTracer::defineResources(GraphicContext& context)
 
     _viewport.reset(new Viewport(context.camera.viewport()));
 
-    _pathTraceFormat = GL_RGBA32F;
     ok = ok && resources.define<GpuImageResource>(
                 ResourceName(PathTracerResult), {
                     _viewport->width,
                     _viewport->height,
-                    _pathTraceFormat});
-
-    _pathTraceUnit = GpuProgramImageUnit::first();
-    _pathTraceLoc = glGetUniformLocation(_pathTracerProgram->handle(), "result");
-    glProgramUniform1i(_pathTracerProgram->handle(), _pathTraceLoc, _pathTraceUnit.unit);
+                    GL_RGBA32F});
 
     _pathTracerHash = context.resources.pathTracerHash();
 
@@ -184,6 +180,9 @@ void PathTracer::setPathTracerResources(
 
     context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)),
                               interface.getConstantBindPoint("PathTracerCommonParams"));
+
+    context.device.bindImage(resources.get<GpuImageResource>(ResourceName(PathTracerResult)),
+                             interface.getImageBindPoint("result"));
 }
 
 void PathTracer::update(GraphicContext& context)
@@ -201,7 +200,7 @@ void PathTracer::update(GraphicContext& context)
                     ResourceName(PathTracerResult), {
                         viewport.width,
                         viewport.height,
-                        _pathTraceFormat});
+                        GL_RGBA32F});
     }
 
     GpuPathTracerCommonParams gpuCommonParams;
@@ -254,8 +253,6 @@ void PathTracer::render(GraphicContext& context)
 
         // Set uniforms for sub-systems
         resources.setPathTracerResources(context, *_pathTracerInterface);
-
-        context.device.bindImage(pathTracerResult, _pathTraceUnit);
 
         context.device.dispatch((_viewport->width + 7) / 8, (_viewport->height + 3) / 4);
     }

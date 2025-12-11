@@ -18,7 +18,7 @@ public:
 
 private:
     GraphicProgramPtr _colorGradingProgram;
-    GpuProgramTextureUnit _resultTexUnit;
+    GpuProgramTextureBindPoint _resultTexUnit;
 };
 
 }
