@@ -28,8 +28,6 @@ class Texture;
 class Body;
 class DirectionalLight;
 
-struct PhysicalSkyCommonParams;
-
 
 class SkyLocalization
 {
@@ -137,8 +135,8 @@ private:
         void update(GraphicContext& context) override;
 
     private:
-        u_int64_t toGpu(
-            const GraphicContext& context) const;
+        u_int64_t toGpu(const GraphicContext& context,
+            struct GpuSkySphereParams& params) const;
 
         std::shared_ptr<Texture> _texture;
 
@@ -184,9 +182,9 @@ private:
         void render(GraphicContext& context) override;
 
     private:
-        uint64_t toGpu(
-            const GraphicContext& context,
-                PhysicalSkyCommonParams& params) const;
+        uint64_t toGpu(const GraphicContext& context,
+            struct GpuMoonLightParams& gpuMoonParams,
+            struct GpuPhysicalSkyParams& gpuSkyParams) const;
 
         Model& _model;
         Params& _params;
@@ -215,8 +213,6 @@ private:
         bool _moonIsDirty;
 
         std::shared_ptr<Texture> _starsTexture;
-
-        std::shared_ptr<PhysicalSkyCommonParams> _gpuParams;
     };
 
     std::unique_ptr<Model> _model;

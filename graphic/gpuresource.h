@@ -176,6 +176,8 @@ public:
     template<typename Resource>
     bool define(ResourceId id, const typename Resource::Definition& definition);
 
+    // TODO : update resource
+
     template<typename Resource>
     const Resource& get(ResourceId id) const;
 

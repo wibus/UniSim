@@ -13,7 +13,6 @@ namespace unisim
 
 struct Viewport;
 class PathTracerInterface;
-struct GpuPathTracerCommonParams;
 
 
 class PathTracer : public GraphicTask
@@ -41,9 +40,8 @@ public:
     static const unsigned int MAX_FRAME_COUNT = 4096;
 
 private:
-    uint64_t toGpu(
-        GraphicContext& context,
-        GpuPathTracerCommonParams& gpuCommonParams);
+    uint64_t toGpu(GraphicContext& context,
+        struct GpuPathTracerCommonParams& gpuParams);
 
     ResourceId _blueNoiseTextureResourceIds[BLUE_NOISE_TEX_COUNT];
     ResourceId _blueNoiseBindlessResourceIds[BLUE_NOISE_TEX_COUNT];

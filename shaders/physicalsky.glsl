@@ -1,15 +1,16 @@
-uniform vec3 sunDirection;
-uniform vec3 moonDirection;
-uniform float sunToMoonRatio;
+layout (std140) uniform PhysicalSkyParams
+{
+    vec4 sunDirection;
+    vec4 moonDirection;
+    vec4 moonQuaternion;
+    vec4 starsQuaternion;
+    float sunToMoonRatio;
+    float groundHeightKM;
+    float starsExposure;
+};
 
-uniform float groundHeightKM;
-
-uniform sampler2D moon;
-uniform vec4 moonQuaternion;
-
-uniform sampler2D stars;
-uniform vec4 starsQuaternion;
-uniform float starsExposure;
+uniform sampler2D Moon;
+uniform sampler2D Stars;
 
 
 // Returns the luminance of the Sun, outside the atmosphere.
@@ -57,18 +58,18 @@ void SampleSkyLuminance(
         camPosToEarthKM,
         viewDir,
         0,                // shadow_length
-        sunDirection,
+        sunDirection.xyz,
         transmittance);
 
     skyLuminance += sunToMoonRatio * GetSkyLuminance(
         camPosToEarthKM,
         viewDir,
         0,                // shadow_length
-        moonDirection,
+        moonDirection.xyz,
         transmittance);
 
     vec2 starsUv = findUV(starsQuaternion, viewDir);
-    vec3 starsLuminance = texture2D(stars, vec2(1 - starsUv.x, 1 - starsUv.y)).rgb;
+    vec3 starsLuminance = texture2D(Stars, vec2(1 - starsUv.x, 1 - starsUv.y)).rgb;
     skyLuminance += transmittance * starsLuminance * starsExposure;
 }
 
@@ -86,14 +87,14 @@ void SampleSkyLuminanceToPoint(
         camPosToEarthKM,
         pointPosToEarthKM,
         0,                // shadow_length
-        sunDirection,
+        sunDirection.xyz,
         transmittance);
 
     skyLuminance += sunToMoonRatio * GetSkyLuminanceToPoint(
         camPosToEarthKM,
         pointPosToEarthKM,
         0,                // shadow_length
-        sunDirection,
+        sunDirection.xyz,
         transmittance);
 }
 
@@ -109,7 +110,7 @@ vec3 SampleDirectionalLightLuminance(vec3 viewDir, uint lightId)
         double maxCos = 1 - directionalLights[lightId].emissionSolidAngle.a / (2 * PI);
         double maxSin = sqrt(1 - maxCos * maxCos);
         vec2 uv = (offset.xy / float(maxSin)) * 0.5 + 0.5;
-        return texture(moon, uv).rgb;
+        return texture(Moon, uv).rgb;
     }
 
     return vec3(0, 0, 0);

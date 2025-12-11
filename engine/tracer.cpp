@@ -266,7 +266,7 @@ std::shared_ptr<PathTracerInterface> PathTracer::initInterface()
 
 uint64_t PathTracer::toGpu(
     GraphicContext& context,
-    GpuPathTracerCommonParams& gpuCommonParams)
+    GpuPathTracerCommonParams& gpuParams)
 {
     GpuResourceManager& resources = context.resources;
 
@@ -277,21 +277,21 @@ uint64_t PathTracer::toGpu(
     glm::mat4 screen = camera.screen();
     glm::mat4 viewToScreen = screen * proj * view;
 
-    gpuCommonParams.rayMatrix = glm::inverse(viewToScreen);
-    gpuCommonParams.lensePosition = glm::vec4(camera.position(), 1);
-    gpuCommonParams.lenseDirection = glm::vec4(camera.direction(), 0);
-    gpuCommonParams.focusDistance = camera.focusDistance();
-    gpuCommonParams.apertureRadius = camera.dofEnabled() ? camera.focalLength() / camera.fstop() * 0.5f : 0.0f;
-    gpuCommonParams.exposure = camera.exposure();
-    gpuCommonParams.frameIndex = 0; // Must be constant for hasing
+    gpuParams.rayMatrix = glm::inverse(viewToScreen);
+    gpuParams.lensePosition = glm::vec4(camera.position(), 1);
+    gpuParams.lenseDirection = glm::vec4(camera.direction(), 0);
+    gpuParams.focusDistance = camera.focusDistance();
+    gpuParams.apertureRadius = camera.dofEnabled() ? camera.focalLength() / camera.fstop() * 0.5f : 0.0f;
+    gpuParams.exposure = camera.exposure();
+    gpuParams.frameIndex = 0; // Must be constant for hasing
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
-        gpuCommonParams.blueNoise[i] = resources.get<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i]).handle();
+        gpuParams.blueNoise[i] = resources.get<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i]).handle();
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
-        gpuCommonParams.halton[i] = _halton[i];
+        gpuParams.halton[i] = _halton[i];
 
     uint64_t hash = 0;
-    hash = hashVal(gpuCommonParams, hash);
+    hash = hashVal(gpuParams, hash);
 
     return hash;
 }
