@@ -2,10 +2,11 @@
 
 #include <imgui/imgui.h>
 
+#include "../resource/instance.h"
+
 #include "sky.h"
 #include "terrain.h"
 #include "materialdatabase.h"
-#include "instance.h"
 
 
 namespace unisim

@@ -3,6 +3,7 @@
 
 #include "../graphic/graphic.h"
 #include "../graphic/gpudevice.h"
+#include "../graphic/gpuprograminterface.h"
 #include "../graphic/gpuresource.h"
 #include "../graphic/pathtracer.h"
 

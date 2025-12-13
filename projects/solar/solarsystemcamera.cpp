@@ -7,10 +7,10 @@
 #include "../system/units.h"
 
 #include "../resource/body.h"
+#include "../resource/instance.h"
 #include "../resource/material.h"
 #include "../resource/primitive.h"
 
-#include "../engine/instance.h"
 #include "../engine/scene.h"
 
 

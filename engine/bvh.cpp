@@ -6,10 +6,10 @@
 #include "../system/units.h"
 
 #include "../resource/body.h"
+#include "../resource/instance.h"
 #include "../resource/primitive.h"
 
 #include "scene.h"
-#include "instance.h"
 #include "materialdatabase.h"
 
 

@@ -54,6 +54,8 @@ set(SystemFiles
 set(ResourceFiles
     resource/body.h
     resource/body.cpp
+    resource/instance.h
+    resource/instance.cpp
     resource/material.h
     resource/material.cpp
     resource/primitive.h
@@ -119,8 +121,6 @@ set(EngineFiles
     engine/materialdatabase.cpp
     engine/camera.h
     engine/camera.cpp
-    engine/instance.h
-    engine/instance.cpp
     engine/scene.h
     engine/scene.cpp
     engine/project.h

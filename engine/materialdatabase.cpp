@@ -4,13 +4,13 @@
 
 #include "../system/profiler.h"
 
+#include "../resource/instance.h"
 #include "../resource/material.h"
 #include "../resource/primitive.h"
 
 #include "../graphic/gpuresource.h"
 
 #include "scene.h"
-#include "instance.h"
 
 
 namespace unisim

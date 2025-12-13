@@ -32,6 +32,7 @@ DefineProfilePointGpu(PhysicalSky);
 
 DefineResource(SkySphereParams);
 DefineResource(PhysicalSkyParams);
+DefineResource(MoonLightParams);
 
 DefineResource(Stars);
 DefineResource(MoonAlbedo);
@@ -148,8 +149,8 @@ void SkyLocalization::ui()
 }
 
 Sky::Sky() :
-    _quaternion(0, 0, 0, 1),
-    _exposure(1)
+    _starsQuaternion(0, 0, 0, 1),
+    _starsExposure(1)
 {
 
 }
@@ -161,14 +162,14 @@ Sky::~Sky()
 
 void Sky::ui()
 {
-    glm::vec4 quaternion = _quaternion;
+    glm::vec4 quaternion = _starsQuaternion;
     if(ImGui::InputFloat4("Quaternion", &quaternion[0]))
     {
         quaternion = glm::normalize(quaternion);
         setQuaternion(quaternion);
     }
 
-    float exposure = _exposure;
+    float exposure = _starsExposure;
     float ev = glm::log2(exposure);
     if(ImGui::SliderFloat("Exposure", &ev, -20, 20))
     {
@@ -195,8 +196,8 @@ void Sky::ui()
 
 struct GpuSkySphereParams
 {
-    glm::vec4 skyQuaternion;
-    float skyExposure;
+    glm::vec4 starsQuaternion;
+    float starsExposure;
 };
 
 SkySphere::SkySphere() :
@@ -220,7 +221,7 @@ std::shared_ptr<GraphicTask> SkySphere::graphicTask()
 
 SkySphere::Task::Task(const std::shared_ptr<Texture>& texture) :
     GraphicTask("SkySphere"),
-    _texture(texture)
+    _starsTexture(texture)
 {
     _sphericalSkyModule = registerPathTracerModule("Spherical Sky");
 }
@@ -252,7 +253,7 @@ bool SkySphere::Task::defineResources(GraphicContext& context)
     _hash = toGpu(context, params);
 
     GpuResourceManager& resources = context.resources;
-    ok = ok && resources.define<GpuTextureResource>(ResourceName(Stars), {*_texture});
+    ok = ok && resources.define<GpuTextureResource>(ResourceName(Stars), {*_starsTexture});
     ok = ok && resources.define<GpuConstantResource>(ResourceName(SkySphereParams), {sizeof(params), &params});
 
     return ok;
@@ -285,8 +286,8 @@ u_int64_t SkySphere::Task::toGpu(
 {
     const SkySphere& sky = static_cast<SkySphere&>(*context.scene.sky());
 
-    gpuParams.skyQuaternion = sky.quaternion();
-    gpuParams.skyExposure = sky.exposure();
+    gpuParams.starsQuaternion = sky.starsQuaternion();
+    gpuParams.starsExposure = sky.starsExposure();
 
     uint64_t hash = 0;
     hash = hashVal(gpuParams, hash);
@@ -517,7 +518,7 @@ PhysicalSky::Task::Task(
     _params(params),
     _sun(sun),
     _moon(moon),
-    _moonLightingDimensions(1024),
+    _moonTexSize(1024),
     _moonHash(0),
     _moonIsDirty(true),
     _starsTexture(stars)
@@ -567,6 +568,13 @@ bool PhysicalSky::Task::defineShaders(GraphicContext &context)
     if(!generateComputeProgram(*_moonLightProgram, "shaders/moonlight.glsl"))
         return false;
 
+    _moonLightGpi.reset(new GpuProgramInterface(_moonLightProgram));
+    _moonLightGpi->declareConstant("MoonLightParams");
+    _moonLightGpi->declareTexture("MoonAlbedo");
+    _moonLightGpi->declareImage("MoonLighting");
+    if (!_moonLightGpi->compile())
+        return false;
+
     return true;
 }
 
@@ -579,35 +587,20 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
     _moonAlbedo.reset(Texture::load("textures/moonAlbedo2d.png"));
     if(!_moonAlbedo)
         _moonAlbedo.reset(new Texture(Texture::BLACK_UNORM8));
-    ok = ok && resources.define<GpuTextureResource>(ResourceName(MoonAlbedo), {*_moonAlbedo});
-
-    _lightingFormat = GL_RGBA32F;
-    ok = ok && resources.define<GpuImageResource>(ResourceName(MoonLighting),
-        {_moonLightingDimensions, _moonLightingDimensions, _lightingFormat});
-
-    _albedoLoc = glGetUniformLocation(_moonLightProgram->handle(), "albedo");
-    _lightingLoc = glGetUniformLocation(_moonLightProgram->handle(), "lighting");
-
-    _albedoUnit = GpuProgramTextureBindPoint::first();
-    _lightingUnit = GpuProgramImageBindPoint::first();
-
-    glProgramUniform1i(_moonLightProgram->handle(), _albedoLoc, _albedoUnit.bindPoint);
-    glProgramUniform1i(_moonLightProgram->handle(), _lightingLoc, _lightingUnit.bindPoint);
-
-    glGenBuffers(1, &_paramsUbo);
-    glBindBuffer(GL_UNIFORM_BUFFER, _paramsUbo);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(GpuMoonLightParams), nullptr, GL_STREAM_DRAW);
 
     if(!_starsTexture)
         _starsTexture.reset(new Texture(Texture::BLACK_UNORM8));
-    ok = ok && resources.define<GpuTextureResource>(ResourceName(Stars), {*_starsTexture});
 
     GpuMoonLightParams moonParams;
     GpuPhysicalSkyParams skyParams;
     _hash = toGpu(context, moonParams, skyParams);
     _moonIsDirty = true;
 
-    resources.define<GpuConstantResource>(ResourceName(PhysicalSkyParams), {sizeof(skyParams), &skyParams});
+    ok = ok && resources.define<GpuConstantResource>(ResourceName(PhysicalSkyParams), {sizeof(skyParams), &skyParams});
+    ok = ok && resources.define<GpuConstantResource>(ResourceName(MoonLightParams), {sizeof(moonParams), &moonParams});
+    ok = ok && resources.define<GpuTextureResource>(ResourceName(MoonAlbedo), {*_moonAlbedo});
+    ok = ok && resources.define<GpuTextureResource>(ResourceName(Stars), {*_starsTexture});
+    ok = ok && resources.define<GpuImageResource>(ResourceName(MoonLighting), {_moonTexSize, _moonTexSize, GL_RGBA32F});
 
     return ok;
 }
@@ -687,6 +680,7 @@ void PhysicalSky::Task::update(GraphicContext& context)
 
     GpuResourceManager& resources = context.resources;
     resources.define<GpuConstantResource>(ResourceName(PhysicalSkyParams), {sizeof(skyParams), &skyParams});
+    resources.define<GpuConstantResource>(ResourceName(MoonLightParams), {sizeof(lightParams), &lightParams});
 }
 
 void PhysicalSky::Task::render(GraphicContext& context)
@@ -699,21 +693,22 @@ void PhysicalSky::Task::render(GraphicContext& context)
     if(!_moonIsDirty)
         return;
 
-    GpuMoonLightParams lightParams;
+    GpuMoonLightParams moonParams;
     GpuPhysicalSkyParams skyParams;
-    toGpu(context, lightParams, skyParams);
+    toGpu(context, moonParams, skyParams);
 
     GraphicProgramScope programScope(*_moonLightProgram);
 
     GpuResourceManager& resources = context.resources;
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, _paramsUbo);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(lightParams), &lightParams, GL_STREAM_DRAW);
+    context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(MoonLightParams)),
+                              _moonLightGpi->getConstantBindPoint("MoonLightParams"));
+    context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(MoonAlbedo)),
+                               _moonLightGpi->getTextureBindPoint("MoonAlbedo"));
+    context.device.bindImage(resources.get<GpuImageResource>(ResourceName(MoonLighting)),
+                             _moonLightGpi->getImageBindPoint("MoonLighting"));
 
-    context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(MoonAlbedo)), _albedoUnit);
-    context.device.bindImage(resources.get<GpuImageResource>(ResourceName(MoonLighting)), _lightingUnit);
-
-    context.device.dispatch(_moonLightingDimensions / 8, _moonLightingDimensions / 8);
+    context.device.dispatch(_moonTexSize / 8, _moonTexSize / 8);
 
     _moonIsDirty = false;
 }
@@ -733,10 +728,10 @@ uint64_t PhysicalSky::Task::toGpu(
     gpuSkyParams.sunDirection = glm::vec4(_sun.direction(), 0);
     gpuSkyParams.moonDirection = glm::vec4(_moon.direction(), 0);
     gpuSkyParams.moonQuaternion = _moonQuaternion;
-    gpuSkyParams.starsQuaternion = sky.quaternion();
+    gpuSkyParams.starsQuaternion = sky.starsQuaternion();
     gpuSkyParams.sunToMoonRatio = _moon.emissionLuminance() / _sun.emissionLuminance();
     gpuSkyParams.groundHeightKM = _params.bottom_radius.to(km);
-    gpuSkyParams.starsExposure = sky.exposure();
+    gpuSkyParams.starsExposure = sky.starsExposure();
 
     uint64_t hash = 0;
     hash = hashVal(gpuMoonParams, hash);

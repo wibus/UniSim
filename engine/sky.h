@@ -86,11 +86,11 @@ public:
     SkyLocalization& localization() { return _localization; }
     const SkyLocalization& localization() const { return _localization; }
 
-    glm::vec4 quaternion() const { return _quaternion; }
-    void setQuaternion(const glm::vec4& quaternion) { _quaternion = quaternion; }
+    glm::vec4 starsQuaternion() const { return _starsQuaternion; }
+    void setQuaternion(const glm::vec4& quaternion) { _starsQuaternion = quaternion; }
 
-    float exposure() const { return _exposure; }
-    void setExposure(float exposure) { _exposure = exposure; }
+    float starsExposure() const { return _starsExposure; }
+    void setExposure(float exposure) { _starsExposure = exposure; }
 
     std::vector<std::shared_ptr<DirectionalLight>>& directionalLights() { return _directionalLights; }
     const std::vector<std::shared_ptr<DirectionalLight>>& directionalLights() const { return _directionalLights; }
@@ -101,8 +101,8 @@ public:
 
 private:
     SkyLocalization _localization;
-    glm::vec4 _quaternion;
-    float _exposure;
+    glm::vec4 _starsQuaternion;
+    float _starsExposure;
 
     std::vector<std::shared_ptr<DirectionalLight>> _directionalLights;
 };
@@ -138,7 +138,7 @@ private:
         u_int64_t toGpu(const GraphicContext& context,
             struct GpuSkySphereParams& params) const;
 
-        std::shared_ptr<Texture> _texture;
+        std::shared_ptr<Texture> _starsTexture;
 
         PathTracerModulePtr _sphericalSkyModule;
     };
@@ -194,25 +194,16 @@ private:
         glm::vec4 _moonQuaternion;
 
         GraphicProgramPtr _moonLightProgram;
+        GpuProgramInterfacePtr _moonLightGpi;
         PathTracerModulePtr _physicalSkyModule;
         PathTracerModulePtr _modelModule;
 
-        GLuint _paramsUbo;
-
-        GLuint _albedoLoc;
-        GpuProgramTextureBindPoint _albedoUnit;
-
-        GLuint _lightingLoc;
-        GpuProgramImageBindPoint _lightingUnit;
-        GLint _lightingFormat;
-
+        int _moonTexSize;
         std::unique_ptr<Texture> _moonAlbedo;
-        int _moonLightingDimensions;
+        std::shared_ptr<Texture> _starsTexture;
 
         std::size_t _moonHash;
         bool _moonIsDirty;
-
-        std::shared_ptr<Texture> _starsTexture;
     };
 
     std::unique_ptr<Model> _model;

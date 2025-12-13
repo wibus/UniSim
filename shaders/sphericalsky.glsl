@@ -1,7 +1,7 @@
 layout (std140) uniform SkySphereParams
 {
-    vec4 skyQuaternion;
-    float skyExposure;
+    vec4 starsQuaternion;
+    float starsExposure;
 };
 
 uniform sampler2D Stars;
@@ -13,10 +13,10 @@ void SampleSkyLuminance(
         vec3 cameraPos,
         vec3 viewDir)
 {
-    vec2 uv = findUV(skyQuaternion, viewDir);
+    vec2 uv = findUV(starsQuaternion, viewDir);
     vec3 color = texture2D(Stars, vec2(1 - uv.x, 1 - uv.y)).rgb;
 
-    skyLuminance = color * skyExposure;
+    skyLuminance = color * starsExposure;
 
     transmittance = vec3(1, 1, 1);
 }

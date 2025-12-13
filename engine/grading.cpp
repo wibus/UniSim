@@ -28,7 +28,10 @@ bool ColorGrading::defineShaders(GraphicContext& context)
 
 bool ColorGrading::defineResources(GraphicContext& context)
 {
-    _resultTexUnit = GpuProgramTextureBindPoint::first();
+    _colorGradingGpi.reset(new GpuProgramInterface(_colorGradingProgram));
+    _colorGradingGpi->declareTexture("Input");
+    if(!_colorGradingGpi->compile())
+        return false;
 
     return true;
 }
@@ -43,7 +46,9 @@ void ColorGrading::render(GraphicContext& context)
     GraphicProgramScope programScope(*_colorGradingProgram);
 
     GpuResourceManager& resources = context.resources;
-    context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(PathTracerResult)), _resultTexUnit);
+    context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(PathTracerResult)),
+                               _colorGradingGpi->getTextureBindPoint("Input"));
+
     context.device.draw(resources.get<GpuGeometryResource>(ResourceName(FullScreenTriangle)));
 }
 

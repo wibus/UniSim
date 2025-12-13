@@ -7,11 +7,11 @@
 #include "../system/profiler.h"
 
 #include "../resource/material.h"
+#include "../resource/instance.h"
 #include "../resource/primitive.h"
 
 #include "sky.h"
 #include "scene.h"
-#include "instance.h"
 
 
 namespace unisim

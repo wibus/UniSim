@@ -1,5 +1,5 @@
-#ifndef RADIATION_H
-#define RADIATION_H
+#ifndef LIGHTING_H
+#define LIGHTING_H
 
 #include <vector>
 #include <string>
@@ -74,4 +74,4 @@ private:
 
 }
 
-#endif // RADIATION_H
+#endif // LIGHTING_H

@@ -1,4 +1,4 @@
-layout (binding = 0) uniform sampler2D input;
+layout (binding = 0) uniform sampler2D Input;
 
 out vec4 frag_colour;
 
@@ -37,7 +37,7 @@ vec3 ACESFilm(vec3 x)
 
 void main()
 {
-    vec3 inputSRGB = texelFetch(input, ivec2(gl_FragCoord), 0).rgb;
+    vec3 inputSRGB = texelFetch(Input, ivec2(gl_FragCoord), 0).rgb;
     vec3 inputLinear = toLinear(inputSRGB);
     vec3 finalAces = ACESFilm(inputLinear);
     vec3 finalSRGB = sRGB(finalAces);

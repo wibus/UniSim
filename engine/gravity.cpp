@@ -4,9 +4,9 @@
 #include "../system/units.h"
 
 #include "../resource/body.h"
+#include "../resource/instance.h"
 
 #include "scene.h"
-#include "instance.h"
 
 
 namespace unisim

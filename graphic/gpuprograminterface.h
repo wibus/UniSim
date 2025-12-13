@@ -59,6 +59,8 @@ private:
     std::map<std::string, GpuProgramImageBindPoint> _imageBindPoints;
 };
 
+typedef std::shared_ptr<GpuProgramInterface> GpuProgramInterfacePtr;
+
 }
 
 #endif // GPUPROGRAMINTERFACE_H
