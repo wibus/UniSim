@@ -63,8 +63,13 @@ GraphicProgramHandle::~GraphicProgramHandle()
     }
 }
 
-GraphicProgram::GraphicProgram(const std::string& name) :
-    _name(name)
+GraphicProgram::GraphicProgram(
+    const std::string& name,
+    GraphicProgramHandle&& programHandle,
+    const std::vector<std::shared_ptr<GraphicShader>>& shaders) :
+    _name(name),
+    _handle(new GraphicProgramHandle(std::move(programHandle))),
+    _shaders(shaders)
 {
     std::cout << "Creating program '" << _name << "'" << std::endl;
 }
@@ -73,17 +78,6 @@ GraphicProgram::~GraphicProgram()
 {
     std::cout << "Destroying program '" << _name << "'" << std::endl;
 
-}
-
-void GraphicProgram::reset(GraphicProgramHandle&& programHandle, const std::vector<std::shared_ptr<GraphicShader>>& shaders)
-{
-    std::cout << "Resetting program '" << _name << "'" << std::endl;
-
-    _shaders.clear();
-    _handle.reset();
-
-    _handle.reset(new GraphicProgramHandle(std::move(programHandle)));
-    _shaders = shaders;
 }
 
 GraphicProgramScope::GraphicProgramScope(const GraphicProgram& program)
@@ -259,7 +253,8 @@ bool generateComputerShader(
 }
 
 bool generateGraphicProgram(
-    GraphicProgram& program,
+    GraphicProgramPtr& program,
+    const std::string& name,
     const std::string& vertexFileName,
     const std::string& fragmentFileName,
     const std::vector<std::string>& defines)
@@ -286,13 +281,20 @@ bool generateGraphicProgram(
         return false;
     }
 
-    program.reset(std::move(GraphicProgramHandle(programId)), {vertex, fragment});
+    program.reset(
+        new GraphicProgram(
+            name,
+            std::move(GraphicProgramHandle(programId)),
+            {vertex, fragment}
+        )
+    );
 
     return true;
 }
 
 bool generateComputeProgram(
-    GraphicProgram& program,
+    GraphicProgramPtr& program,
+    const std::string& name,
     const std::string& computeFileName,
     const std::vector<std::string>& defines)
 {
@@ -313,13 +315,20 @@ bool generateComputeProgram(
         return false;
     }
 
-    program.reset(std::move(GraphicProgramHandle(programId)), {compute});
+    program.reset(
+        new GraphicProgram(
+            name,
+            std::move(GraphicProgramHandle(programId)),
+            {compute}
+        )
+    );
 
     return true;
 }
 
 bool generateComputeProgram(
-    GraphicProgram& program,
+    GraphicProgramPtr& program,
+    const std::string& name,
     const std::string programName,
     const std::vector<std::shared_ptr<GraphicShader>>& shaders)
 {
@@ -336,7 +345,13 @@ bool generateComputeProgram(
         return false;
     }
 
-    program.reset(programId, {});
+    program.reset(
+        new GraphicProgram(
+            name,
+            std::move(GraphicProgramHandle(programId)),
+            shaders
+        )
+    );
 
     return true;
 }

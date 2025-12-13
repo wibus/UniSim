@@ -124,13 +124,13 @@ private:
     public:
         Task(const std::shared_ptr<Texture>& texture);
 
-        bool definePathTracerModules(GraphicContext& context) override;
+        bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
 
         bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
 
         bool defineResources(GraphicContext& context) override;
 
-        void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
+        void bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
 
         void update(GraphicContext& context) override;
 
@@ -139,8 +139,6 @@ private:
             struct GpuSkySphereParams& params) const;
 
         std::shared_ptr<Texture> _starsTexture;
-
-        PathTracerModulePtr _sphericalSkyModule;
     };
 
     std::shared_ptr<GraphicTask> _task;
@@ -169,14 +167,12 @@ private:
                 DirectionalLight& moon,
                 const std::shared_ptr<Texture>& stars);
 
-        std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const override;
-
-        bool definePathTracerModules(GraphicContext& context) override;
+        bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
         bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
         bool defineShaders(GraphicContext& context) override;
         bool defineResources(GraphicContext& context) override;
 
-        void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
+        void bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
 
         void update(GraphicContext& context) override;
         void render(GraphicContext& context) override;
@@ -195,8 +191,6 @@ private:
 
         GraphicProgramPtr _moonLightProgram;
         GpuProgramInterfacePtr _moonLightGpi;
-        PathTracerModulePtr _physicalSkyModule;
-        PathTracerModulePtr _modelModule;
 
         int _moonTexSize;
         std::unique_ptr<Texture> _moonAlbedo;

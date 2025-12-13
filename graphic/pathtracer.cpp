@@ -21,13 +21,6 @@ PathTracerInterface::PathTracerInterface(const std::shared_ptr<GraphicProgram>& 
 
 
 // MODULE //
-
-PathTracerModule::PathTracerModule(const std::string& name) :
-    _name(name)
-{
-    std::cout << "Creating path tracer module '" << _name << "'" << std::endl;
-}
-
 PathTracerModule::PathTracerModule(const std::string& name, const std::shared_ptr<GraphicShader>& shader) :
     _name(name),
     _shader(shader)
@@ -38,13 +31,6 @@ PathTracerModule::PathTracerModule(const std::string& name, const std::shared_pt
 PathTracerModule::~PathTracerModule()
 {
     std::cout << "Destroying path tracer module '" << _name << "'" << std::endl;
-}
-
-void PathTracerModule::reset(const std::shared_ptr<GraphicShader>& shader)
-{
-    std::cout << "Resetting path tracer module '" << _name << "'" << std::endl;
-
-    _shader = shader;
 }
 
 
@@ -58,12 +44,7 @@ PathTracerProvider::~PathTracerProvider()
 {
 }
 
-std::vector<std::shared_ptr<PathTracerModule>> PathTracerProvider::pathTracerModules() const
-{
-    return {};
-}
-
-bool PathTracerProvider::definePathTracerModules(GraphicContext& context)
+bool PathTracerProvider::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
 {
     return true;
 }
@@ -73,7 +54,7 @@ bool PathTracerProvider::definePathTracerInterface(GraphicContext& context, Path
     return true;
 }
 
-void PathTracerProvider::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
+void PathTracerProvider::bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
 }
 

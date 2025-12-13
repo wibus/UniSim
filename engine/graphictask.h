@@ -41,11 +41,6 @@ public:
 
     const std::string& name() const { return _name; }
 
-    std::shared_ptr<GraphicProgram> registerProgram(const std::string& name);
-    std::shared_ptr<PathTracerModule> registerPathTracerModule(const std::string& name);
-
-    std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const override;
-
     virtual void registerDynamicResources(GraphicContext& context) {}
     virtual bool defineShaders(GraphicContext& context) { return true; }
     virtual bool defineResources(GraphicContext& context) { return true; }
@@ -55,16 +50,14 @@ public:
 
 protected:
     bool addPathTracerModule(
-        PathTracerModule& module,
+        std::vector<std::shared_ptr<PathTracerModule>>& modules,
+        const std::string& name,
         const GraphicSettings& settings,
         const std::string& computeFileName,
         const std::vector<std::string>& defines = {});
 
 private:
     std::string _name;
-
-    std::vector<std::shared_ptr<GraphicProgram>> _programs;
-    std::vector<std::shared_ptr<PathTracerModule>> _modules;
 };
 
 

@@ -31,9 +31,6 @@ class PathTracerModule
 {
     PathTracerModule(const PathTracerModule&) = delete;
 
-    friend class GraphicTask;
-    PathTracerModule(const std::string& name);
-
 public:
     PathTracerModule(const std::string& name, const std::shared_ptr<GraphicShader>& shader);
     ~PathTracerModule();
@@ -41,8 +38,6 @@ public:
     std::shared_ptr<GraphicShader> shader() const { return _shader; }
 
     std::string name() const { return _name; }
-
-    void reset(const std::shared_ptr<GraphicShader>& shader);
 
 private:
     std::string _name;
@@ -58,13 +53,11 @@ public:
     PathTracerProvider();
     virtual ~PathTracerProvider();
 
-    virtual std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const;
-
-    virtual bool definePathTracerModules(GraphicContext& context);
+    virtual bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules);
 
     virtual bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface);
 
-    virtual void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
+    virtual void bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
 
     uint64_t hash() const { return _hash; }
 

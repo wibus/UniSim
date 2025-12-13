@@ -21,14 +21,14 @@ public:
     PathTracer();
     
     void registerDynamicResources(GraphicContext& context) override;
-    bool definePathTracerModules(GraphicContext& context) override;
+    bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
     bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
     bool defineShaders(GraphicContext& context) override;
     bool defineResources(GraphicContext& context) override;
 
-    void setPathTracerResources(
+    void bindPathTracerResources(
         GraphicContext& context,
-            PathTracerInterface& interface) const override;
+        PathTracerInterface& interface) const override;
     
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
@@ -48,8 +48,6 @@ private:
 
     glm::vec4 _halton[HALTON_SAMPLE_COUNT];
 
-    PathTracerModulePtr _utilsModule;
-    PathTracerModulePtr _pathTraceModule;
     GraphicProgramPtr _pathTracerProgram;
 
     unsigned int _frameIndex;

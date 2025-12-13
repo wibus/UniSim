@@ -120,7 +120,7 @@ bool Lighting::defineResources(GraphicContext& context)
     return ok;
 }
 
-void Lighting::setPathTracerResources(
+void Lighting::bindPathTracerResources(
     GraphicContext &context,
         PathTracerInterface &interface) const
 {

@@ -93,7 +93,7 @@ void MaterialDatabase::registerDynamicResources(GraphicContext& context)
     }
 }
 
-bool MaterialDatabase::definePathTracerModules(GraphicContext& context)
+bool MaterialDatabase::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
 {
     return true;
 }
@@ -148,7 +148,7 @@ bool MaterialDatabase::defineResources(GraphicContext& context)
     return ok;
 }
 
-void MaterialDatabase::setPathTracerResources(
+void MaterialDatabase::bindPathTracerResources(
     GraphicContext& context,
     PathTracerInterface& interface) const
 {

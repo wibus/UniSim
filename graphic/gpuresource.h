@@ -181,11 +181,12 @@ public:
     template<typename Resource>
     const Resource& get(ResourceId id) const;
 
-    void registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider);
-    std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules() const;
     void resetPathTracerProviders();
+    void registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider);
 
-    void setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
+    const std::vector<std::shared_ptr<PathTracerModule>>& pathTracerModules() const { return _pathTracerModules; }
+    void setPathTracerModules(const std::vector<std::shared_ptr<PathTracerModule>>& modules);
+    void bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
 
     uint64_t pathTracerHash() const;
 
@@ -198,7 +199,8 @@ private:
 
     std::vector<std::shared_ptr<GpuResource>> _resources;
 
-    std::vector<std::shared_ptr<PathTracerProvider>> _providers;
+    std::vector<std::shared_ptr<PathTracerModule>> _pathTracerModules;
+    std::vector<std::shared_ptr<PathTracerProvider>> _pathTracerProviders;
 };
 
 template<typename Resource>

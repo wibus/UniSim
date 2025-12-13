@@ -223,12 +223,11 @@ SkySphere::Task::Task(const std::shared_ptr<Texture>& texture) :
     GraphicTask("SkySphere"),
     _starsTexture(texture)
 {
-    _sphericalSkyModule = registerPathTracerModule("Spherical Sky");
 }
 
-bool SkySphere::Task::definePathTracerModules(GraphicContext& context)
+bool SkySphere::Task::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
 {
-    if(!addPathTracerModule(*_sphericalSkyModule, context.settings, "shaders/sphericalsky.glsl"))
+    if(!addPathTracerModule(modules, "Spherical Sky", context.settings, "shaders/sphericalsky.glsl"))
         return false;
 
     return true;
@@ -259,7 +258,7 @@ bool SkySphere::Task::defineResources(GraphicContext& context)
     return ok;
 }
 
-void SkySphere::Task::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
+void SkySphere::Task::bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
     SkySphere& sky = *dynamic_cast<SkySphere*>(context.scene.sky().get());
     GpuResourceManager& resources = context.resources;
@@ -523,25 +522,16 @@ PhysicalSky::Task::Task(
     _moonIsDirty(true),
     _starsTexture(stars)
 {
-    _moonLightProgram = registerProgram("Moon Light");
-    _physicalSkyModule = registerPathTracerModule("Physical Sky");
+}
+
+bool PhysicalSky::Task::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
+{
+    if(!addPathTracerModule(modules, "Physical Sky", context.settings, "shaders/physicalsky.glsl"))
+        return false;
 
     std::shared_ptr<GraphicShader> modelShader(new GraphicShader("Sky Model", std::move(GraphicShaderHandle(_model.shader()))));
-    _modelModule.reset(new PathTracerModule("Sky Model", modelShader));
-}
-
-std::vector<std::shared_ptr<PathTracerModule>> PhysicalSky::Task::pathTracerModules() const
-{
-    std::vector<std::shared_ptr<PathTracerModule>> modules = GraphicTask::pathTracerModules();
-    modules.push_back(_modelModule);
-
-    return modules;
-}
-
-bool PhysicalSky::Task::definePathTracerModules(GraphicContext& context)
-{
-    if(!addPathTracerModule(*_physicalSkyModule, context.settings, "shaders/physicalsky.glsl"))
-        return false;
+    std::shared_ptr<PathTracerModule> modelModule(new PathTracerModule("Sky Model", modelShader));
+    modules.push_back(modelModule);
 
     return true;
 }
@@ -565,7 +555,8 @@ bool PhysicalSky::Task::definePathTracerInterface(GraphicContext& context, PathT
 
 bool PhysicalSky::Task::defineShaders(GraphicContext &context)
 {
-    if(!generateComputeProgram(*_moonLightProgram, "shaders/moonlight.glsl"))
+    _moonLightProgram.reset();
+    if(!generateComputeProgram(_moonLightProgram, "Moon Light", "shaders/moonlight.glsl"))
         return false;
 
     _moonLightGpi.reset(new GpuProgramInterface(_moonLightProgram));
@@ -605,7 +596,7 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
     return ok;
 }
 
-void PhysicalSky::Task::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
+void PhysicalSky::Task::bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
 {
     PhysicalSky& sky = *dynamic_cast<PhysicalSky*>(context.scene.sky().get());
     GpuResourceManager& resources = context.resources;

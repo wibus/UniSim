@@ -44,10 +44,6 @@ PathTracer::PathTracer() :
     _frameIndex(0),
     _pathTracerHash(0)
 {
-    _utilsModule = registerPathTracerModule("Utils");
-    _pathTraceModule = registerPathTracerModule("Path Trace");
-    _pathTracerProgram = registerProgram("Path Tracer");
-
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
     {
         double* sample = halton(i, 4);
@@ -67,12 +63,12 @@ void PathTracer::registerDynamicResources(GraphicContext& context)
     }
 }
 
-bool PathTracer::definePathTracerModules(GraphicContext& context)
+bool PathTracer::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
 {
-    if(!addPathTracerModule(*_pathTraceModule, context.settings, "shaders/pathtrace.glsl"))
+    if(!addPathTracerModule(modules, "Path Trace", context.settings, "shaders/pathtrace.glsl"))
         return false;
 
-    if(!addPathTracerModule(*_utilsModule, context.settings, "shaders/common/utils.glsl"))
+    if(!addPathTracerModule(modules, "Utils", context.settings, "shaders/common/utils.glsl"))
         return false;
 
     return true;
@@ -100,7 +96,8 @@ bool PathTracer::defineShaders(GraphicContext &context)
         }
     }
 
-    if(!generateComputeProgram(*_pathTracerProgram, "pathtracer", shaders))
+    _pathTracerProgram.reset();
+    if(!generateComputeProgram(_pathTracerProgram, "Path Tracer", "pathtracer", shaders))
         return false;
 
     return _pathTracerProgram->isValid();
@@ -172,7 +169,7 @@ bool PathTracer::defineResources(GraphicContext& context)
     return ok;
 }
 
-void PathTracer::setPathTracerResources(
+void PathTracer::bindPathTracerResources(
     GraphicContext &context,
         PathTracerInterface &interface) const
 {
@@ -251,8 +248,7 @@ void PathTracer::render(GraphicContext& context)
     {
         GraphicProgramScope programScope(*_pathTracerProgram);
 
-        // Set uniforms for sub-systems
-        resources.setPathTracerResources(context, *_pathTracerInterface);
+        resources.bindPathTracerResources(context, *_pathTracerInterface);
 
         context.device.dispatch((_viewport->width + 7) / 8, (_viewport->height + 3) / 4);
     }

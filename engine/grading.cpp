@@ -15,12 +15,12 @@ DeclareResource(FullScreenTriangle);
 ColorGrading::ColorGrading() :
     GraphicTask("Color Grading")
 {
-    _colorGradingProgram = registerProgram("Color Grading");
 }
 
 bool ColorGrading::defineShaders(GraphicContext& context)
 {
-    if(!generateGraphicProgram(*_colorGradingProgram, "shaders/fullscreen.vert", "shaders/colorgrade.frag"))
+    _colorGradingProgram.reset();
+    if(!generateGraphicProgram(_colorGradingProgram, "Color Grading", "shaders/fullscreen.vert", "shaders/colorgrade.frag"))
         return false;
 
     return true;

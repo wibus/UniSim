@@ -41,9 +41,11 @@ class GraphicProgram
 {
     GraphicProgram(const GraphicProgram&) = delete;
 
-    friend class GraphicTask;
-    GraphicProgram(const std::string& name);
 public:
+    GraphicProgram(
+        const std::string& name,
+        GraphicProgramHandle&& programHandle,
+        const std::vector<std::shared_ptr<GraphicShader>>& shaders);
     ~GraphicProgram();
 
     bool isValid() const { return _handle.get() != nullptr; }
@@ -51,8 +53,6 @@ public:
     std::string name() const { return _name; }
 
     const GraphicProgramHandle& handle() const { return *_handle; }
-
-    void reset(GraphicProgramHandle&& programHandle, const std::vector<std::shared_ptr<GraphicShader>>& shaders);
 
 private:
     std::string _name;
@@ -97,18 +97,21 @@ bool generateComputerShader(
     const std::vector<std::string>& defines);
 
 bool generateGraphicProgram(
-    GraphicProgram& program,
+    GraphicProgramPtr& program,
+    const std::string& name,
     const std::string& vertexFileName,
     const std::string& fragmentFileName,
     const std::vector<std::string>& defines = {});
 
 bool generateComputeProgram(
-    GraphicProgram& program,
+    GraphicProgramPtr& program,
+    const std::string& name,
     const std::string& computeFileName,
     const std::vector<std::string>& defines = {});
 
 bool generateComputeProgram(
-    GraphicProgram& program,
+    GraphicProgramPtr& program,
+    const std::string& name,
     const std::string programName,
     const std::vector<std::shared_ptr<GraphicShader>>& shaders);
 

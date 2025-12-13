@@ -32,25 +32,9 @@ GraphicTask::~GraphicTask()
 {
 }
 
-std::shared_ptr<GraphicProgram> GraphicTask::registerProgram(const std::string& name)
-{
-    _programs.emplace_back(new GraphicProgram(name));
-    return _programs.back();
-}
-
-std::shared_ptr<PathTracerModule> GraphicTask::registerPathTracerModule(const std::string& name)
-{
-    _modules.emplace_back(new PathTracerModule(name));
-    return _modules.back();
-}
-
-std::vector<std::shared_ptr<PathTracerModule>> GraphicTask::pathTracerModules() const
-{
-    return _modules;
-}
-
 bool GraphicTask::addPathTracerModule(
-    PathTracerModule& module,
+    std::vector<std::shared_ptr<PathTracerModule>>& modules,
+    const std::string& name,
     const GraphicSettings& settings,
     const std::string& computeFileName,
     const std::vector<std::string>& defines)
@@ -74,7 +58,7 @@ bool GraphicTask::addPathTracerModule(
     if(!generateShader(shader, ShaderType::Compute, computeFileName, allSrcs, allDefines))
         return false;
 
-    module.reset(shader);
+    modules.push_back(std::make_shared<PathTracerModule>(name, shader));
 
     return true;
 }
@@ -123,9 +107,10 @@ bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Ca
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
 
+    std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules;
     for(const auto& task : _tasks)
     {
-        bool ok = task->definePathTracerModules(context);
+        bool ok = task->definePathTracerModules(context, pathTracerModules);
 
         if(!ok)
         {
@@ -135,6 +120,7 @@ bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Ca
 
         _resources.registerPathTracerProvider(std::dynamic_pointer_cast<PathTracerProvider>(task));
     }
+    _resources.setPathTracerModules(pathTracerModules);
 
     for(const auto& task : _tasks)
     {
@@ -184,11 +170,16 @@ bool GraphicTaskGraph::reloadShaders(const View& view, const Scene& scene, const
 
     GraphicContext context = {_device, view, scene, camera, _resources, _settings};
 
+    // Reset path tracer module definitions
+    _resources.setPathTracerModules({});
     _resources.resetPathTracerProviders();
 
+    // Re-define path tracer modules and interface
+
+    std::vector<std::shared_ptr<PathTracerModule>> pathTracerModules;
     for(const auto& task : _tasks)
     {
-        bool ok = task->definePathTracerModules(context);
+        bool ok = task->definePathTracerModules(context, pathTracerModules);
 
         if(!ok)
         {
@@ -198,6 +189,7 @@ bool GraphicTaskGraph::reloadShaders(const View& view, const Scene& scene, const
 
         _resources.registerPathTracerProvider(std::dynamic_pointer_cast<PathTracerProvider>(task));
     }
+    _resources.setPathTracerModules(pathTracerModules);
 
     for(const auto& task : _tasks)
     {

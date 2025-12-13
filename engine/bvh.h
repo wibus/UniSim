@@ -26,11 +26,11 @@ public:
     BVH();
     
     void registerDynamicResources(GraphicContext& context) override;
-    bool definePathTracerModules(GraphicContext& context) override;
+    bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
     bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
     bool defineResources(GraphicContext& context) override;
 
-    void setPathTracerResources(
+    void bindPathTracerResources(
         GraphicContext& context,
             PathTracerInterface& interface) const override;
     
@@ -49,8 +49,6 @@ private:
             std::vector<GpuTriangle>& gpuTriangles,
             std::vector<GpuVertexPos>& gpuVertPos,
             std::vector<GpuVertexData>& gpuVertData);
-
-    PathTracerModulePtr _intersectionModule;
 };
 
 

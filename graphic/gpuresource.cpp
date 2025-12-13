@@ -57,45 +57,35 @@ void GpuResourceManager::initialize()
     define<GpuGeometryResource>(ResourceName(FullScreenTriangle), {fullScreenTriangleVerts});
 }
 
-void GpuResourceManager::registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider)
-{
-    _providers.push_back(provider);
-}
-
-std::vector<std::shared_ptr<PathTracerModule>> GpuResourceManager::pathTracerModules() const
-{
-    std::vector<std::shared_ptr<PathTracerModule>> modules;
-    auto appendShaders = [&](const std::vector<std::shared_ptr<PathTracerModule>>& s)
-    {
-        modules.insert(modules.end(), s.begin(), s.end());
-    };
-
-    // Append modules from all providers
-    for(const auto& provider : _providers)
-        appendShaders(provider->pathTracerModules());
-
-    // Remove duplicated modules
-    std::sort( modules.begin(), modules.end() );
-    modules.erase( std::unique( modules.begin(), modules.end() ), modules.end());
-
-    return modules;
-}
-
 void GpuResourceManager::resetPathTracerProviders()
 {
-    _providers.clear();
+    _pathTracerProviders.clear();
 }
 
-void GpuResourceManager::setPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
+void GpuResourceManager::registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider)
 {
-    for(const auto& provider : _providers)
-        provider->setPathTracerResources(context, interface);
+    _pathTracerProviders.push_back(provider);
+}
+
+void GpuResourceManager::setPathTracerModules(const std::vector<std::shared_ptr<PathTracerModule>>& modules)
+{
+    _pathTracerModules = modules;
+
+    // Remove duplicated modules
+    std::sort( _pathTracerModules.begin(), _pathTracerModules.end() );
+    _pathTracerModules.erase( std::unique( _pathTracerModules.begin(), _pathTracerModules.end() ), _pathTracerModules.end());
+}
+
+void GpuResourceManager::bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
+{
+    for(const auto& provider : _pathTracerProviders)
+        provider->bindPathTracerResources(context, interface);
 }
 
 uint64_t GpuResourceManager::pathTracerHash() const
 {
     uint64_t hash;
-    for(const auto& provider : _providers)
+    for(const auto& provider : _pathTracerProviders)
         hash = PathTracerProvider::combineHashes(hash, provider->hash());
     return hash;
 }
