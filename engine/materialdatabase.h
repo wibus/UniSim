@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "graphictask.h"
+#include "pathtracer.h"
 
 
 namespace unisim
@@ -19,7 +19,7 @@ using MaterialId = uint32_t;
 const MaterialId MaterialId_Invalid = MaterialId(-1);
 
 
-class MaterialDatabase : public GraphicTask
+class MaterialDatabase : public PathTracerProvider
 {
 public:
     MaterialDatabase();
@@ -29,13 +29,17 @@ public:
     bool isMaterialRegistered(const std::shared_ptr<Material>& material) const;
     
     void registerDynamicResources(GraphicContext& context) override;
-    bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
-    bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
     bool defineResources(GraphicContext& context) override;
 
+    bool definePathTracerModules(
+        GraphicContext& context,
+        std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
+    bool definePathTracerInterface(
+        GraphicContext& context,
+        PathTracerInterface& interface) override;
     void bindPathTracerResources(
         GraphicContext& context,
-        PathTracerInterface& interface) const override;
+        CompiledGpuProgramInterface& compiledGpi) const override;
     
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;

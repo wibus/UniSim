@@ -9,7 +9,7 @@
 #include "graphic/window.h"
 
 #include "engine/enginetask.h"
-#include "engine/graphictask.h"
+#include "engine/graphictaskgraph.h"
 
 #include "engine/project.h"
 

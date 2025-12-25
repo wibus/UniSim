@@ -3,6 +3,8 @@
 
 #include <map>
 #include <memory>
+#include <vector>
+#include <string>
 
 
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
@@ -19,21 +21,33 @@ namespace unisim
 
 class GraphicProgram;
 
+struct GpuProgramConstantInput
+{
+    std::string name;
+};
 
-class GpuProgramInterface
+struct GpuProgramStorageInput
+{
+    std::string name;
+};
+
+struct GpuProgramTextureInput
+{
+    std::string name;
+};
+
+struct GpuProgramImageInput
+{
+    std::string name;
+};
+
+
+class CompiledGpuProgramInterface
 {
 public:
-    GpuProgramInterface(const std::shared_ptr<GraphicProgram>& program);
+    CompiledGpuProgramInterface();
 
-    const std::shared_ptr<GraphicProgram>& program() const { return _program; }
-
-    bool isValid() const;
-
-    bool declareConstant(const std::string& name);
-    bool declareStorage(const std::string& name);
-    bool declareTexture(const std::string& name);
-    bool declareImage(const std::string& name);
-    bool compile();
+    bool isValid() const { return _isValid; }
 
     GpuProgramConstantBindPoint getConstantBindPoint(const std::string& name) const;
     GpuProgramStorageBindPoint  getStorageBindPoint(const std::string& name) const;
@@ -41,22 +55,37 @@ public:
     GpuProgramImageBindPoint    getImageBindPoint(const std::string& name) const;
 
 private:
-    bool _isCompiled;
-    bool _declFailed;
+    friend class GpuProgramInterface;
 
-    std::shared_ptr<GraphicProgram> _program;
+    bool set(const GraphicProgram& program, const GpuProgramConstantBindPoint& bindPoint, const GpuProgramConstantInput& input);
+    bool set(const GraphicProgram& program, const GpuProgramStorageBindPoint& bindPoint, const GpuProgramStorageInput& input);
+    bool set(const GraphicProgram& program, const GpuProgramTextureBindPoint& bindPoint, const GpuProgramTextureInput& input);
+    bool set(const GraphicProgram& program, const GpuProgramImageBindPoint& bindPoint, const GpuProgramImageInput& input);
 
-    GpuProgramConstantBindPoint _nextConstantBindPoint;
+    bool _isValid;
     std::map<std::string, GpuProgramConstantBindPoint> _constantBindPoints;
-
-    GpuProgramStorageBindPoint _nextStorageBindPoint;
     std::map<std::string, GpuProgramStorageBindPoint> _storageBindPoints;
-
-    GpuProgramTextureBindPoint _nextTextureBindPoint;
     std::map<std::string, GpuProgramTextureBindPoint> _textureBindPoints;
-
-    GpuProgramImageBindPoint _nextImageBindPoint;
     std::map<std::string, GpuProgramImageBindPoint> _imageBindPoints;
+};
+
+class GpuProgramInterface
+{
+public:
+    GpuProgramInterface();
+
+    bool declareConstant(const GpuProgramConstantInput& input);
+    bool declareStorage(const GpuProgramStorageInput& input);
+    bool declareTexture(const GpuProgramTextureInput& input);
+    bool declareImage(const GpuProgramImageInput& input);
+
+    bool compile(CompiledGpuProgramInterface& compiledGpi, const GraphicProgram& program);
+
+private:
+    std::vector<GpuProgramConstantInput> _constants;
+    std::vector<GpuProgramStorageInput> _storages;
+    std::vector<GpuProgramTextureInput> _textures;
+    std::vector<GpuProgramImageInput> _images;
 };
 
 typedef std::shared_ptr<GpuProgramInterface> GpuProgramInterfacePtr;

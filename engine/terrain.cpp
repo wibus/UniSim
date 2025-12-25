@@ -37,7 +37,7 @@ NoTerrain::NoTerrain()
     _task = std::make_shared<Task>();
 }
 
-std::shared_ptr<GraphicTask> NoTerrain::graphicTask()
+GraphicTaskPtr NoTerrain::graphicTask()
 {
     return _task;
 }
@@ -78,7 +78,7 @@ void FlatTerrain::setMaterial(const std::shared_ptr<Material>& material)
     _plane->setMaterial(material);
 }
 
-std::shared_ptr<GraphicTask> FlatTerrain::graphicTask()
+GraphicTaskPtr FlatTerrain::graphicTask()
 {
     return _task;
 }

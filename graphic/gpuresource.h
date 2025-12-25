@@ -4,9 +4,10 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include <cassert>
 
 #include <GLM/glm.hpp>
+
+#include <PilsCore/Utils/Assert.h>
 
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
 #include "gpuresource_gl.h"
@@ -21,9 +22,7 @@ namespace unisim
 
 struct Texture;
 class GraphicContext;
-class PathTracerModule;
-class PathTracerInterface;
-class PathTracerProvider;
+class CompiledGpuProgramInterface;
 
 
 typedef unsigned int ResourceId;
@@ -52,6 +51,7 @@ public:
     };
 
     GpuTextureResource(ResourceId id, Definition def);
+    GpuTextureResource(GpuTextureResourceHandle&& handle);
     ~GpuTextureResource();
 
     const GpuTextureResourceHandle& handle() const { return *_handle; }
@@ -176,19 +176,11 @@ public:
     template<typename Resource>
     bool define(ResourceId id, const typename Resource::Definition& definition);
 
-    // TODO : update resource
+    template<typename Resource>
+    bool update(ResourceId id, const typename Resource::Definition& definition);
 
     template<typename Resource>
     const Resource& get(ResourceId id) const;
-
-    void resetPathTracerProviders();
-    void registerPathTracerProvider(const std::shared_ptr<PathTracerProvider>& provider);
-
-    const std::vector<std::shared_ptr<PathTracerModule>>& pathTracerModules() const { return _pathTracerModules; }
-    void setPathTracerModules(const std::vector<std::shared_ptr<PathTracerModule>>& modules);
-    void bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
-
-    uint64_t pathTracerHash() const;
 
 private:
     static unsigned int _staticResourceCount;
@@ -198,15 +190,13 @@ private:
     std::vector<std::string> _names;
 
     std::vector<std::shared_ptr<GpuResource>> _resources;
-
-    std::vector<std::shared_ptr<PathTracerModule>> _pathTracerModules;
-    std::vector<std::shared_ptr<PathTracerProvider>> _pathTracerProviders;
 };
 
 template<typename Resource>
 bool GpuResourceManager::define(ResourceId id, const typename Resource::Definition& definition)
 {
-    assert(id < _resourceCount);
+    PILS_ASSERT(id < _resourceCount, "Invalid resource ID");
+    PILS_ASSERT(_resources[id].get() == nullptr, "GPU resource already declared");
 
     _resources[id] = std::make_shared<Resource>(id, definition);
 
@@ -214,10 +204,21 @@ bool GpuResourceManager::define(ResourceId id, const typename Resource::Definiti
 }
 
 template<typename Resource>
+bool GpuResourceManager::update(ResourceId id, const typename Resource::Definition& definition)
+{
+    PILS_ASSERT(id < _resourceCount, "Invalid resource ID");
+    PILS_ASSERT(_resources[id].get() != nullptr, "Trying to update a resource that has not been defined yet.");
+
+    static_cast<Resource*>(_resources[id].get())->update(definition);
+
+    return true;
+}
+
+template<typename Resource>
 const Resource& GpuResourceManager::get(ResourceId id) const
 {
-    assert(id < _resourceCount);
-    assert(_resources[id].get() != nullptr);
+    PILS_ASSERT(id < _resourceCount, "Invalid resource ID");
+    PILS_ASSERT(_resources[id].get() != nullptr, "Trying to access a resource that has not been defined yet.");
 
     const Resource* resource = dynamic_cast<const Resource*>(_resources[id].get());
     assert(resource/* resource is null or not of the correct type */);

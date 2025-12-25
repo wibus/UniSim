@@ -2,10 +2,8 @@
 #define GRAPHICTASK_H
 
 #include "../graphic/graphic.h"
-#include "../graphic/gpudevice.h"
-#include "../graphic/gpuprograminterface.h"
 #include "../graphic/gpuresource.h"
-#include "../graphic/pathtracer.h"
+#include "../graphic/gpuprograminterface.h"
 
 
 namespace unisim
@@ -14,6 +12,7 @@ namespace unisim
 class View;
 class Scene;
 class Camera;
+class GpuDevice;
 class PathTracer;
 
 struct GraphicSettings
@@ -33,7 +32,7 @@ struct GraphicContext
     const GraphicSettings& settings;
 };
 
-class GraphicTask : public PathTracerProvider
+class GraphicTask
 {
 public:
     GraphicTask(const std::string& name);
@@ -48,17 +47,11 @@ public:
     virtual void update(GraphicContext& context) {}
     virtual void render(GraphicContext& context) {}
 
-protected:
-    bool addPathTracerModule(
-        std::vector<std::shared_ptr<PathTracerModule>>& modules,
-        const std::string& name,
-        const GraphicSettings& settings,
-        const std::string& computeFileName,
-        const std::vector<std::string>& defines = {});
-
 private:
     std::string _name;
 };
+
+typedef std::shared_ptr<GraphicTask> GraphicTaskPtr;
 
 
 class ClearSwapChain : public GraphicTask
@@ -67,32 +60,6 @@ public:
     ClearSwapChain();
 
     void render(GraphicContext& context) override;
-};
-
-
-class GraphicTaskGraph
-{
-public:
-    GraphicTaskGraph();
-
-    bool initialize(const View& view, const Scene& scene, const Camera& camera);
-
-    bool reloadShaders(const View& view, const Scene& scene, const Camera& camera);
-
-    void execute(const View& view, const Scene& scene, const Camera& camera);
-    
-    const GpuResourceManager& resources() const { return _resources; }
-
-private:
-    void createTaskGraph(const Scene& scene);
-    void addTask(const std::shared_ptr<GraphicTask>& task);
-
-    GpuDevice _device;
-    GraphicSettings _settings;
-    GpuResourceManager _resources;
-    std::vector<std::shared_ptr<GraphicTask>> _tasks;
-
-    std::shared_ptr<PathTracer> _pathTracerTask;
 };
 
 }

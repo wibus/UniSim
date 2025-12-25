@@ -24,7 +24,7 @@ public:
 
     const std::vector<std::shared_ptr<Instance>>& instances() const { return _instances; }
 
-    virtual std::shared_ptr<GraphicTask> graphicTask() = 0;
+    virtual GraphicTaskPtr graphicTask() = 0;
 
     virtual void ui();
 
@@ -42,7 +42,7 @@ class NoTerrain : public Terrain
 public:
     NoTerrain();
 
-    std::shared_ptr<GraphicTask> graphicTask() override;
+    GraphicTaskPtr graphicTask() override;
 
 private:
     class Task : public GraphicTask
@@ -65,7 +65,7 @@ public:
 
     void setMaterial(const std::shared_ptr<Material>& material);
 
-    std::shared_ptr<GraphicTask> graphicTask() override;
+    GraphicTaskPtr graphicTask() override;
 
 private:
     class Task : public GraphicTask

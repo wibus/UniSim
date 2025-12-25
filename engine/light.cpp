@@ -10,6 +10,8 @@
 #include "../resource/instance.h"
 #include "../resource/primitive.h"
 
+#include "../graphic/gpudevice.h"
+
 #include "sky.h"
 #include "scene.h"
 
@@ -68,7 +70,7 @@ struct GpuDirectionalLight
 };
 
 Lighting::Lighting() :
-    GraphicTask("Radiation")
+    PathTracerProvider("Radiation")
 {
 }
 
@@ -79,16 +81,6 @@ glm::vec3 toLinear(const glm::vec3& sRGB)
     glm::vec3 lower = sRGB/glm::vec3(12.92);
 
     return glm::mix(higher, lower, cutoff);
-}
-
-bool Lighting::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
-{
-    bool ok = true;
-
-    ok = ok && interface.declareStorage("Emitters");
-    ok = ok && interface.declareStorage("DirectionalLights");
-
-    return ok;
 }
 
 bool Lighting::defineResources(GraphicContext& context)
@@ -106,28 +98,40 @@ bool Lighting::defineResources(GraphicContext& context)
         gpuDirectionalLights);
 
     ok = ok && resources.define<GpuStorageResource>(
-                ResourceName(Emitters), {
-                    sizeof(gpuEmitters),
-                    gpuEmitters.size(),
-                    gpuEmitters.data()});
+             ResourceName(Emitters), {
+              sizeof(gpuEmitters),
+              gpuEmitters.size(),
+              gpuEmitters.data()});
 
     ok = ok && resources.define<GpuStorageResource>(
-                ResourceName(DirectionalLights), {
-                    sizeof(GpuDirectionalLight),
-                    gpuDirectionalLights.size(),
-                    gpuDirectionalLights.data()});
+             ResourceName(DirectionalLights), {
+              sizeof(GpuDirectionalLight),
+              gpuDirectionalLights.size(),
+              gpuDirectionalLights.data()});
+
+    return ok;
+}
+
+bool Lighting::definePathTracerInterface(
+    GraphicContext& context,
+    PathTracerInterface& interface)
+{
+    bool ok = true;
+
+    ok = ok && interface.declareStorage({"Emitters"});
+    ok = ok && interface.declareStorage({"DirectionalLights"});
 
     return ok;
 }
 
 void Lighting::bindPathTracerResources(
     GraphicContext &context,
-        PathTracerInterface &interface) const
+    CompiledGpuProgramInterface& compiledGpi) const
 {
     GpuResourceManager& resources = context.resources;
 
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Emitters)),          interface.getStorageBindPoint("Emitters"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(DirectionalLights)), interface.getStorageBindPoint("DirectionalLights"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Emitters)),          compiledGpi.getStorageBindPoint("Emitters"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(DirectionalLights)), compiledGpi.getStorageBindPoint("DirectionalLights"));
 }
 
 void Lighting::update(GraphicContext& context)

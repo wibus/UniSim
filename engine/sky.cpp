@@ -10,7 +10,7 @@
 #include "../system/units.h"
 
 #include "../graphic/graphic.h"
-#include "../graphic/pathtracer.h"
+#include "../graphic/gpudevice.h"
 
 #include "../resource/body.h"
 #include "../resource/texture.h"
@@ -204,43 +204,23 @@ SkySphere::SkySphere() :
     Sky()
 {
     _texture.reset(new Texture(Texture::BLACK_Float32));
-    _task = std::make_shared<SkySphere::Task>(_texture);
 }
 
 SkySphere::SkySphere(const std::string& fileName) :
     Sky()
 {
     _texture.reset(Texture::load(fileName));
-    _task = std::make_shared<SkySphere::Task>(_texture);
 }
 
-std::shared_ptr<GraphicTask> SkySphere::graphicTask()
+GraphicTaskPtr SkySphere::graphicTask()
 {
-    return _task;
+    return GraphicTaskPtr(new SkySphere::Task(_texture));
 }
 
 SkySphere::Task::Task(const std::shared_ptr<Texture>& texture) :
-    GraphicTask("SkySphere"),
+    PathTracerProvider("SkySphere"),
     _starsTexture(texture)
 {
-}
-
-bool SkySphere::Task::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
-{
-    if(!addPathTracerModule(modules, "Spherical Sky", context.settings, "shaders/sphericalsky.glsl"))
-        return false;
-
-    return true;
-}
-
-bool SkySphere::Task::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
-{
-    bool ok = true;
-
-    ok = ok && interface.declareConstant("SkySphereParams");
-    ok = ok && interface.declareTexture("Stars");
-
-    return ok;
 }
 
 bool SkySphere::Task::defineResources(GraphicContext& context)
@@ -258,16 +238,40 @@ bool SkySphere::Task::defineResources(GraphicContext& context)
     return ok;
 }
 
-void SkySphere::Task::bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
+bool SkySphere::Task::definePathTracerModules(
+    GraphicContext& context,
+    std::vector<std::shared_ptr<PathTracerModule>>& modules)
+{
+    if(!addPathTracerModule(modules, "Spherical Sky", context.settings, "shaders/sphericalsky.glsl"))
+        return false;
+
+    return true;
+}
+
+bool SkySphere::Task::definePathTracerInterface(
+    GraphicContext& context,
+    PathTracerInterface& interface)
+{
+    bool ok = true;
+
+    ok = ok && interface.declareConstant({"SkySphereParams"});
+    ok = ok && interface.declareTexture({"Stars"});
+
+    return ok;
+}
+
+void SkySphere::Task::bindPathTracerResources(
+    GraphicContext& context,
+    CompiledGpuProgramInterface& compiledGpi) const
 {
     SkySphere& sky = *dynamic_cast<SkySphere*>(context.scene.sky().get());
     GpuResourceManager& resources = context.resources;
 
     context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(SkySphereParams)),
-                              interface.getConstantBindPoint("SkySphereParams"));
+                              compiledGpi.getConstantBindPoint("SkySphereParams"));
 
     context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(Stars)),
-                               interface.getTextureBindPoint("Stars"));
+                               compiledGpi.getTextureBindPoint("Stars"));
 }
 
 void SkySphere::Task::update(GraphicContext& context)
@@ -279,7 +283,7 @@ void SkySphere::Task::update(GraphicContext& context)
     resources.define<GpuConstantResource>(ResourceName(SkySphereParams), {sizeof(params), &params});
 }
 
-u_int64_t SkySphere::Task::toGpu(
+uint64_t SkySphere::Task::toGpu(
     const GraphicContext& context,
     GpuSkySphereParams& gpuParams) const
 {
@@ -473,8 +477,6 @@ PhysicalSky::PhysicalSky() :
     directionalLights().push_back(_moon);
 
     _starsTexture.reset(Texture::load("textures/starmap_2020_4k.exr"));
-
-    _task = std::make_shared<PhysicalSky::Task>(*_model, *_params, *_sun, *_moon, _starsTexture);
 }
 
 PhysicalSky::~PhysicalSky()
@@ -482,9 +484,9 @@ PhysicalSky::~PhysicalSky()
 
 }
 
-std::shared_ptr<GraphicTask> PhysicalSky::graphicTask()
+GraphicTaskPtr PhysicalSky::graphicTask()
 {
-    return _task;
+    return GraphicTaskPtr(new Task(*_model, *_params, *_sun, *_moon, _starsTexture));
 }
 
 struct GpuMoonLightParams
@@ -512,7 +514,7 @@ PhysicalSky::Task::Task(
         DirectionalLight& sun,
         DirectionalLight& moon,
         const std::shared_ptr<Texture>& stars) :
-    GraphicTask("PhysicalSky"),
+    PathTracerProvider("PhysicalSky"),
     _model(model),
     _params(params),
     _sun(sun),
@@ -524,55 +526,10 @@ PhysicalSky::Task::Task(
 {
 }
 
-bool PhysicalSky::Task::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
-{
-    if(!addPathTracerModule(modules, "Physical Sky", context.settings, "shaders/physicalsky.glsl"))
-        return false;
-
-    std::shared_ptr<GraphicShader> modelShader(new GraphicShader("Sky Model", std::move(GraphicShaderHandle(_model.shader()))));
-    std::shared_ptr<PathTracerModule> modelModule(new PathTracerModule("Sky Model", modelShader));
-    modules.push_back(modelModule);
-
-    return true;
-}
-
-bool PhysicalSky::Task::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
-{    
-    bool ok = true;
-
-    ok = ok && interface.declareConstant("PhysicalSkyParams");
-    ok = ok && interface.declareTexture("Moon");
-    ok = ok && interface.declareTexture("Stars");
-
-    // Bruneton
-    ok = ok && interface.declareTexture("transmittance_texture");
-    ok = ok && interface.declareTexture("scattering_texture");
-    //ok = ok && interface.declareTexture("irradiance_texture");
-    ok = ok && interface.declareTexture("single_mie_scattering_texture");
-
-    return ok;
-}
-
-bool PhysicalSky::Task::defineShaders(GraphicContext &context)
-{
-    _moonLightProgram.reset();
-    if(!generateComputeProgram(_moonLightProgram, "Moon Light", "shaders/moonlight.glsl"))
-        return false;
-
-    _moonLightGpi.reset(new GpuProgramInterface(_moonLightProgram));
-    _moonLightGpi->declareConstant("MoonLightParams");
-    _moonLightGpi->declareTexture("MoonAlbedo");
-    _moonLightGpi->declareImage("MoonLighting");
-    if (!_moonLightGpi->compile())
-        return false;
-
-    return true;
-}
-
 bool PhysicalSky::Task::defineResources(GraphicContext& context)
 {
     bool ok = true;
-    
+
     GpuResourceManager& resources = context.resources;
 
     _moonAlbedo.reset(Texture::load("textures/moonAlbedo2d.png"));
@@ -596,25 +553,73 @@ bool PhysicalSky::Task::defineResources(GraphicContext& context)
     return ok;
 }
 
-void PhysicalSky::Task::bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const
+bool PhysicalSky::Task::defineShaders(GraphicContext &context)
+{
+    _moonLightGpi.reset(new GpuProgramInterface());
+    _moonLightGpi->declareConstant({"MoonLightParams"});
+    _moonLightGpi->declareTexture({"MoonAlbedo"});
+    _moonLightGpi->declareImage({"MoonLighting"});
+
+    _moonLightProgram.reset();
+    if(!generateComputeProgram(_moonLightProgram, "Moon Light", "shaders/moonlight.glsl"))
+        return false;
+
+    return true;
+}
+
+bool PhysicalSky::Task::definePathTracerModules(
+    GraphicContext& context,
+    std::vector<std::shared_ptr<PathTracerModule>>& modules)
+{
+    if(!addPathTracerModule(modules, "Physical Sky", context.settings, "shaders/physicalsky.glsl"))
+        return false;
+
+    std::shared_ptr<GraphicShader> modelShader(new GraphicShader("Sky Model", std::move(GraphicShaderHandle(_model.shader(), false))));
+    std::shared_ptr<PathTracerModule> modelModule(new PathTracerModule("Sky Model", modelShader));
+    modules.push_back(modelModule);
+
+    return true;
+}
+
+bool PhysicalSky::Task::definePathTracerInterface(
+    GraphicContext& context,
+    PathTracerInterface& interface)
+{
+    bool ok = true;
+
+    ok = ok && interface.declareConstant({"PhysicalSkyParams"});
+    ok = ok && interface.declareTexture({"Moon"});
+    ok = ok && interface.declareTexture({"Stars"});
+
+    // Bruneton
+    ok = ok && interface.declareTexture({"transmittance_texture"});
+    ok = ok && interface.declareTexture({"scattering_texture"});
+    //ok = ok && interface.declareTexture({"irradiance_texture"});
+    ok = ok && interface.declareTexture({"single_mie_scattering_texture"});
+
+    return ok;
+}
+
+void PhysicalSky::Task::bindPathTracerResources(
+    GraphicContext& context,
+    CompiledGpuProgramInterface& compiledGpi) const
 {
     PhysicalSky& sky = *dynamic_cast<PhysicalSky*>(context.scene.sky().get());
     GpuResourceManager& resources = context.resources;
 
-   _model.SetProgramUniforms(interface.program()->handle(),
-                             interface.getTextureBindPoint("transmittance_texture").bindPoint,
-                             interface.getTextureBindPoint("scattering_texture").bindPoint,
-                             -1/*interface.getTextureBindPoint("irradiance_texture").bindPoint*/,
-                             interface.getTextureBindPoint("single_mie_scattering_texture").bindPoint);
+    _model.SetProgramUniforms(compiledGpi.getTextureBindPoint("transmittance_texture").bindPoint,
+                              compiledGpi.getTextureBindPoint("scattering_texture").bindPoint,
+                              0/*compiledGpi.getTextureBindPoint("irradiance_texture").bindPoint*/,
+                              compiledGpi.getTextureBindPoint("single_mie_scattering_texture").bindPoint);
 
     context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(PhysicalSkyParams)),
-                              interface.getConstantBindPoint("PhysicalSkyParams"));
+                              compiledGpi.getConstantBindPoint("PhysicalSkyParams"));
 
     context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(MoonLighting)),
-                               interface.getTextureBindPoint("Moon"));
+                               compiledGpi.getTextureBindPoint("Moon"));
 
     context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(Stars)),
-                               interface.getTextureBindPoint("Stars"));
+                               compiledGpi.getTextureBindPoint("Stars"));
 }
 
 void PhysicalSky::Task::update(GraphicContext& context)
@@ -670,8 +675,8 @@ void PhysicalSky::Task::update(GraphicContext& context)
     _hash = hash;
 
     GpuResourceManager& resources = context.resources;
-    resources.define<GpuConstantResource>(ResourceName(PhysicalSkyParams), {sizeof(skyParams), &skyParams});
-    resources.define<GpuConstantResource>(ResourceName(MoonLightParams), {sizeof(lightParams), &lightParams});
+    resources.update<GpuConstantResource>(ResourceName(PhysicalSkyParams), {sizeof(skyParams), &skyParams});
+    resources.update<GpuConstantResource>(ResourceName(MoonLightParams), {sizeof(lightParams), &lightParams});
 }
 
 void PhysicalSky::Task::render(GraphicContext& context)
@@ -684,6 +689,10 @@ void PhysicalSky::Task::render(GraphicContext& context)
     if(!_moonIsDirty)
         return;
 
+    CompiledGpuProgramInterface compiledGpi;
+    if (!_moonLightGpi->compile(compiledGpi, *_moonLightProgram))
+        return;
+
     GpuMoonLightParams moonParams;
     GpuPhysicalSkyParams skyParams;
     toGpu(context, moonParams, skyParams);
@@ -693,11 +702,11 @@ void PhysicalSky::Task::render(GraphicContext& context)
     GpuResourceManager& resources = context.resources;
 
     context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(MoonLightParams)),
-                              _moonLightGpi->getConstantBindPoint("MoonLightParams"));
+                              compiledGpi.getConstantBindPoint("MoonLightParams"));
     context.device.bindTexture(resources.get<GpuTextureResource>(ResourceName(MoonAlbedo)),
-                               _moonLightGpi->getTextureBindPoint("MoonAlbedo"));
+                               compiledGpi.getTextureBindPoint("MoonAlbedo"));
     context.device.bindImage(resources.get<GpuImageResource>(ResourceName(MoonLighting)),
-                             _moonLightGpi->getImageBindPoint("MoonLighting"));
+                             compiledGpi.getImageBindPoint("MoonLighting"));
 
     context.device.dispatch(_moonTexSize / 8, _moonTexSize / 8);
 
@@ -730,5 +739,6 @@ uint64_t PhysicalSky::Task::toGpu(
 
     return hash;
 }
+
 
 }

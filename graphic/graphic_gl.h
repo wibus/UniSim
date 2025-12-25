@@ -14,13 +14,14 @@ protected:
 
 public:
     GraphicShaderHandle(GraphicShaderHandle&& other);
-    GraphicShaderHandle(GLuint shaderId);
+    GraphicShaderHandle(GLuint shaderId, bool releaseOnDestroy = true);
     ~GraphicShaderHandle();
 
     operator GLuint() const { return _shaderId; }
 
 private:
     GLuint _shaderId;
+    bool _releaseOnDestroy;
 };
 
 class GraphicProgramHandle

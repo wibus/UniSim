@@ -9,20 +9,23 @@ namespace unisim
 {
 
 GraphicShaderHandle::GraphicShaderHandle(GraphicShaderHandle&& other) :
-    _shaderId(other._shaderId)
+    _shaderId(other._shaderId),
+    _releaseOnDestroy(other._releaseOnDestroy)
 {
     other._shaderId = 0;
+    other._releaseOnDestroy = false;
 }
 
-GraphicShaderHandle::GraphicShaderHandle(GLuint shaderId) :
-    _shaderId(shaderId)
+GraphicShaderHandle::GraphicShaderHandle(GLuint shaderId, bool releaseOnDestroy) :
+    _shaderId(shaderId),
+    _releaseOnDestroy(releaseOnDestroy)
 {
     std::cout << "Creating shader handle '" << _shaderId << "'" << std::endl;
 }
 
 GraphicShaderHandle::~GraphicShaderHandle()
 {
-    if (_shaderId != 0)
+    if (_releaseOnDestroy && _shaderId != 0)
     {
         std::cout << "Destroying shader handle '" << _shaderId << "'" << std::endl;
         glDeleteShader(_shaderId);

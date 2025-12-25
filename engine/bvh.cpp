@@ -9,6 +9,8 @@
 #include "../resource/instance.h"
 #include "../resource/primitive.h"
 
+#include "../graphic/gpudevice.h"
+
 #include "scene.h"
 #include "materialdatabase.h"
 
@@ -93,38 +95,8 @@ struct GpuVertexData
 
 
 BVH::BVH() :
-    GraphicTask("BVH")
+    PathTracerProvider("BVH")
 {
-}
-
-void BVH::registerDynamicResources(GraphicContext& context)
-{
-
-}
-
-bool BVH::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
-{
-    if(!addPathTracerModule(modules, "Instersection", context.settings, "shaders/common/intersection.glsl"))
-        return false;
-
-    return true;
-}
-
-bool BVH::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
-{
-    bool ok = true;
-
-    ok = ok && interface.declareStorage("Primitives");
-    ok = ok && interface.declareStorage("Meshes");
-    ok = ok && interface.declareStorage("Spheres");
-    ok = ok && interface.declareStorage("Planes");
-    ok = ok && interface.declareStorage("Instances");
-    ok = ok && interface.declareStorage("BvhNodes");
-    ok = ok && interface.declareStorage("Triangles");
-    ok = ok && interface.declareStorage("VerticesPos");
-    ok = ok && interface.declareStorage("VerticesData");
-
-    return ok;
 }
 
 bool BVH::defineResources(GraphicContext& context)
@@ -140,92 +112,117 @@ bool BVH::defineResources(GraphicContext& context)
     std::vector<GpuVertexData> gpuVerticesData;
 
     _hash = toGpu(context,
-          gpuPrimitives,
-          gpuMeshes,
-          gpuSpheres,
-          gpuPlanes,
-          gpuInstances,
-          gpuBvhNodes,
-          gpuTriangles,
-          gpuVerticesPos,
-          gpuVerticesData);
-    
+                  gpuPrimitives,
+                  gpuMeshes,
+                  gpuSpheres,
+                  gpuPlanes,
+                  gpuInstances,
+                  gpuBvhNodes,
+                  gpuTriangles,
+                  gpuVerticesPos,
+                  gpuVerticesData);
+
     GpuResourceManager& resources = context.resources;
 
     bool ok = true;
 
     ok = ok && resources.define<GpuStorageResource>(
-        ResourceName(Primitives), {
-            sizeof(GpuPrimitive),
-            gpuPrimitives.size(),
-            gpuPrimitives.data()});
+             ResourceName(Primitives), {
+              sizeof(GpuPrimitive),
+              gpuPrimitives.size(),
+              gpuPrimitives.data()});
 
     ok = ok && resources.define<GpuStorageResource>(
-        ResourceName(Meshes), {
-            sizeof(GpuMesh),
-            gpuMeshes.size(),
-            gpuMeshes.data()});
+             ResourceName(Meshes), {
+              sizeof(GpuMesh),
+              gpuMeshes.size(),
+              gpuMeshes.data()});
 
     ok = ok && resources.define<GpuStorageResource>(
-        ResourceName(Spheres), {
-            sizeof(GpuSphere),
-            gpuSpheres.size(),
-            gpuSpheres.data()});
+             ResourceName(Spheres), {
+              sizeof(GpuSphere),
+              gpuSpheres.size(),
+              gpuSpheres.data()});
 
     ok = ok && resources.define<GpuStorageResource>(
-        ResourceName(Planes), {
-            sizeof(GpuPlane),
-            gpuPlanes.size(),
-            gpuPlanes.data()});
+             ResourceName(Planes), {
+              sizeof(GpuPlane),
+              gpuPlanes.size(),
+              gpuPlanes.data()});
 
     ok = ok && resources.define<GpuStorageResource>(
-        ResourceName(Instances), {
-            sizeof(GpuInstance),
-            gpuInstances.size(),
-            gpuInstances.data()});
+             ResourceName(Instances), {
+              sizeof(GpuInstance),
+              gpuInstances.size(),
+              gpuInstances.data()});
 
     ok = ok && resources.define<GpuStorageResource>(
-        ResourceName(BvhNodes), {
-            sizeof(GpuBvhNode),
-            gpuBvhNodes.size(),
-            gpuBvhNodes.data()});
+             ResourceName(BvhNodes), {
+              sizeof(GpuBvhNode),
+              gpuBvhNodes.size(),
+              gpuBvhNodes.data()});
 
     ok = ok && resources.define<GpuStorageResource>(
-        ResourceName(Triangles), {
-            sizeof(GpuTriangle),
-            gpuTriangles.size(),
-            gpuTriangles.data()});
+             ResourceName(Triangles), {
+              sizeof(GpuTriangle),
+              gpuTriangles.size(),
+              gpuTriangles.data()});
 
     ok = ok && resources.define<GpuStorageResource>(
-        ResourceName(VerticesPos), {
-            sizeof(GpuVertexPos),
-            gpuVerticesPos.size(),
-            gpuVerticesPos.data()});
+             ResourceName(VerticesPos), {
+              sizeof(GpuVertexPos),
+              gpuVerticesPos.size(),
+              gpuVerticesPos.data()});
 
     ok = ok && resources.define<GpuStorageResource>(
-        ResourceName(VerticesData), {
-            sizeof(GpuVertexData),
-            gpuVerticesData.size(),
-            gpuVerticesData.data()});
+             ResourceName(VerticesData), {
+              sizeof(GpuVertexData),
+              gpuVerticesData.size(),
+              gpuVerticesData.data()});
+
+    return ok;
+}
+
+bool BVH::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
+{
+    if(!addPathTracerModule(modules, "Instersection", context.settings, "shaders/common/intersection.glsl"))
+        return false;
+
+    return true;
+}
+
+bool BVH::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+{
+    bool ok = true;
+
+    ok = ok && interface.declareStorage({"Primitives"});
+    ok = ok && interface.declareStorage({"Meshes"});
+    ok = ok && interface.declareStorage({"Spheres"});
+    ok = ok && interface.declareStorage({"Planes"});
+    ok = ok && interface.declareStorage({"Instances"});
+    ok = ok && interface.declareStorage({"BvhNodes"});
+    ok = ok && interface.declareStorage({"Triangles"});
+    ok = ok && interface.declareStorage({"VerticesPos"});
+    ok = ok && interface.declareStorage({"VerticesData"});
 
     return ok;
 }
 
 void BVH::bindPathTracerResources(
     GraphicContext& context,
-    PathTracerInterface& interface) const
+    CompiledGpuProgramInterface& compiledGpi) const
 {
     GpuResourceManager& resources = context.resources;
 
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Primitives)),      interface.getStorageBindPoint("Primitives"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Meshes)),          interface.getStorageBindPoint("Meshes"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Spheres)),         interface.getStorageBindPoint("Spheres"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Planes)),          interface.getStorageBindPoint("Planes"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Instances)),       interface.getStorageBindPoint("Instances"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BvhNodes)),        interface.getStorageBindPoint("BvhNodes"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Triangles)),       interface.getStorageBindPoint("Triangles"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesPos)),     interface.getStorageBindPoint("VerticesPos"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesData)),    interface.getStorageBindPoint("VerticesData"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Primitives)),      compiledGpi.getStorageBindPoint("Primitives"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Meshes)),          compiledGpi.getStorageBindPoint("Meshes"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Spheres)),         compiledGpi.getStorageBindPoint("Spheres"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Planes)),          compiledGpi.getStorageBindPoint("Planes"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Instances)),       compiledGpi.getStorageBindPoint("Instances"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BvhNodes)),        compiledGpi.getStorageBindPoint("BvhNodes"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Triangles)),       compiledGpi.getStorageBindPoint("Triangles"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesPos)),     compiledGpi.getStorageBindPoint("VerticesPos"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesData)),    compiledGpi.getStorageBindPoint("VerticesData"));
 }
 
 void BVH::update(GraphicContext& context)

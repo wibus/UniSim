@@ -5,8 +5,10 @@
 #include <memory>
 #include <string>
 
-#include "graphic.h"
-#include "gpuprograminterface.h"
+#include "../graphic/graphic.h"
+#include "../graphic/gpuprograminterface.h"
+
+#include "graphictask.h"
 
 
 namespace unisim
@@ -14,6 +16,7 @@ namespace unisim
 
 class GraphicProgram;
 class GraphicContext;
+class GraphicSettings;
 
 extern std::vector<std::string> g_PathTracerCommonSrcs;
 
@@ -21,7 +24,7 @@ extern std::vector<std::string> g_PathTracerCommonSrcs;
 class PathTracerInterface : public GpuProgramInterface
 {
 public:
-    PathTracerInterface(const std::shared_ptr<GraphicProgram>& program);
+    PathTracerInterface();
 
 private:
 };
@@ -47,17 +50,23 @@ private:
 using PathTracerModulePtr = std::shared_ptr<PathTracerModule>;
 
 
-class PathTracerProvider
+class PathTracerProvider : public GraphicTask
 {
 public:
-    PathTracerProvider();
+    PathTracerProvider(const std::string& name);
     virtual ~PathTracerProvider();
 
-    virtual bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules);
+    virtual bool definePathTracerModules(
+        GraphicContext& context,
+        std::vector<std::shared_ptr<PathTracerModule>>& modules);
 
-    virtual bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface);
+    virtual bool definePathTracerInterface(
+        GraphicContext& context,
+        PathTracerInterface& interface);
 
-    virtual void bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const;
+    virtual void bindPathTracerResources(
+        GraphicContext& context,
+        CompiledGpuProgramInterface& compiledGpi) const;
 
     uint64_t hash() const { return _hash; }
 
@@ -81,8 +90,18 @@ public:
     }
 
 protected:
+    bool addPathTracerModule(
+        std::vector<std::shared_ptr<PathTracerModule>>& modules,
+        const std::string& name,
+        const GraphicSettings& settings,
+        const std::string& computeFileName,
+        const std::vector<std::string>& defines = {});
+
+    std::string _name;
     uint64_t _hash;
 };
+
+using PathTracerProviderPtr = std::shared_ptr<PathTracerProvider>;
 
 }
 

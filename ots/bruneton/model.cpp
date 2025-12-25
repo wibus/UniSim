@@ -980,31 +980,22 @@ texture units.
 */
 
 void Model::SetProgramUniforms(
-    GLuint program,
     GLuint transmittance_texture_unit,
     GLuint scattering_texture_unit,
     GLuint irradiance_texture_unit,
     GLuint single_mie_scattering_texture_unit) const {
   glActiveTexture(GL_TEXTURE0 + transmittance_texture_unit);
   glBindTexture(GL_TEXTURE_2D, transmittance_texture_);
-  glUniform1i(glGetUniformLocation(program, "transmittance_texture"),
-      transmittance_texture_unit);
 
   glActiveTexture(GL_TEXTURE0 + scattering_texture_unit);
   glBindTexture(GL_TEXTURE_3D, scattering_texture_);
-  glUniform1i(glGetUniformLocation(program, "scattering_texture"),
-      scattering_texture_unit);
 
   glActiveTexture(GL_TEXTURE0 + irradiance_texture_unit);
   glBindTexture(GL_TEXTURE_2D, irradiance_texture_);
-  glUniform1i(glGetUniformLocation(program, "irradiance_texture"),
-      irradiance_texture_unit);
 
   if (optional_single_mie_scattering_texture_ != 0) {
     glActiveTexture(GL_TEXTURE0 + single_mie_scattering_texture_unit);
     glBindTexture(GL_TEXTURE_3D, optional_single_mie_scattering_texture_);
-    glUniform1i(glGetUniformLocation(program, "single_mie_scattering_texture"),
-        single_mie_scattering_texture_unit);
   }
 }
 

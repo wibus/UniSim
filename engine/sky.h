@@ -5,7 +5,7 @@
 
 #include <GLM/glm.hpp>
 
-#include "graphictask.h"
+#include "pathtracer.h"
 
 
 namespace atmosphere
@@ -95,7 +95,7 @@ public:
     std::vector<std::shared_ptr<DirectionalLight>>& directionalLights() { return _directionalLights; }
     const std::vector<std::shared_ptr<DirectionalLight>>& directionalLights() const { return _directionalLights; }
 
-    virtual std::shared_ptr<GraphicTask> graphicTask() = 0;
+    virtual GraphicTaskPtr graphicTask() = 0;
 
     virtual void ui();
 
@@ -114,34 +114,38 @@ public:
     SkySphere();
     SkySphere(const std::string& fileName);
 
-    std::shared_ptr<GraphicTask> graphicTask() override;
+    GraphicTaskPtr graphicTask() override;
+
 
 private:
     std::shared_ptr<Texture> _texture;
 
-    class Task : public GraphicTask
+    class Task : public PathTracerProvider
     {
     public:
         Task(const std::shared_ptr<Texture>& texture);
 
-        bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
-
-        bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
-
         bool defineResources(GraphicContext& context) override;
 
-        void bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
+        bool definePathTracerModules(
+            GraphicContext& context,
+            std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
+        bool definePathTracerInterface(
+            GraphicContext& context,
+            PathTracerInterface& interface) override;
+        void bindPathTracerResources(
+            GraphicContext& context,
+            CompiledGpuProgramInterface& compiledGpi) const override;
 
         void update(GraphicContext& context) override;
 
     private:
-        u_int64_t toGpu(const GraphicContext& context,
+        uint64_t toGpu(
+            const GraphicContext& context,
             struct GpuSkySphereParams& params) const;
 
         std::shared_ptr<Texture> _starsTexture;
     };
-
-    std::shared_ptr<GraphicTask> _task;
 };
 
 
@@ -151,13 +155,13 @@ public:
     PhysicalSky();
     virtual ~PhysicalSky();
 
-    std::shared_ptr<GraphicTask> graphicTask() override;
+    GraphicTaskPtr graphicTask() override;
 
 private:
     typedef atmosphere::Model Model;
     typedef atmosphere::reference::AtmosphereParameters Params;
 
-    class Task : public GraphicTask
+    class Task : public PathTracerProvider
     {
     public:
         Task(
@@ -167,12 +171,18 @@ private:
                 DirectionalLight& moon,
                 const std::shared_ptr<Texture>& stars);
 
-        bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
-        bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
-        bool defineShaders(GraphicContext& context) override;
         bool defineResources(GraphicContext& context) override;
+        bool defineShaders(GraphicContext& context) override;
 
-        void bindPathTracerResources(GraphicContext& context, PathTracerInterface& interface) const override;
+        bool definePathTracerModules(
+            GraphicContext& context,
+            std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
+        bool definePathTracerInterface(
+            GraphicContext& context,
+            PathTracerInterface& interface) override;
+        void bindPathTracerResources(
+            GraphicContext& context,
+            CompiledGpuProgramInterface& compiledGpi) const override;
 
         void update(GraphicContext& context) override;
         void render(GraphicContext& context) override;
@@ -200,6 +210,7 @@ private:
         bool _moonIsDirty;
     };
 
+
     std::unique_ptr<Model> _model;
     std::unique_ptr<Params> _params;
 
@@ -208,8 +219,6 @@ private:
     std::shared_ptr<DirectionalLight> _moon;
 
     std::shared_ptr<Texture> _starsTexture;
-
-    std::shared_ptr<Task> _task;
 };
 
 }

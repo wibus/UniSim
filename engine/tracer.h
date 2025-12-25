@@ -5,7 +5,7 @@
 
 #include <GLM/glm.hpp>
 
-#include "graphictask.h"
+#include "pathtracer.h"
 
 
 namespace unisim
@@ -15,25 +15,29 @@ struct Viewport;
 class PathTracerInterface;
 
 
-class PathTracer : public GraphicTask
+class PathTracer : public PathTracerProvider
 {
 public:
     PathTracer();
     
     void registerDynamicResources(GraphicContext& context) override;
-    bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
-    bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
-    bool defineShaders(GraphicContext& context) override;
     bool defineResources(GraphicContext& context) override;
+    bool defineShaders(GraphicContext& context) override;
 
+    bool definePathTracerModules(
+        GraphicContext& context,
+        std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
+    bool definePathTracerInterface(
+        GraphicContext& context,
+        PathTracerInterface& interface) override;
     void bindPathTracerResources(
         GraphicContext& context,
-        PathTracerInterface& interface) const override;
+        CompiledGpuProgramInterface& compiledGpi) const override;
     
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
 
-    std::shared_ptr<PathTracerInterface> initInterface();
+    void setPathTracerProviders(const std::vector<PathTracerProviderPtr>& providers);
 
     static const unsigned int BLUE_NOISE_TEX_COUNT = 64;
     static const unsigned int HALTON_SAMPLE_COUNT = 64;
@@ -56,6 +60,8 @@ private:
     std::unique_ptr<Viewport> _viewport;
 
     std::shared_ptr<PathTracerInterface> _pathTracerInterface;
+    std::vector<std::shared_ptr<PathTracerModule>> _pathTracerModules;
+    std::vector<std::shared_ptr<PathTracerProvider>> _pathTracerProviders;
 };
 
 }

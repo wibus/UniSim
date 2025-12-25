@@ -8,6 +8,7 @@
 #include "../resource/material.h"
 #include "../resource/primitive.h"
 
+#include "../graphic/gpudevice.h"
 #include "../graphic/gpuresource.h"
 
 #include "scene.h"
@@ -36,7 +37,7 @@ struct GpuMaterial
 
 
 MaterialDatabase::MaterialDatabase() :
-    GraphicTask("Material Registry")
+    PathTracerProvider("Material Registry")
 {
 }
 
@@ -93,25 +94,10 @@ void MaterialDatabase::registerDynamicResources(GraphicContext& context)
     }
 }
 
-bool MaterialDatabase::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
-{
-    return true;
-}
-
-bool MaterialDatabase::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
-{
-    bool ok = true;
-
-    ok = ok && interface.declareStorage("Textures");
-    ok = ok && interface.declareStorage("Materials");
-
-    return ok;
-}
-
 bool MaterialDatabase::defineResources(GraphicContext& context)
 {
     bool ok = true;
-    
+
     GpuResourceManager& resources = context.resources;
 
     for(std::size_t i = 0; i < _materials.size(); ++i)
@@ -138,24 +124,39 @@ bool MaterialDatabase::defineResources(GraphicContext& context)
     _hash = toGpu(context, gpuTextures, gpuMaterials);
 
     ok = ok && context.resources.define<GpuStorageResource>(
-        ResourceName(MaterialDatabase),
-        {sizeof (GpuMaterial), gpuMaterials.size(), gpuMaterials.data()});
+             ResourceName(MaterialDatabase),
+             {sizeof (GpuMaterial), gpuMaterials.size(), gpuMaterials.data()});
 
     ok = ok && context.resources.define<GpuStorageResource>(
-        ResourceName(BindlessTextures),
-        {sizeof (GpuBindlessTextureDescriptor), gpuTextures.size(), gpuTextures.data()});
+             ResourceName(BindlessTextures),
+             {sizeof (GpuBindlessTextureDescriptor), gpuTextures.size(), gpuTextures.data()});
+
+    return ok;
+}
+
+bool MaterialDatabase::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
+{
+    return true;
+}
+
+bool MaterialDatabase::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+{
+    bool ok = true;
+
+    ok = ok && interface.declareStorage({"Textures"});
+    ok = ok && interface.declareStorage({"Materials"});
 
     return ok;
 }
 
 void MaterialDatabase::bindPathTracerResources(
     GraphicContext& context,
-    PathTracerInterface& interface) const
+    CompiledGpuProgramInterface& compiledGpi) const
 {
     GpuResourceManager& resources = context.resources;
 
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BindlessTextures)), interface.getStorageBindPoint("Textures"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(MaterialDatabase)), interface.getStorageBindPoint("Materials"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BindlessTextures)), compiledGpi.getStorageBindPoint("Textures"));
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(MaterialDatabase)), compiledGpi.getStorageBindPoint("Materials"));
 }
 
 void MaterialDatabase::update(GraphicContext& context)

@@ -287,7 +287,6 @@ class Model {
   GLuint shader() const { return atmosphere_shader_; }
 
   void SetProgramUniforms(
-      GLuint program,
       GLuint transmittance_texture_unit,
       GLuint scattering_texture_unit,
       GLuint irradiance_texture_unit,

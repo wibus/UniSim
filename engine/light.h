@@ -6,7 +6,7 @@
 
 #include <GLM/glm.hpp>
 
-#include "graphictask.h"
+#include "pathtracer.h"
 
 
 
@@ -50,18 +50,19 @@ private:
 };
 
 
-class Lighting : public GraphicTask
+class Lighting : public PathTracerProvider
 {
 public:
     Lighting();
 
-    bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
-
     bool defineResources(GraphicContext& context) override;
-    
+
+    bool definePathTracerInterface(
+        GraphicContext& context,
+        PathTracerInterface& interface) override;
     void bindPathTracerResources(
         GraphicContext& context,
-            PathTracerInterface& interface) const override;
+        CompiledGpuProgramInterface& compiledGpi) const override;
 
     void update(GraphicContext& context) override;
 

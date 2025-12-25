@@ -3,7 +3,7 @@
 
 #include <GLM/glm.hpp>
 
-#include "graphictask.h"
+#include "pathtracer.h"
 
 
 namespace unisim
@@ -20,19 +20,22 @@ struct GpuVertexPos;
 struct GpuVertexData;
 
 
-class BVH : public GraphicTask
+class BVH : public PathTracerProvider
 {
 public:
     BVH();
-    
-    void registerDynamicResources(GraphicContext& context) override;
-    bool definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
-    bool definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface) override;
+
     bool defineResources(GraphicContext& context) override;
 
+    bool definePathTracerModules(
+        GraphicContext& context,
+        std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
+    bool definePathTracerInterface(
+        GraphicContext& context,
+        PathTracerInterface& interface) override;
     void bindPathTracerResources(
         GraphicContext& context,
-            PathTracerInterface& interface) const override;
+        CompiledGpuProgramInterface& compiledGpi) const override;
     
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;

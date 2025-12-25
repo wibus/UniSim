@@ -90,8 +90,6 @@ set(GraphicFiles
     graphic/graphic_gl.cpp
     graphic/graphic_vk.h
     graphic/graphic_vk.cpp
-    graphic/pathtracer.h
-    graphic/pathtracer.cpp
     graphic/view.h
     graphic/view.cpp
     graphic/view_gl.h
@@ -113,6 +111,8 @@ set(EngineFiles
     engine/grading.cpp
     engine/graphictask.h
     engine/graphictask.cpp
+    engine/graphictaskgraph.h
+    engine/graphictaskgraph.cpp
     engine/gravity.h
     engine/gravity.cpp
     engine/light.h
@@ -123,6 +123,8 @@ set(EngineFiles
     engine/camera.cpp
     engine/scene.h
     engine/scene.cpp
+    engine/pathtracer.h
+    engine/pathtracer.cpp
     engine/project.h
     engine/project.cpp
     engine/sky.h

@@ -56,6 +56,12 @@ GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
     glBindTexture(_handle->dimension, 0);
 }
 
+GpuTextureResource::GpuTextureResource(GpuTextureResourceHandle&& handle) :
+    GpuResource(0),
+    _handle(new GpuTextureResourceHandle(std::move(handle)))
+{
+}
+
 GpuTextureResource::~GpuTextureResource()
 {
     glDeleteTextures(1, &_handle->texId);

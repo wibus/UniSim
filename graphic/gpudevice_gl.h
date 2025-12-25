@@ -19,11 +19,11 @@ struct GpuProgramTextureBindPoint;
 struct GpuProgramImageBindPoint;
 
 
-class GpuDeviceGl
+class GpuDevice
 {
 public:
-    GpuDeviceGl();
-    ~GpuDeviceGl();
+    GpuDevice();
+    ~GpuDevice();
     
     void bindBuffer(const GpuConstantResource& resource, const GpuProgramConstantBindPoint& bindPoint);
     void bindBuffer(const GpuStorageResource& resource, const GpuProgramStorageBindPoint& bindPoint);
@@ -38,9 +38,6 @@ public:
 private:
 
 };
-
-
-typedef GpuDeviceGl GpuDevice;
 
 }
 

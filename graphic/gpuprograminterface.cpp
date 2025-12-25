@@ -9,39 +9,7 @@
 namespace unisim
 {
 
-GpuProgramInterface::GpuProgramInterface(const std::shared_ptr<GraphicProgram>& program) :
-    _isCompiled(false),
-    _declFailed(false),
-    _program(program),
-    _nextConstantBindPoint(GpuProgramConstantBindPoint::first()),
-    _nextStorageBindPoint(GpuProgramStorageBindPoint::first()),
-    _nextTextureBindPoint(GpuProgramTextureBindPoint::first()),
-    _nextImageBindPoint(GpuProgramImageBindPoint::first())
-{
-}
-
-bool GpuProgramInterface::compile()
-{
-    if (_isCompiled)
-        return !_declFailed;
-
-    _isCompiled = true;
-
-    PILS_ASSERT(!_declFailed, "Could not compile GPI for ", _program->name());
-
-    if (_declFailed)
-    {
-        _program.reset();
-
-        return false;
-    }
-
-    PILS_INFO("GPI compilation succeeded for ", _program->name());
-
-    return true;
-}
-
-GpuProgramConstantBindPoint GpuProgramInterface::getConstantBindPoint(const std::string& name) const
+GpuProgramConstantBindPoint CompiledGpuProgramInterface::getConstantBindPoint(const std::string& name) const
 {
     auto it = _constantBindPoints.find(name);
     PILS_ASSERT(it != _constantBindPoints.end(), "Could not find constant buffer named ", name);
@@ -51,7 +19,7 @@ GpuProgramConstantBindPoint GpuProgramInterface::getConstantBindPoint(const std:
     return GpuProgramConstantBindPoint::invalid();
 }
 
-GpuProgramStorageBindPoint GpuProgramInterface::getStorageBindPoint(const std::string& name) const
+GpuProgramStorageBindPoint CompiledGpuProgramInterface::getStorageBindPoint(const std::string& name) const
 {
     auto it = _storageBindPoints.find(name);
     PILS_ASSERT(it != _storageBindPoints.end(), "Could not find storage buffer named ", name);
@@ -61,7 +29,7 @@ GpuProgramStorageBindPoint GpuProgramInterface::getStorageBindPoint(const std::s
     return GpuProgramStorageBindPoint::invalid();
 }
 
-GpuProgramTextureBindPoint GpuProgramInterface::getTextureBindPoint(const std::string& name) const
+GpuProgramTextureBindPoint CompiledGpuProgramInterface::getTextureBindPoint(const std::string& name) const
 {
     auto it = _textureBindPoints.find(name);
     PILS_ASSERT(it != _textureBindPoints.end(), "Could not find texture named ", name);
@@ -71,7 +39,7 @@ GpuProgramTextureBindPoint GpuProgramInterface::getTextureBindPoint(const std::s
     return GpuProgramTextureBindPoint::invalid();
 }
 
-GpuProgramImageBindPoint GpuProgramInterface::getImageBindPoint(const std::string& name) const
+GpuProgramImageBindPoint CompiledGpuProgramInterface::getImageBindPoint(const std::string& name) const
 {
     auto it = _imageBindPoints.find(name);
     PILS_ASSERT(it != _imageBindPoints.end(), "Could not find image named ", name);
@@ -81,9 +49,70 @@ GpuProgramImageBindPoint GpuProgramInterface::getImageBindPoint(const std::strin
     return GpuProgramImageBindPoint::invalid();
 }
 
-bool GpuProgramInterface::isValid() const
+
+GpuProgramInterface::GpuProgramInterface()
 {
-    return _program && _program->isValid() && _isCompiled;
+}
+
+bool GpuProgramInterface::declareConstant(const GpuProgramConstantInput& input)
+{
+    _constants.push_back(input);
+    return true;
+}
+
+bool GpuProgramInterface::declareStorage(const GpuProgramStorageInput& input)
+{
+    _storages.push_back(input);
+    return true;
+}
+
+bool GpuProgramInterface::declareTexture(const GpuProgramTextureInput& input)
+{
+    _textures.push_back(input);
+    return true;
+}
+
+bool GpuProgramInterface::declareImage(const GpuProgramImageInput& input)
+{
+    _images.push_back(input);
+    return true;
+}
+
+bool GpuProgramInterface::compile(CompiledGpuProgramInterface& compiledGpi, const GraphicProgram& program)
+{
+    bool ok = true;
+
+    GpuProgramConstantBindPoint nextConstantBindPoint = GpuProgramConstantBindPoint::first();
+    for(const auto& input : _constants)
+    {
+        ok = ok && compiledGpi.set(program, nextConstantBindPoint, input);
+        nextConstantBindPoint = GpuProgramConstantBindPoint::next(nextConstantBindPoint);
+    }
+
+    GpuProgramStorageBindPoint nextStorageBindPoint = GpuProgramStorageBindPoint::first();
+    for(const auto& input : _storages)
+    {
+        ok = ok && compiledGpi.set(program, nextStorageBindPoint, input);
+        nextStorageBindPoint = GpuProgramStorageBindPoint::next(nextStorageBindPoint);
+    }
+
+    GpuProgramTextureBindPoint nextTextureBindPoint = GpuProgramTextureBindPoint::first();
+    for(const auto& input : _textures)
+    {
+        ok = ok && compiledGpi.set(program, nextTextureBindPoint, input);
+        nextTextureBindPoint = GpuProgramTextureBindPoint::next(nextTextureBindPoint);
+    }
+
+    GpuProgramImageBindPoint nextImageBindPoint = GpuProgramImageBindPoint::first();
+    for(const auto& input : _images)
+    {
+        ok = ok && compiledGpi.set(program, nextImageBindPoint, input);
+        nextImageBindPoint = GpuProgramImageBindPoint::next(nextImageBindPoint);
+    }
+
+    PILS_ASSERT(ok, "GPU Program Interface compilation failed for program ", program.name());
+
+    return ok;
 }
 
 }

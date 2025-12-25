@@ -2,6 +2,8 @@
 
 #include "../system/profiler.h"
 
+#include "../graphic/gpudevice.h"
+
 
 namespace unisim
 {
@@ -19,18 +21,11 @@ ColorGrading::ColorGrading() :
 
 bool ColorGrading::defineShaders(GraphicContext& context)
 {
+    _colorGradingGpi.reset(new GpuProgramInterface());
+    _colorGradingGpi->declareTexture({"Input"});
+
     _colorGradingProgram.reset();
     if(!generateGraphicProgram(_colorGradingProgram, "Color Grading", "shaders/fullscreen.vert", "shaders/colorgrade.frag"))
-        return false;
-
-    return true;
-}
-
-bool ColorGrading::defineResources(GraphicContext& context)
-{
-    _colorGradingGpi.reset(new GpuProgramInterface(_colorGradingProgram));
-    _colorGradingGpi->declareTexture("Input");
-    if(!_colorGradingGpi->compile())
         return false;
 
     return true;
@@ -43,11 +38,15 @@ void ColorGrading::render(GraphicContext& context)
     if(!_colorGradingProgram->isValid())
         return;
 
+    CompiledGpuProgramInterface compiledGpi;
+    if (!_colorGradingGpi->compile(compiledGpi, *_colorGradingProgram))
+        return;
+
     GraphicProgramScope programScope(*_colorGradingProgram);
 
     GpuResourceManager& resources = context.resources;
     context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(PathTracerResult)),
-                               _colorGradingGpi->getTextureBindPoint("Input"));
+                               compiledGpi.getTextureBindPoint("Input"));
 
     context.device.draw(resources.get<GpuGeometryResource>(ResourceName(FullScreenTriangle)));
 }

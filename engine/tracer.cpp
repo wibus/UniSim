@@ -1,5 +1,6 @@
 #include "tracer.h"
 
+#include <algorithm>
 #include <iostream>
 #include <random>
 
@@ -9,6 +10,7 @@
 #include "../resource/texture.h"
 
 #include "../graphic/graphic.h"
+#include "../graphic/gpudevice.h"
 
 #include "camera.h"
 
@@ -40,7 +42,7 @@ struct GpuPathTracerCommonParams
 
 
 PathTracer::PathTracer() :
-    GraphicTask("Path Tracer"),
+    PathTracerProvider("Path Tracer"),
     _frameIndex(0),
     _pathTracerHash(0)
 {
@@ -63,50 +65,10 @@ void PathTracer::registerDynamicResources(GraphicContext& context)
     }
 }
 
-bool PathTracer::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
-{
-    if(!addPathTracerModule(modules, "Path Trace", context.settings, "shaders/pathtrace.glsl"))
-        return false;
-
-    if(!addPathTracerModule(modules, "Utils", context.settings, "shaders/common/utils.glsl"))
-        return false;
-
-    return true;
-}
-
-bool PathTracer::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
-{
-    bool ok = true;
-
-    ok = ok && interface.declareConstant("PathTracerCommonParams");
-    ok = ok && interface.declareImage("result");
-
-    return ok;
-}
-
-bool PathTracer::defineShaders(GraphicContext &context)
-{
-    // Generate programs
-    std::vector<std::shared_ptr<GraphicShader>> shaders;
-    for (const auto& module : context.resources.pathTracerModules())
-    {
-        if (module)
-        {
-            shaders.push_back(module->shader());
-        }
-    }
-
-    _pathTracerProgram.reset();
-    if(!generateComputeProgram(_pathTracerProgram, "Path Tracer", "pathtracer", shaders))
-        return false;
-
-    return _pathTracerProgram->isValid();
-}
-
 bool PathTracer::defineResources(GraphicContext& context)
 {
     bool ok = true;
-    
+
     GpuResourceManager& resources = context.resources;
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
@@ -152,34 +114,91 @@ bool PathTracer::defineResources(GraphicContext& context)
         gpuCommonParams);
 
     ok = ok && resources.define<GpuConstantResource>(
-                ResourceName(PathTracerCommonParams), {
-                    sizeof(GpuPathTracerCommonParams),
-                    &gpuCommonParams});
+             ResourceName(PathTracerCommonParams), {
+              sizeof(GpuPathTracerCommonParams),
+              &gpuCommonParams});
 
     _viewport.reset(new Viewport(context.camera.viewport()));
 
     ok = ok && resources.define<GpuImageResource>(
-                ResourceName(PathTracerResult), {
-                    _viewport->width,
-                    _viewport->height,
-                    GL_RGBA32F});
+             ResourceName(PathTracerResult), {
+              _viewport->width,
+              _viewport->height,
+              GL_RGBA32F});
 
-    _pathTracerHash = context.resources.pathTracerHash();
+    return ok;
+}
+
+bool PathTracer::defineShaders(GraphicContext& context)
+{
+    _pathTracerModules.clear();
+    _pathTracerInterface.reset(new PathTracerInterface());
+
+    for (auto& provider : _pathTracerProviders)
+    {
+        if (!provider->definePathTracerModules(context, _pathTracerModules))
+        {
+            PILS_ERROR("Could not define path tracer module for: ", provider->name());
+            return false;
+        }
+
+        if (!provider->definePathTracerInterface(context, *_pathTracerInterface))
+        {
+            PILS_ERROR("Could not define path tracer interface for: ", provider->name());
+            return false;
+        }
+    }
+
+    // Remove duplicated modules
+    std::sort( _pathTracerModules.begin(), _pathTracerModules.end() );
+    _pathTracerModules.erase( std::unique( _pathTracerModules.begin(), _pathTracerModules.end() ), _pathTracerModules.end());
+
+    // Gather shaders
+    std::vector<std::shared_ptr<GraphicShader>> shaders;
+    for (const auto& module : _pathTracerModules)
+        if (module)
+            shaders.push_back(module->shader());
+
+    // Generate program
+    _pathTracerProgram.reset();
+    if(!generateComputeProgram(_pathTracerProgram, "Path Tracer", "pathtracer", shaders))
+        return false;
+
+    return true;
+}
+
+bool PathTracer::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
+{
+    if(!addPathTracerModule(modules, "Path Trace", context.settings, "shaders/pathtrace.glsl"))
+        return false;
+
+    if(!addPathTracerModule(modules, "Utils", context.settings, "shaders/common/utils.glsl"))
+        return false;
+
+    return true;
+}
+
+bool PathTracer::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+{
+    bool ok = true;
+
+    ok = ok && interface.declareConstant({"PathTracerCommonParams"});
+    ok = ok && interface.declareImage({"result"});
 
     return ok;
 }
 
 void PathTracer::bindPathTracerResources(
     GraphicContext &context,
-        PathTracerInterface &interface) const
+    CompiledGpuProgramInterface& compiledGpi) const
 {
     GpuResourceManager& resources = context.resources;
 
     context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)),
-                              interface.getConstantBindPoint("PathTracerCommonParams"));
+                              compiledGpi.getConstantBindPoint("PathTracerCommonParams"));
 
     context.device.bindImage(resources.get<GpuImageResource>(ResourceName(PathTracerResult)),
-                             interface.getImageBindPoint("result"));
+                             compiledGpi.getImageBindPoint("result"));
 }
 
 void PathTracer::update(GraphicContext& context)
@@ -202,6 +221,7 @@ void PathTracer::update(GraphicContext& context)
 
     GpuPathTracerCommonParams gpuCommonParams;
 
+    // Provier hash
     uint64_t hash = toGpu(
         context,
         gpuCommonParams);
@@ -211,7 +231,11 @@ void PathTracer::update(GraphicContext& context)
         _hash = hash;
     }
 
-    u_int64_t pathTracerHash = context.resources.pathTracerHash();
+    // Path Tracer hash
+    u_int64_t pathTracerHash = 0;
+    for(const auto& provider : _pathTracerProviders)
+        pathTracerHash = PathTracerProvider::combineHashes(pathTracerHash, provider->hash());
+
     if(_pathTracerHash != pathTracerHash)
     {
         _frameIndex = 0;
@@ -237,7 +261,8 @@ void PathTracer::render(GraphicContext& context)
     if(!_pathTracerProgram->isValid())
         return;
 
-    if(!_pathTracerInterface->isValid())
+    CompiledGpuProgramInterface compiledGpi;
+    if(!_pathTracerInterface->compile(compiledGpi, *_pathTracerProgram))
         return;
     
     GpuResourceManager& resources = context.resources;
@@ -248,16 +273,16 @@ void PathTracer::render(GraphicContext& context)
     {
         GraphicProgramScope programScope(*_pathTracerProgram);
 
-        resources.bindPathTracerResources(context, *_pathTracerInterface);
+        for(const auto& provider : _pathTracerProviders)
+            provider->bindPathTracerResources(context, compiledGpi);
 
         context.device.dispatch((_viewport->width + 7) / 8, (_viewport->height + 3) / 4);
     }
 }
 
-std::shared_ptr<PathTracerInterface> PathTracer::initInterface()
+void PathTracer::setPathTracerProviders(const std::vector<PathTracerProviderPtr>& providers)
 {
-    _pathTracerInterface.reset(new PathTracerInterface(_pathTracerProgram));
-    return _pathTracerInterface;
+    _pathTracerProviders = providers;
 }
 
 uint64_t PathTracer::toGpu(
