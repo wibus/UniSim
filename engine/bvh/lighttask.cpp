@@ -1,4 +1,4 @@
-#include "light.h"
+#include "lighttask.h"
 
 #include <imgui/imgui.h>
 
@@ -6,14 +6,15 @@
 
 #include "../system/profiler.h"
 
+#include "../resource/light.h"
 #include "../resource/material.h"
 #include "../resource/instance.h"
 #include "../resource/primitive.h"
+#include "../resource/sky.h"
 
 #include "../graphic/gpudevice.h"
 
-#include "sky.h"
-#include "scene.h"
+#include "../scene.h"
 
 
 namespace unisim
@@ -24,38 +25,6 @@ DefineProfilePoint(Lighting);
 DefineResource(DirectionalLights);
 DefineResource(Emitters);
 
-
-DirectionalLight::DirectionalLight(const std::string& name) :
-    _name(name),
-    _emissionColor(1, 1, 1),
-    _emissionLuminance(1)
-{
-
-}
-
-DirectionalLight::~DirectionalLight()
-{
-
-}
-
-void DirectionalLight::ui()
-{
-    glm::vec3 direction = _position;
-    if(ImGui::SliderFloat3("Direction", &direction[0], -1, 1))
-        setDirection(glm::normalize(direction));
-
-    glm::vec3 emissionColor = _emissionColor;
-    if(ImGui::ColorPicker3("Emission Color", &emissionColor[0]))
-        setEmissionColor(emissionColor);
-
-    float emissionLuminance = _emissionLuminance;
-    if(ImGui::InputFloat("Emission Luminance", &emissionLuminance))
-        setEmissionLuminance(glm::max(0.0f, emissionLuminance));
-
-    float solidAngle = _solidAngle;
-    if(ImGui::InputFloat("Solid Angle", &solidAngle, 0.0f, 0.0f, "%.6f"))
-        setSolidAngle(glm::clamp(solidAngle, 0.0f ,4 * glm::pi<float>()));
-}
 
 struct GpuEmitter
 {
@@ -69,8 +38,8 @@ struct GpuDirectionalLight
     glm::vec4 emissionSolidAngle;
 };
 
-Lighting::Lighting() :
-    PathTracerProvider("Radiation")
+LightTask::LightTask() :
+    PathTracerProviderTask("Light")
 {
 }
 
@@ -83,7 +52,7 @@ glm::vec3 toLinear(const glm::vec3& sRGB)
     return glm::mix(higher, lower, cutoff);
 }
 
-bool Lighting::defineResources(GraphicContext& context)
+bool LightTask::defineResources(GraphicContext& context)
 {
     bool ok = true;
 
@@ -112,7 +81,7 @@ bool Lighting::defineResources(GraphicContext& context)
     return ok;
 }
 
-bool Lighting::definePathTracerInterface(
+bool LightTask::definePathTracerInterface(
     GraphicContext& context,
     PathTracerInterface& interface)
 {
@@ -124,7 +93,7 @@ bool Lighting::definePathTracerInterface(
     return ok;
 }
 
-void Lighting::bindPathTracerResources(
+void LightTask::bindPathTracerResources(
     GraphicContext &context,
     CompiledGpuProgramInterface& compiledGpi) const
 {
@@ -134,7 +103,7 @@ void Lighting::bindPathTracerResources(
     context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(DirectionalLights)), compiledGpi.getStorageBindPoint("DirectionalLights"));
 }
 
-void Lighting::update(GraphicContext& context)
+void LightTask::update(GraphicContext& context)
 {
     Profile(Lighting);
 
@@ -166,11 +135,12 @@ void Lighting::update(GraphicContext& context)
                     gpuDirectionalLights.data()});
 }
 
-uint64_t Lighting::toGpu(
+uint64_t LightTask::toGpu(
     GraphicContext& context,
         std::vector<GpuEmitter>& gpuEmitters,
         std::vector<GpuDirectionalLight>& gpuDirectionalLights)
 {
+    // Emitters
     const auto& instances = context.scene.instances();
     for(std::size_t i = 0; i < instances.size(); ++i)
     {
@@ -187,20 +157,27 @@ uint64_t Lighting::toGpu(
         }
     }
 
-    const auto& directionalLights = context.scene.sky()->directionalLights();
-    gpuDirectionalLights.reserve(directionalLights.size());
-    for(std::size_t i = 0; i < directionalLights.size(); ++i)
+    // Directional lights
+    gpuDirectionalLights.reserve(2);
+    auto processDirectionalLight = [&](DirectionalLight& light)
     {
-        const std::shared_ptr<DirectionalLight>& directionalLight = directionalLights[i];
         GpuDirectionalLight& gpuDirectionalLight = gpuDirectionalLights.emplace_back();
         gpuDirectionalLight.directionCosThetaMax = glm::vec4(
-                    directionalLight->direction(),
-                    1 - directionalLight->solidAngle() / (2 * glm::pi<float>()));
+            light.direction(),
+            1 - light.solidAngle() / (2 * glm::pi<float>()));
         gpuDirectionalLight.emissionSolidAngle = glm::vec4(
-                    directionalLight->emissionColor() * directionalLight->emissionLuminance(),
-                    directionalLight->solidAngle());
+            light.emissionColor() * light.emissionLuminance(),
+            light.solidAngle());
+    };
+
+    if (const Atmosphere* atmosphere = context.scene.sky()->atmosphere().get())
+    {
+        processDirectionalLight(*atmosphere->sun());
+        processDirectionalLight(*atmosphere->moon());
     }
 
+
+    // Finalize
     uint64_t hash = 0;
     hash = hashVec(gpuEmitters, hash);
     hash = hashVec(gpuDirectionalLights, hash);

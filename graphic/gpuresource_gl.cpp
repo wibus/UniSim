@@ -88,6 +88,13 @@ GpuImageResource::~GpuImageResource()
     glDeleteTextures(1, &_handle->texId);
 }
 
+void GpuImageResource::update(const Definition& def) const
+{
+    glBindTexture(_handle->dimension, _handle->texId);
+    glTexStorage2D(_handle->dimension, 1, def.format, def.width, def.height);
+    glBindTexture(_handle->dimension, 0);
+}
+
 
 // BINDLESS //
 GpuBindlessResource::GpuBindlessResource(ResourceId id, Definition def) :

@@ -2,11 +2,10 @@
 
 #include <imgui/imgui.h>
 
+#include "../resource/material.h"
 #include "../resource/instance.h"
-
-#include "sky.h"
-#include "terrain.h"
-#include "materialdatabase.h"
+#include "../resource/sky.h"
+#include "../resource/terrain.h"
 
 
 namespace unisim
@@ -15,9 +14,9 @@ namespace unisim
 
 Scene::Scene(const std::string& name) :
     _name(name),
-    _sky(new SkySphere()),
-    _terrain(new NoTerrain()),
-    _materials(new MaterialDatabase())
+    _sky(new Sky()),
+    _terrain(nullptr),
+    _materialDb(new MaterialDatabase())
 {
 }
 

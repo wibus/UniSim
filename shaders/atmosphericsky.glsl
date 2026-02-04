@@ -1,16 +1,20 @@
-layout (std140) uniform PhysicalSkyParams
+layout (std140) uniform StarsParams
+{
+    vec4 starsQuaternion;
+    float starsExposure;
+};
+
+layout (std140) uniform AtmosphereParams
 {
     vec4 sunDirection;
     vec4 moonDirection;
     vec4 moonQuaternion;
-    vec4 starsQuaternion;
     float sunToMoonRatio;
     float groundHeightKM;
-    float starsExposure;
 };
 
-uniform sampler2D Moon;
 uniform sampler2D Stars;
+uniform sampler2D Moon;
 
 
 // Returns the luminance of the Sun, outside the atmosphere.

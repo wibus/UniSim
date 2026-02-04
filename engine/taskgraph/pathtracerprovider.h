@@ -1,5 +1,5 @@
-#ifndef PATHTRACER_H
-#define PATHTRACER_H
+#ifndef PATHTRACERPROVIDER_H
+#define PATHTRACERPROVIDER_H
 
 #include <vector>
 #include <memory>
@@ -8,7 +8,7 @@
 #include "../graphic/graphic.h"
 #include "../graphic/gpuprograminterface.h"
 
-#include "graphictask.h"
+#include "../taskgraph/graphictask.h"
 
 
 namespace unisim
@@ -50,11 +50,11 @@ private:
 using PathTracerModulePtr = std::shared_ptr<PathTracerModule>;
 
 
-class PathTracerProvider : public GraphicTask
+class PathTracerProviderTask : public GraphicTask
 {
 public:
-    PathTracerProvider(const std::string& name);
-    virtual ~PathTracerProvider();
+    PathTracerProviderTask(const std::string& name);
+    virtual ~PathTracerProviderTask();
 
     virtual bool definePathTracerModules(
         GraphicContext& context,
@@ -101,8 +101,8 @@ protected:
     uint64_t _hash;
 };
 
-using PathTracerProviderPtr = std::shared_ptr<PathTracerProvider>;
+using PathTracerProviderTaskPtr = std::shared_ptr<PathTracerProviderTask>;
 
 }
 
-#endif // PATHTRACER_H
+#endif // PATHTRACERPROVIDER_H

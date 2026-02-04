@@ -3,13 +3,21 @@
 
 #include <GLM/glm.hpp>
 
+#include <memory>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 
 namespace unisim
 {
 
 struct Texture;
+
+
+using MaterialId = uint32_t;
+const MaterialId MaterialId_Invalid = MaterialId(-1);
+
 
 class Material
 {
@@ -56,6 +64,24 @@ private:
     float _defaultRoughness;
     float _defaultMetalness;
     float _defaultReflectance;
+};
+
+
+class MaterialDatabase
+{
+public:
+    MaterialDatabase();
+
+    void unregisterAllMaterials();
+    void registerMaterial(const std::shared_ptr<Material>& material);
+    MaterialId materialId(const std::shared_ptr<Material>& material) const;
+    bool isMaterialRegistered(const std::shared_ptr<Material>& material) const;
+
+    const std::vector<std::shared_ptr<Material>>& materials() const  { return _materials; }
+
+private:
+    std::vector<std::shared_ptr<Material>> _materials;
+    std::unordered_map<uint64_t, MaterialId> _materialIds;
 };
 
 }

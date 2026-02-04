@@ -10,12 +10,12 @@
 
 #include "system/profiler.h"
 
+#include "resource/sky.h"
+
 #include "graphic/window.h"
 
 #include "engine/scene.h"
 #include "engine/project.h"
-#include "engine/terrain.h"
-#include "engine/sky.h"
 
 #include "projects/solar/solarsystemproject.h"
 #include "projects/pathtracer/pathtracerproject.h"
@@ -165,11 +165,6 @@ bool Universe::setup()
     _project.reset(new PathTracerProject());
 
     _project->addView(_mainView);
-
-    auto& instances = _project->scene().instances();
-    auto addInstnaces = [&](const std::vector<std::shared_ptr<Instance>>& o)
-        {instances.insert(instances.end(), o.begin(), o.end());};
-    addInstnaces(_project->scene().terrain()->instances());
 
     bool ok = true;
 

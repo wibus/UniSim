@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "gravity.h"
+#include "../physics/gravitytask.h"
 
 
 namespace unisim
@@ -75,11 +75,11 @@ void EngineTaskGraph::execute(
 void EngineTaskGraph::createTaskGraph(const Scene& scene)
 {
     _tasks.clear();
-
-    addTask(std::shared_ptr<EngineTask>(new Gravity()));
+    
+    addTask(EngineTaskPtr(new GravityTask()));
 }
 
-void EngineTaskGraph::addTask(const std::shared_ptr<EngineTask>& task)
+void EngineTaskGraph::addTask(const EngineTaskPtr& task)
 {
     _tasks.push_back(task);
 }

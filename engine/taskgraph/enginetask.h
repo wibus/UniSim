@@ -13,9 +13,6 @@ class Scene;
 class Camera;
 class GpuResourceManager;
 
-class UiEngineTask;
-class Gravity;
-
 
 struct EngineSettings
 {
@@ -49,6 +46,8 @@ private:
     std::string _name;
 };
 
+typedef std::shared_ptr<EngineTask> EngineTaskPtr;
+
 
 class EngineTaskGraph
 {
@@ -67,10 +66,10 @@ public:
 
 private:
     void createTaskGraph(const Scene& scene);
-    void addTask(const std::shared_ptr<EngineTask>& task);
+    void addTask(const EngineTaskPtr& task);
 
     EngineSettings _settings;
-    std::vector<std::shared_ptr<EngineTask>> _tasks;
+    std::vector<EngineTaskPtr> _tasks;
 };
 
 }

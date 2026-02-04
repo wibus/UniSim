@@ -9,17 +9,17 @@
 
 #include "../graphic/view.h"
 
-#include "light.h"
-#include "scene.h"
-#include "sky.h"
-#include "bvh.h"
-#include "grading.h"
-#include "tracer.h"
-#include "ui.h"
-#include "camera.h"
-#include "materialdatabase.h"
-#include "terrain.h"
-#include "pathtracer.h"
+#include "../camera.h"
+#include "../scene.h"
+#include "../ui.h"
+
+#include "../sky/skytask.h"
+#include "../bvh/geometrytask.h"
+#include "../bvh/lighttask.h"
+#include "../bvh/materialtask.h"
+#include "../grading/gradingtask.h"
+#include "../pathtracer/pathtracertask.h"
+#include "../terrain/terraintask.h"
 
 namespace unisim
 {
@@ -117,31 +117,31 @@ void GraphicTaskGraph::execute(const View& view, const Scene& scene, const Camer
 void GraphicTaskGraph::createTaskGraph(const Scene& scene)
 {
     // Task declaration
-    _pathTracerTask.reset(new PathTracer());
+    _pathTracerTask.reset(new PathTracerTask());
 
     // Task Graph
     _tasks.clear();
 
-    addTask(scene.materials());
-    addTask(GraphicTaskPtr(new BVH()));
-    addTask(scene.sky()->graphicTask());
-    addTask(scene.terrain()->graphicTask());
-    addTask(GraphicTaskPtr(new Lighting()));
+    addTask(GraphicTaskPtr(new TerrainTask()));
+    addTask(GraphicTaskPtr(new MaterialTask()));
+    addTask(GraphicTaskPtr(new GeometryTask()));
+    addTask(GraphicTaskPtr(new SkyTask()));
+    addTask(GraphicTaskPtr(new LightTask()));
     addTask(_pathTracerTask);
     addTask(GraphicTaskPtr(new ClearSwapChain()));
-    addTask(GraphicTaskPtr(new ColorGrading()));
+    addTask(GraphicTaskPtr(new GradingTask()));
     addTask(GraphicTaskPtr(new Ui()));
 
     // Path Tracer Providers
-    std::vector<PathTracerProviderPtr> pathTracerProviders;
+    std::vector<PathTracerProviderTaskPtr> pathTracerProviders;
     for(const auto& task : _tasks)
     {
-        if (auto provider = std::dynamic_pointer_cast<PathTracerProvider>(task))
+        if (auto pathTracerProvider = std::dynamic_pointer_cast<PathTracerProviderTask>(task))
         {
-            pathTracerProviders.push_back(provider);
+            pathTracerProviders.push_back(pathTracerProvider);
         }
     }
-    _pathTracerTask->setPathTracerProviders(pathTracerProviders);
+    _pathTracerTask->setPathTracerTasks(pathTracerProviders);
 }
 
 void GraphicTaskGraph::addTask(const GraphicTaskPtr& task)

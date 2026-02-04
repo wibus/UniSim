@@ -1,24 +1,23 @@
-#ifndef TRACER_H
-#define TRACER_H
+#ifndef PATHTRACERTASK_H
+#define PATHTRACERTASK_H
 
 #include <memory>
 
 #include <GLM/glm.hpp>
 
-#include "pathtracer.h"
+#include "../taskgraph/pathtracerprovider.h"
 
 
 namespace unisim
 {
 
 struct Viewport;
-class PathTracerInterface;
 
 
-class PathTracer : public PathTracerProvider
+class PathTracerTask : public PathTracerProviderTask
 {
 public:
-    PathTracer();
+    PathTracerTask();
     
     void registerDynamicResources(GraphicContext& context) override;
     bool defineResources(GraphicContext& context) override;
@@ -36,8 +35,8 @@ public:
     
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
-
-    void setPathTracerProviders(const std::vector<PathTracerProviderPtr>& providers);
+    
+    void setPathTracerTasks(const std::vector<PathTracerProviderTaskPtr>& tasks);
 
     static const unsigned int BLUE_NOISE_TEX_COUNT = 64;
     static const unsigned int HALTON_SAMPLE_COUNT = 64;
@@ -60,10 +59,10 @@ private:
     std::unique_ptr<Viewport> _viewport;
 
     std::shared_ptr<PathTracerInterface> _pathTracerInterface;
+    std::vector<std::shared_ptr<PathTracerProviderTask>> _pathTracerProviders;
     std::vector<std::shared_ptr<PathTracerModule>> _pathTracerModules;
-    std::vector<std::shared_ptr<PathTracerProvider>> _pathTracerProviders;
 };
 
 }
 
-#endif // TRACER_H
+#endif // PATHTRACERTASK_H

@@ -1,12 +1,11 @@
-#ifndef MATERIALDATABASE_H
-#define MATERIALDATABASE_H
+#ifndef MATERIALTASK_H
+#define MATERIALTASK_H
 
 #include <GLM/glm.hpp>
 
-#include <unordered_map>
 #include <vector>
 
-#include "pathtracer.h"
+#include "../taskgraph/pathtracerprovider.h"
 
 
 namespace unisim
@@ -15,18 +14,11 @@ namespace unisim
 struct Material;
 struct GpuMaterial;
 
-using MaterialId = uint32_t;
-const MaterialId MaterialId_Invalid = MaterialId(-1);
 
-
-class MaterialDatabase : public PathTracerProvider
+class MaterialTask : public PathTracerProviderTask
 {
 public:
-    MaterialDatabase();
-
-    void registerMaterial(const std::shared_ptr<Material>& material);
-    MaterialId materialId(const std::shared_ptr<Material>& material) const;
-    bool isMaterialRegistered(const std::shared_ptr<Material>& material) const;
+    MaterialTask();
     
     void registerDynamicResources(GraphicContext& context) override;
     bool defineResources(GraphicContext& context) override;
@@ -50,9 +42,6 @@ private:
         std::vector<GpuBindlessTextureDescriptor>& textures,
         std::vector<GpuMaterial>& materials);
 
-    std::vector<std::shared_ptr<Material>> _materials;
-    std::unordered_map<uint64_t, MaterialId> _materialIds;
-
     struct MaterialResources
     {
         ResourceId textureAlbedo;
@@ -66,4 +55,4 @@ private:
 
 }
 
-#endif // MATERIALDATABASE_H
+#endif // MATERIALTASK_H

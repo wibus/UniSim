@@ -1,16 +1,16 @@
-#ifndef GRADING_H
-#define GRADING_H
+#ifndef GRADINGTASK_H
+#define GRADINGTASK_H
 
-#include "graphictask.h"
+#include "../taskgraph/graphictask.h"
 
 
 namespace unisim
 {
 
-class ColorGrading : public GraphicTask
+class GradingTask : public GraphicTask
 {
 public:
-    ColorGrading();
+    GradingTask();
 
     bool defineShaders(GraphicContext& context) override;
     
@@ -23,4 +23,4 @@ private:
 
 }
 
-#endif // GRADING_H
+#endif // GRADINGTASK_H

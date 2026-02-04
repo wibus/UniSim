@@ -1,4 +1,4 @@
-#include "pathtracer.h"
+#include "pathtracerprovider.h"
 
 #include <algorithm>
 
@@ -13,7 +13,7 @@ namespace unisim
 std::vector<std::string> g_PathTracerCommonSrcs;
 
 
-// INTERFACE //
+// PATH TRACER INTERFACE //
 
 PathTracerInterface::PathTracerInterface() :
     GpuProgramInterface()
@@ -21,7 +21,7 @@ PathTracerInterface::PathTracerInterface() :
 }
 
 
-// MODULE //
+// PATH TRACER MODULE //
 PathTracerModule::PathTracerModule(const std::string& name, const std::shared_ptr<GraphicShader>& shader) :
     _name(name),
     _shader(shader)
@@ -35,39 +35,39 @@ PathTracerModule::~PathTracerModule()
 }
 
 
-// PROVIDER //
-PathTracerProvider::PathTracerProvider(const std::string& name) :
+// PATH TRACER TASK //
+PathTracerProviderTask::PathTracerProviderTask(const std::string& name) :
     GraphicTask(name),
     _name(name),
     _hash(0)
 {
 }
 
-PathTracerProvider::~PathTracerProvider()
+PathTracerProviderTask::~PathTracerProviderTask()
 {
 }
 
-bool PathTracerProvider::definePathTracerModules(
+bool PathTracerProviderTask::definePathTracerModules(
     GraphicContext& context,
     std::vector<std::shared_ptr<PathTracerModule>>& modules)
 {
     return true;
 }
 
-bool PathTracerProvider::definePathTracerInterface(
+bool PathTracerProviderTask::definePathTracerInterface(
     GraphicContext& context,
     PathTracerInterface& interface)
 {
     return true;
 }
 
-void PathTracerProvider::bindPathTracerResources(
+void PathTracerProviderTask::bindPathTracerResources(
     GraphicContext& context,
     CompiledGpuProgramInterface& compiledGpi) const
 {
 }
 
-bool PathTracerProvider::addPathTracerModule(
+bool PathTracerProviderTask::addPathTracerModule(
     std::vector<std::shared_ptr<PathTracerModule>>& modules,
     const std::string& name,
     const GraphicSettings& settings,

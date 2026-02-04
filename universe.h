@@ -8,8 +8,8 @@
 
 #include "graphic/window.h"
 
-#include "engine/enginetask.h"
-#include "engine/graphictaskgraph.h"
+#include "engine/taskgraph/enginetask.h"
+#include "engine/taskgraph/graphictaskgraph.h"
 
 #include "engine/project.h"
 

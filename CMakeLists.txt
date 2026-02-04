@@ -56,10 +56,16 @@ set(ResourceFiles
     resource/body.cpp
     resource/instance.h
     resource/instance.cpp
+    resource/light.h
+    resource/light.cpp
     resource/material.h
     resource/material.cpp
     resource/primitive.h
     resource/primitive.cpp
+    resource/sky.h
+    resource/sky.cpp
+    resource/terrain.h
+    resource/terrain.cpp
     resource/texture.h
     resource/texture.cpp
 )
@@ -102,37 +108,64 @@ set(GraphicFiles
 )
 
 # Engine files
+set(EngineBvhFile
+    engine/bvh/geometrytask.h
+    engine/bvh/geometrytask.cpp
+    engine/bvh/lighttask.h
+    engine/bvh/lighttask.cpp
+    engine/bvh/materialtask.h
+    engine/bvh/materialtask.cpp
+)
+
+set(EngineGradingFile
+    engine/grading/gradingtask.h
+    engine/grading/gradingtask.cpp
+)
+
+set(EnginePathTracerFiles
+    engine/pathtracer/pathtracertask.h
+    engine/pathtracer/pathtracertask.cpp
+)
+
+set(EnginePhysicsFiles
+    engine/physics/gravitytask.h
+    engine/physics/gravitytask.cpp
+)
+
+set(EngineSkyFiles
+    engine/sky/skytask.h
+    engine/sky/skytask.cpp)
+
+set(EngineTaskGraphFiles
+    engine/taskgraph/enginetask.h
+    engine/taskgraph/enginetask.cpp
+    engine/taskgraph/graphictask.h
+    engine/taskgraph/graphictask.cpp
+    engine/taskgraph/graphictaskgraph.h
+    engine/taskgraph/graphictaskgraph.cpp
+    engine/taskgraph/pathtracerprovider.h
+    engine/taskgraph/pathtracerprovider.cpp
+)
+
+set(EngineTerrainFiles
+    engine/terrain/terraintask.h
+    engine/terrain/terraintask.cpp
+)
+
 set(EngineFiles
-    engine/bvh.h
-    engine/bvh.cpp
-    engine/enginetask.h
-    engine/enginetask.cpp
-    engine/grading.h
-    engine/grading.cpp
-    engine/graphictask.h
-    engine/graphictask.cpp
-    engine/graphictaskgraph.h
-    engine/graphictaskgraph.cpp
-    engine/gravity.h
-    engine/gravity.cpp
-    engine/light.h
-    engine/light.cpp
-    engine/materialdatabase.h
-    engine/materialdatabase.cpp
+    ${EngineBvhFile}
+    ${EngineGradingFile}
+    ${EnginePathTracerFiles}
+    ${EnginePhysicsFiles}
+    ${EngineSkyFiles}
+    ${EngineTaskGraphFiles}
+    ${EngineTerrainFiles}
     engine/camera.h
     engine/camera.cpp
     engine/scene.h
     engine/scene.cpp
-    engine/pathtracer.h
-    engine/pathtracer.cpp
     engine/project.h
     engine/project.cpp
-    engine/sky.h
-    engine/sky.cpp
-    engine/terrain.h
-    engine/terrain.cpp
-    engine/tracer.h
-    engine/tracer.cpp
     engine/ui.h
     engine/ui.cpp
 )
@@ -142,8 +175,8 @@ set(ShaderFiles
     shaders/fullscreen.vert
     shaders/pathtrace.glsl
     shaders/colorgrade.frag
-    shaders/physicalsky.glsl
-    shaders/sphericalsky.glsl
+    shaders/atmosphericsky.glsl
+    shaders/outerspacesky.glsl
     shaders/moonlight.glsl
     shaders/common/constants.glsl
     shaders/common/data.glsl

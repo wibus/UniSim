@@ -74,6 +74,8 @@ public:
     GpuImageResource(ResourceId id, Definition def);
     ~GpuImageResource();
 
+    void update(const Definition& def) const;
+
     const GpuImageResourceHandle& handle() const { return *_handle; }
 
 private:

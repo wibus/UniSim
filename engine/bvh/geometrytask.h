@@ -1,9 +1,9 @@
-#ifndef BVH_H
-#define BVH_H
+#ifndef GEOMETRYTASK_H
+#define GEOMETRYTASK_H
 
 #include <GLM/glm.hpp>
 
-#include "pathtracer.h"
+#include "../taskgraph/pathtracerprovider.h"
 
 
 namespace unisim
@@ -20,10 +20,10 @@ struct GpuVertexPos;
 struct GpuVertexData;
 
 
-class BVH : public PathTracerProvider
+class GeometryTask : public PathTracerProviderTask
 {
 public:
-    BVH();
+    GeometryTask();
 
     bool defineResources(GraphicContext& context) override;
 
@@ -57,4 +57,4 @@ private:
 
 }
 
-#endif // BVH_H
+#endif // GEOMETRYTASK_H

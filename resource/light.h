@@ -1,23 +1,13 @@
-#ifndef LIGHTING_H
-#define LIGHTING_H
+#ifndef LIGHT_H
+#define LIGHT_H
 
-#include <vector>
 #include <string>
 
 #include <GLM/glm.hpp>
 
-#include "pathtracer.h"
-
-
 
 namespace unisim
 {
-
-class Scene;
-
-struct GpuEmitter;
-struct GpuDirectionalLight;
-
 
 class DirectionalLight
 {
@@ -49,30 +39,6 @@ private:
     float _solidAngle;
 };
 
-
-class Lighting : public PathTracerProvider
-{
-public:
-    Lighting();
-
-    bool defineResources(GraphicContext& context) override;
-
-    bool definePathTracerInterface(
-        GraphicContext& context,
-        PathTracerInterface& interface) override;
-    void bindPathTracerResources(
-        GraphicContext& context,
-        CompiledGpuProgramInterface& compiledGpi) const override;
-
-    void update(GraphicContext& context) override;
-
-private:
-    uint64_t toGpu(
-        GraphicContext& context,
-            std::vector<GpuEmitter>& gpuEmitters,
-            std::vector<GpuDirectionalLight>& gpuDirectionalLights);
-};
-
 }
 
-#endif // LIGHTING_H
+#endif // LIGHT_H

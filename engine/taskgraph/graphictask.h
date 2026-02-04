@@ -13,7 +13,7 @@ class View;
 class Scene;
 class Camera;
 class GpuDevice;
-class PathTracer;
+class PathTracerTask;
 
 struct GraphicSettings
 {

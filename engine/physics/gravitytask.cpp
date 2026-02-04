@@ -1,4 +1,4 @@
-#include "gravity.h"
+#include "gravitytask.h"
 
 #include "../system/profiler.h"
 #include "../system/units.h"
@@ -6,7 +6,7 @@
 #include "../resource/body.h"
 #include "../resource/instance.h"
 
-#include "scene.h"
+#include "../scene.h"
 
 
 namespace unisim
@@ -15,13 +15,13 @@ namespace unisim
 DefineProfilePoint(Gravity);
 
 
-Gravity::Gravity() :
+GravityTask::GravityTask() :
     EngineTask("Gravity")
 {
 
 }
 
-void Gravity::update(EngineContext& context)
+void GravityTask::update(EngineContext& context)
 {
     Profile(Gravity);
 

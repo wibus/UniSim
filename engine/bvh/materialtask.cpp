@@ -1,4 +1,4 @@
-#include "materialdatabase.h"
+#include "materialtask.h"
 
 #include <imgui/imgui.h>
 
@@ -7,11 +7,12 @@
 #include "../resource/instance.h"
 #include "../resource/material.h"
 #include "../resource/primitive.h"
+#include "../resource/terrain.h"
 
 #include "../graphic/gpudevice.h"
 #include "../graphic/gpuresource.h"
 
-#include "scene.h"
+#include "../scene.h"
 
 
 namespace unisim
@@ -36,73 +37,58 @@ struct GpuMaterial
 };
 
 
-MaterialDatabase::MaterialDatabase() :
-    PathTracerProvider("Material Registry")
+MaterialTask::MaterialTask() :
+    PathTracerProviderTask("Material")
 {
 }
 
-void MaterialDatabase::registerMaterial(const std::shared_ptr<Material>& material)
+void MaterialTask::registerDynamicResources(GraphicContext& context)
 {
-    bool isRegistered = isMaterialRegistered(material);
-    assert(!isRegistered);
-    if(isRegistered)
-        return;
+    context.scene.materialDb()->unregisterAllMaterials();
 
-    assert(_materialIds.find(uint64_t(material.get())) == _materialIds.end());
-    _materialIds[uint64_t(material.get())] = MaterialId(_materials.size());
-    _materials.push_back(material);
-}
-
-unsigned int MaterialDatabase::materialId(const std::shared_ptr<Material>& material) const
-{
-    auto it = _materialIds.find(uint64_t(material.get()));
-    assert(it != _materialIds.end());
-
-    if(it != _materialIds.end())
-        return it->second;
-    else
-        return MaterialId_Invalid;
-}
-
-bool MaterialDatabase::isMaterialRegistered(const std::shared_ptr<Material>& material) const
-{
-    return _materialIds.find(uint64_t(material.get())) != _materialIds.end();
-}
-
-void MaterialDatabase::registerDynamicResources(GraphicContext& context)
-{
-    for(const auto& instance : context.scene.instances())
+    auto registerMaterials = [&](const std::vector<std::shared_ptr<Instance>>& instances)
     {
-        for(const auto& primitive : instance->primitives())
+        for(const auto& instance : instances)
         {
-            const auto& material = primitive->material();
-            if(material && !isMaterialRegistered(material))
-                registerMaterial(material);
+            for(const auto& primitive : instance->primitives())
+            {
+                const auto& material = primitive->material();
+                if(material && !context.scene.materialDb()->isMaterialRegistered(material))
+                {
+                    context.scene.materialDb()->registerMaterial(material);
+                }
+            }
         }
-    }
+    };
+
+    registerMaterials(context.scene.instances());
+    if (Terrain* terrain = context.scene.terrain().get())
+        registerMaterials(terrain->instances());
     
     GpuResourceManager& resources = context.resources;
 
-    for(std::size_t i = 0; i < _materials.size(); ++i)
+    for(const auto& material : context.scene.materialDb()->materials())
     {
         _materialsResourceIds.push_back({
-            resources.registerDynamicResource(_materials[i]->name() + "_texture_albedo"),
-            resources.registerDynamicResource(_materials[i]->name() + "_texture_specular"),
-            resources.registerDynamicResource(_materials[i]->name() + "_bindless_albedo"),
-            resources.registerDynamicResource(_materials[i]->name() + "_bindless_specular"),
+            resources.registerDynamicResource(material->name() + "_texture_albedo"),
+            resources.registerDynamicResource(material->name() + "_texture_specular"),
+            resources.registerDynamicResource(material->name() + "_bindless_albedo"),
+            resources.registerDynamicResource(material->name() + "_bindless_specular"),
         });
     }
 }
 
-bool MaterialDatabase::defineResources(GraphicContext& context)
+bool MaterialTask::defineResources(GraphicContext& context)
 {
     bool ok = true;
 
     GpuResourceManager& resources = context.resources;
 
-    for(std::size_t i = 0; i < _materials.size(); ++i)
+    const std::vector<std::shared_ptr<Material>>& materials = context.scene.materialDb()->materials();
+
+    for(std::size_t i = 0; i < materials.size(); ++i)
     {
-        const Material& material = *_materials[i];
+        const Material& material = *materials[i];
 
         if(material.albedo() != nullptr)
         {
@@ -134,12 +120,12 @@ bool MaterialDatabase::defineResources(GraphicContext& context)
     return ok;
 }
 
-bool MaterialDatabase::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
+bool MaterialTask::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
 {
     return true;
 }
 
-bool MaterialDatabase::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+bool MaterialTask::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
 {
     bool ok = true;
 
@@ -149,7 +135,7 @@ bool MaterialDatabase::definePathTracerInterface(GraphicContext& context, PathTr
     return ok;
 }
 
-void MaterialDatabase::bindPathTracerResources(
+void MaterialTask::bindPathTracerResources(
     GraphicContext& context,
     CompiledGpuProgramInterface& compiledGpi) const
 {
@@ -159,7 +145,7 @@ void MaterialDatabase::bindPathTracerResources(
     context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(MaterialDatabase)), compiledGpi.getStorageBindPoint("Materials"));
 }
 
-void MaterialDatabase::update(GraphicContext& context)
+void MaterialTask::update(GraphicContext& context)
 {
     Profile(Material);
 
@@ -179,20 +165,22 @@ void MaterialDatabase::update(GraphicContext& context)
                 {sizeof(GpuMaterial), gpuMaterials.size(), gpuMaterials.data()});
 }
 
-void MaterialDatabase::render(GraphicContext& context)
+void MaterialTask::render(GraphicContext& context)
 {
 }
 
-uint64_t MaterialDatabase::toGpu(
+uint64_t MaterialTask::toGpu(
     const GraphicContext& context,
     std::vector<GpuBindlessTextureDescriptor>& gpuBindless,
     std::vector<GpuMaterial>& gpuMaterials)
 {
     GpuResourceManager& resources = context.resources;
 
-    for(std::size_t i = 0; i < _materials.size(); ++i)
+    const std::vector<std::shared_ptr<Material>>& materials = context.scene.materialDb()->materials();
+
+    for(std::size_t i = 0; i < materials.size(); ++i)
     {
-        const Material& material = *_materials[i];
+        const Material& material = *materials[i];
 
         GpuMaterial gpuMaterial;
 

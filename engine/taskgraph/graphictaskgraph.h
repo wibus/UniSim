@@ -4,7 +4,7 @@
 #include "../graphic/gpudevice.h"
 
 #include "graphictask.h"
-#include "pathtracer.h"
+#include "pathtracerprovider.h"
 
 
 namespace unisim
@@ -32,7 +32,7 @@ private:
     GpuResourceManager _resources;
     std::vector<GraphicTaskPtr> _tasks;
 
-    std::shared_ptr<PathTracer> _pathTracerTask;
+    std::shared_ptr<PathTracerTask> _pathTracerTask;
 };
 
 }

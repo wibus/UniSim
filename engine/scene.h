@@ -31,8 +31,8 @@ public:
     std::shared_ptr<Sky> sky() const { return _sky; }
 
     std::shared_ptr<Terrain> terrain() const { return _terrain; }
-
-    std::shared_ptr<MaterialDatabase> materials() const { return _materials; }
+    
+    std::shared_ptr<MaterialDatabase> materialDb() const { return _materialDb; }
 
     std::vector<std::shared_ptr<Instance>>& instances() { return _instances; }
     const std::vector<std::shared_ptr<Instance>>& instances() const { return _instances; }
@@ -47,8 +47,8 @@ protected:
     std::shared_ptr<Terrain> _terrain;
 
     std::vector<std::shared_ptr<Instance>> _instances;
-
-    std::shared_ptr<MaterialDatabase> _materials;
+    
+    std::shared_ptr<MaterialDatabase> _materialDb;
 };
 
 }

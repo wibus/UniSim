@@ -1,4 +1,4 @@
-#include "grading.h"
+#include "gradingtask.h"
 
 #include "../system/profiler.h"
 
@@ -14,12 +14,12 @@ DeclareResource(PathTracerResult);
 DeclareResource(FullScreenTriangle);
 
 
-ColorGrading::ColorGrading() :
+GradingTask::GradingTask() :
     GraphicTask("Color Grading")
 {
 }
 
-bool ColorGrading::defineShaders(GraphicContext& context)
+bool GradingTask::defineShaders(GraphicContext& context)
 {
     _colorGradingGpi.reset(new GpuProgramInterface());
     _colorGradingGpi->declareTexture({"Input"});
@@ -31,7 +31,7 @@ bool ColorGrading::defineShaders(GraphicContext& context)
     return true;
 }
 
-void ColorGrading::render(GraphicContext& context)
+void GradingTask::render(GraphicContext& context)
 {
     ProfileGpu(ColorGrading);
 

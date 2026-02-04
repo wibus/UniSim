@@ -1,4 +1,4 @@
-layout (std140) uniform SkySphereParams
+layout (std140) uniform StarsParams
 {
     vec4 starsQuaternion;
     float starsExposure;

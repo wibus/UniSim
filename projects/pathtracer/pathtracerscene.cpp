@@ -8,10 +8,10 @@
 #include "../resource/instance.h"
 #include "../resource/material.h"
 #include "../resource/primitive.h"
+#include "../resource/sky.h"
+#include "../resource/terrain.h"
 
 #include "../engine/camera.h"
-#include "../engine/sky.h"
-#include "../engine/terrain.h"
 
 
 namespace unisim
@@ -48,14 +48,16 @@ std::shared_ptr<Instance> makeCube(const std::string& name, double length, float
 PathTracerScene::PathTracerScene() :
     Scene("Path Tracer")
 {
-    _sky.reset(new PhysicalSky());
+    _sky.reset(new Sky(std::make_shared<Stars>(), std::make_shared<Atmosphere>()));
 
-    std::shared_ptr<FlatTerrain> terrain(new FlatTerrain(6));
     std::shared_ptr<Material> terrainMaterial(new Material("Grass Terrain"));
+    terrainMaterial->setDefaultAlbedo(glm::vec3(0.25, 0.25, 0.25));
+    terrainMaterial->setDefaultRoughness(0.7f);
+    terrainMaterial->setDefaultMetalness(0.0f);
     terrainMaterial->loadAlbedo("textures/grass/Grass_albedo.jpg");
     terrainMaterial->loadSpecular("textures/grass/Grass_specular.jpg");
-    terrain->setMaterial(terrainMaterial);
-    _terrain = std::static_pointer_cast<Terrain>(terrain);
+    std::shared_ptr<Terrain> terrain(new Terrain(0.0, terrainMaterial, 6.0f));
+    _terrain = terrain;
 
     SkyLocalization& localization = _sky->localization();
     localization.setLongitude(-73.567);

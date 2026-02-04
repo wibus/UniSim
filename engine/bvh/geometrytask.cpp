@@ -1,4 +1,4 @@
-#include "bvh.h"
+#include "geometrytask.h"
 
 #include <iostream>
 
@@ -6,13 +6,14 @@
 #include "../system/units.h"
 
 #include "../resource/body.h"
+#include "../resource/material.h"
 #include "../resource/instance.h"
 #include "../resource/primitive.h"
+#include "../resource/terrain.h"
 
 #include "../graphic/gpudevice.h"
 
-#include "scene.h"
-#include "materialdatabase.h"
+#include "../scene.h"
 
 
 namespace unisim
@@ -94,12 +95,12 @@ struct GpuVertexData
 };
 
 
-BVH::BVH() :
-    PathTracerProvider("BVH")
+GeometryTask::GeometryTask() :
+    PathTracerProviderTask("Geometry")
 {
 }
 
-bool BVH::defineResources(GraphicContext& context)
+bool GeometryTask::defineResources(GraphicContext& context)
 {
     std::vector<GpuPrimitive> gpuPrimitives;
     std::vector<GpuMesh> gpuMeshes;
@@ -183,7 +184,7 @@ bool BVH::defineResources(GraphicContext& context)
     return ok;
 }
 
-bool BVH::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
+bool GeometryTask::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
 {
     if(!addPathTracerModule(modules, "Instersection", context.settings, "shaders/common/intersection.glsl"))
         return false;
@@ -191,7 +192,7 @@ bool BVH::definePathTracerModules(GraphicContext& context, std::vector<std::shar
     return true;
 }
 
-bool BVH::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+bool GeometryTask::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
 {
     bool ok = true;
 
@@ -208,7 +209,7 @@ bool BVH::definePathTracerInterface(GraphicContext& context, PathTracerInterface
     return ok;
 }
 
-void BVH::bindPathTracerResources(
+void GeometryTask::bindPathTracerResources(
     GraphicContext& context,
     CompiledGpuProgramInterface& compiledGpi) const
 {
@@ -225,7 +226,7 @@ void BVH::bindPathTracerResources(
     context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesData)),    compiledGpi.getStorageBindPoint("VerticesData"));
 }
 
-void BVH::update(GraphicContext& context)
+void GeometryTask::update(GraphicContext& context)
 {
     Profile(BVH);
 
@@ -312,11 +313,11 @@ void BVH::update(GraphicContext& context)
             gpuVerticesData.data()});
 }
 
-void BVH::render(GraphicContext& context)
+void GeometryTask::render(GraphicContext& context)
 {
 }
 
-uint64_t BVH::toGpu(
+uint64_t GeometryTask::toGpu(
     const GraphicContext& context,
         std::vector<GpuPrimitive>& gpuPrimitives,
         std::vector<GpuMesh>& gpuMeshes,
@@ -328,7 +329,16 @@ uint64_t BVH::toGpu(
         std::vector<GpuVertexPos>& gpuVerticesPos,
         std::vector<GpuVertexData>& gpuVerticesData)
 {
-    const auto& instances = context.scene.instances();
+    std::vector<std::shared_ptr<Instance>> instances;
+    auto addInstances = [&](const std::vector<std::shared_ptr<Instance>>& o)
+    {
+        instances.insert(instances.end(), o.begin(), o.end());
+    };
+
+    addInstances(context.scene.instances());
+    if (Terrain* terrain = context.scene.terrain().get())
+        addInstances(terrain->instances());
+
     for(const std::shared_ptr<Instance>& instance : instances)
     {
         GpuInstance& gpuInstance = gpuInstances.emplace_back();
@@ -340,7 +350,7 @@ uint64_t BVH::toGpu(
         {
             GpuPrimitive& gpuPrimitive = gpuPrimitives.emplace_back();
             gpuPrimitive.type = primitive->type();
-            gpuPrimitive.material = context.scene.materials()->materialId(primitive->material());
+            gpuPrimitive.material = context.scene.materialDb()->materialId(primitive->material());
             gpuPrimitive.pad1 = 0;
 
             switch(primitive->type())

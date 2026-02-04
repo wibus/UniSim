@@ -125,4 +125,44 @@ void Material::ui()
     }
 }
 
+
+// Material Database
+MaterialDatabase::MaterialDatabase()
+{
+}
+
+void MaterialDatabase::unregisterAllMaterials()
+{
+    _materialIds.clear();
+    _materials.clear();
+}
+
+void MaterialDatabase::registerMaterial(const std::shared_ptr<Material>& material)
+{
+    bool isRegistered = isMaterialRegistered(material);
+    assert(!isRegistered);
+    if(isRegistered)
+        return;
+
+    assert(_materialIds.find(uint64_t(material.get())) == _materialIds.end());
+    _materialIds[uint64_t(material.get())] = MaterialId(_materials.size());
+    _materials.push_back(material);
+}
+
+unsigned int MaterialDatabase::materialId(const std::shared_ptr<Material>& material) const
+{
+    auto it = _materialIds.find(uint64_t(material.get()));
+    assert(it != _materialIds.end());
+
+    if(it != _materialIds.end())
+        return it->second;
+    else
+        return MaterialId_Invalid;
+}
+
+bool MaterialDatabase::isMaterialRegistered(const std::shared_ptr<Material>& material) const
+{
+    return _materialIds.find(uint64_t(material.get())) != _materialIds.end();
+}
+
 }
