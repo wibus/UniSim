@@ -306,7 +306,6 @@ class Model {
   typedef std::array<float, 9> mat3;
 
   void Precompute(
-      GLuint fbo,
       GLuint delta_irradiance_texture,
       GLuint delta_rayleigh_scattering_texture,
       GLuint delta_mie_scattering_texture,

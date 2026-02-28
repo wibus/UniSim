@@ -161,7 +161,7 @@ void Stars::ui()
 
 Atmosphere::Atmosphere()
 {
-    bool precomputed_luminance = false;
+    bool precomputed_luminance = true;
 
     // Values from "Reference Solar Spectral Irradiance: ASTM G-173", ETR column
     // (see http://rredc.nrel.gov/solar/spectra/am1.5/ASTMG173/ASTMG173.html),
