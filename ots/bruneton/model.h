@@ -270,15 +270,7 @@ class Model {
     // (rounded up to a multiple of 3), integrated with the CIE color matching
     // functions, and stored as illuminance values. Then only the
     // luminance-based API functions are provided (see the above note).
-    unsigned int num_precomputed_wavelengths,
-    // Whether to pack the (red component of the) single Mie scattering with the
-    // Rayleigh and multiple scattering in a single texture, or to store the
-    // (3 components of the) single Mie scattering in a separate texture.
-    bool combine_scattering_textures,
-    // Whether to use half precision floats (16 bits) or single precision floats
-    // (32 bits) for the precomputed textures. Half precision is sufficient for
-    // most cases, except for very high exposure values.
-    bool half_precision);
+    unsigned int num_precomputed_wavelengths);
 
   ~Model();
 
@@ -306,6 +298,9 @@ class Model {
   static constexpr double kLambdaG = 550.0;
   static constexpr double kLambdaB = 440.0;
 
+  static GLenum format();
+  static GLenum internalFormat();
+
  private:
   typedef std::array<double, 3> vec3;
   typedef std::array<float, 9> mat3;
@@ -323,12 +318,10 @@ class Model {
       unsigned int num_scattering_orders);
 
   unsigned int num_precomputed_wavelengths_;
-  bool half_precision_;
-  bool rgb_format_supported_;
   std::function<std::string(const vec3&)> glsl_header_factory_;
   GLuint transmittance_texture_;
   GLuint scattering_texture_;
-  GLuint optional_single_mie_scattering_texture_;
+  GLuint single_mie_scattering_texture_;
   GLuint irradiance_texture_;
   GLuint atmosphere_shader_;
   GLuint full_screen_quad_vao_;

@@ -161,9 +161,7 @@ void Stars::ui()
 
 Atmosphere::Atmosphere()
 {
-    bool half_precision = false;
-    bool combine_textures = false;
-    bool precomputed_luminance = true;
+    bool precomputed_luminance = false;
 
     // Values from "Reference Solar Spectral Irradiance: ASTM G-173", ETR column
     // (see http://rredc.nrel.gov/solar/spectra/am1.5/ASTMG173/ASTMG173.html),
@@ -298,9 +296,7 @@ Atmosphere::Atmosphere()
         atmosphere_parameters_.ground_albedo.to(Number::Unit()),
         acos(atmosphere_parameters_.mu_s_min()),
         kLengthUnit.to(m),
-        precomputed_luminance ? 15 : 3 /* num_computed_wavelengths */,
-        combine_textures,
-        half_precision));
+        precomputed_luminance ? 15 : 3 /* num_computed_wavelengths */));
 
     _model->Init();
 
