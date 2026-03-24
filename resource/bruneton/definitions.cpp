@@ -1,6 +1,5 @@
 #include "definitions.h"
 
-
 namespace unisim
 {
 namespace bruneton
@@ -69,5 +68,5 @@ void ConvertSpectrumToLinearSrgb(const std::vector<double> &wavelengths,
          * dlambda;
 }
 
-}  // namespace bruneton
-}  // namespace unisim
+} // namespace bruneton
+} // namespace unisim
