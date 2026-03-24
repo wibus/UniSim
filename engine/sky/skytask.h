@@ -42,7 +42,7 @@ private:
 
     struct AtmosphereRenderState
     {
-        AtmosphereRenderState();
+        AtmosphereRenderState(GraphicContext& context);
         ~AtmosphereRenderState();
 
         glm::mat4 _moonTransform;
@@ -56,6 +56,8 @@ private:
 
         std::size_t _atmosphereHash;
         bool _moonIsDirty;
+
+        std::unique_ptr<Atmosphere::Model> _model;
     };
 
     std::unique_ptr<AtmosphereRenderState> _atmosphereRenderState;

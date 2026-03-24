@@ -32,7 +32,7 @@
 
 #include <cmath>
 
-#include "math/scalar.h"
+#include "scalar.h"
 
 namespace dimensional {
 

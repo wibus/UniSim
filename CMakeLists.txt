@@ -26,7 +26,8 @@ add_subdirectory(PilsCore/PilsCore)
 
 set(UNISIM_INCLUDE_DIRS
     ${OTS_INCLUDE_DIRS}
-    ${PILS_CORE_INCLUDE_DIRS})
+    ${PILS_CORE_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR})
 message( STATUS "UniSim Includes ${UNISIM_INCLUDE_DIRS}" )
 
 set(UNISIM_LIBRARIES
@@ -50,8 +51,16 @@ set(SystemFiles
     system/units.h
 )
 
+file(GLOB BRUNETON_MATH_SRC
+     "resource/bruneton/math/*.h"
+)
+
 # Resource files
 set(ResourceFiles
+    ${BRUNETON_MATH_SRC}
+    resource/bruneton/constants.h
+    resource/bruneton/definitions.h
+    resource/bruneton/definitions.cpp
     resource/body.h
     resource/body.cpp
     resource/instance.h
@@ -134,7 +143,9 @@ set(EnginePhysicsFiles
 
 set(EngineSkyFiles
     engine/sky/skytask.h
-    engine/sky/skytask.cpp)
+    engine/sky/skytask.cpp
+    engine/sky/bruneton/model.h
+    engine/sky/bruneton/model.cpp)
 
 set(EngineTaskGraphFiles
     engine/taskgraph/enginetask.h
@@ -184,6 +195,10 @@ set(ShaderFiles
     shaders/common/signatures.glsl
     shaders/common/utils.glsl
     shaders/common/intersection.glsl
+    shaders/bruneton/definitions.glsl
+    shaders/bruneton/functions.glsl
+    shaders/bruneton/definitions.glsl.inc
+    shaders/bruneton/functions.glsl.inc
 )
 
 ## Projects ##

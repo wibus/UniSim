@@ -57,8 +57,10 @@ and provided by the following included files:
 #include "math/ternary_function.h"
 #include "math/vector.h"
 
-namespace atmosphere {
-namespace reference {
+namespace unisim
+{
+namespace bruneton
+{
 
 /*
 <h3>Physical quantities</h3>
@@ -214,10 +216,10 @@ parameters that depend on the altitude:
 // An atmosphere layer of width 'width', and whose density is defined as
 //   'exp_term' * exp('exp_scale' * h) + 'linear_term' * h + 'constant_term',
 // clamped to [0,1], and where h is the altitude.
-struct DensityProfileLayer {
-  DensityProfileLayer() :
-      DensityProfileLayer(0.0 * m, 0.0, 0.0 / m, 0.0 / m, 0.0) {}
-  DensityProfileLayer(Length width, Number exp_term, InverseLength exp_scale,
+struct ParameterDensityProfileLayer {
+  ParameterDensityProfileLayer() :
+      ParameterDensityProfileLayer(0.0 * m, 0.0, 0.0 / m, 0.0 / m, 0.0) {}
+  ParameterDensityProfileLayer(Length width, Number exp_term, InverseLength exp_scale,
                       InverseLength linear_term, Number constant_term)
       : width(width), exp_term(exp_term), exp_scale(exp_scale),
         linear_term(linear_term), constant_term(constant_term) {
@@ -234,7 +236,7 @@ struct DensityProfileLayer {
 // extend to the top atmosphere boundary. The profile values vary between 0
 // (null density) to 1 (maximum density).
 struct DensityProfile {
-  DensityProfileLayer layers[2];
+  ParameterDensityProfileLayer layers[2];
 };
 
 struct AtmosphereParameters {
@@ -287,9 +289,60 @@ struct AtmosphereParameters {
   // angle yielding negligible sky light radiance values. For instance, for the
   // Earth case, 102 degrees is a good choice - yielding mu_s_min = -0.2).
   Number mu_s_min;
+
+  // Added by wbussiere
+  std::vector<double> wavelengths;
 };
 
-}  // namespace reference
-}  // namespace atmosphere
+
+// Utility method to convert a function of the wavelength to linear sRGB.
+// 'wavelengths' and 'spectrum' must have the same size. The integral of
+// 'spectrum' times each CIE_2_DEG_COLOR_MATCHING_FUNCTIONS (and times
+// MAX_LUMINOUS_EFFICACY) is computed to get XYZ values, which are then
+// converted to linear sRGB with the XYZ_TO_SRGB matrix.
+
+/*
+<p>Finally, we need a utility function to compute the value of the conversion
+constants *<code>_RADIANCE_TO_LUMINANCE</code>, used above to convert the
+spectral results into luminance values. These are the constants k_r, k_g, k_b
+described in Section 14.3 of <a href="https://arxiv.org/pdf/1612.04336.pdf">A
+Qualitative and Quantitative Evaluation of 8 Clear Sky Models</a>.
+
+<p>Computing their value requires an integral of a function times a CIE color
+matching function. Thus, we first need functions to interpolate an arbitrary
+function (specified by some samples), and a CIE color matching function
+(specified by tabulated values), at an arbitrary wavelength. This is the purpose
+of the following two functions:
+*/
+
+constexpr int kLambdaMin = 360;
+constexpr int kLambdaMax = 830;
+
+double CieColorMatchingFunctionTableValue(double wavelength, int column);
+
+
+double Interpolate(const std::vector<double> &wavelengths,
+                   const std::vector<double> &wavelength_function,
+                   double wavelength);
+
+/*
+<p>The utility method <code>ConvertSpectrumToLinearSrgb</code> is implemented
+with a simple numerical integration of the given function, times the CIE color
+matching funtions (with an integration step of 1nm), followed by a matrix
+multiplication:
+*/
+
+static constexpr double kLambdaR = 680.0;
+static constexpr double kLambdaG = 550.0;
+static constexpr double kLambdaB = 440.0;
+
+void ConvertSpectrumToLinearSrgb(const std::vector<double> &wavelengths,
+                                        const std::vector<double> &spectrum,
+                                        double *r,
+                                        double *g,
+                                 double *b);
+
+}  // namespace bruneton
+}  // namespace unisim
 
 #endif  // ATMOSPHERE_REFERENCE_DEFINITIONS_H_

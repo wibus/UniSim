@@ -42,7 +42,10 @@ sRGB luminance values).
 #ifndef ATMOSPHERE_CONSTANTS_H_
 #define ATMOSPHERE_CONSTANTS_H_
 
-namespace atmosphere {
+namespace unisim
+{
+namespace bruneton
+{
 
 constexpr int TRANSMITTANCE_TEXTURE_WIDTH = 256;
 constexpr int TRANSMITTANCE_TEXTURE_HEIGHT = 64;
@@ -172,6 +175,7 @@ constexpr double XYZ_TO_SRGB[9] = {
   +0.0557, -0.2040, +1.0570
 };
 
-}  // namespace atmosphere
+}  // namespace bruneton
+}  // unisim
 
 #endif  // ATMOSPHERE_CONSTANTS_H_

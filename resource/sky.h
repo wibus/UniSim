@@ -6,18 +6,14 @@
 #include <GLM/glm.hpp>
 
 
-namespace atmosphere
-{
-namespace reference
-{
-struct AtmosphereParameters;
-}
-class Model;
-}
-
-
 namespace unisim
 {
+
+namespace bruneton
+{
+struct AtmosphereParameters;
+class Model;
+}
 
 struct  Viewport;
 
@@ -99,13 +95,12 @@ private:
 class Atmosphere
 {
 public:
-    typedef atmosphere::Model Model;
-    typedef atmosphere::reference::AtmosphereParameters Params;
+    typedef bruneton::Model Model;
+    typedef bruneton::AtmosphereParameters Params;
 
     Atmosphere();
     ~Atmosphere();
 
-    const Model& model() const {return *_model; }
     const Params& params() const { return *_params; }
 
     std::shared_ptr<DirectionalLight> sun() const { return _sun; }
@@ -114,7 +109,6 @@ public:
     void ui();
 
 private:
-    std::unique_ptr<Model> _model;
     std::unique_ptr<Params> _params;
 
     glm::vec3 _sunIrradiance;

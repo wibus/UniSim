@@ -34,7 +34,7 @@
 #include <cassert>
 #include <vector>
 
-#include "math/scalar.h"
+#include "scalar.h"
 
 namespace dimensional {
 
@@ -96,7 +96,7 @@ class ScalarFunction {
     Init(sampling_points, values);
   }
 
-  std::vector<double> to(output_type unit) {
+  std::vector<double> to(output_type unit) const {
     std::vector<double> result;
     for (unsigned int i = 0; i < N; ++i) {
       result.push_back(value_[i].to(unit));

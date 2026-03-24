@@ -38,7 +38,7 @@
 #include <memory>
 #include <string>
 
-#include "math/vector.h"
+#include "vector.h"
 
 namespace dimensional {
 

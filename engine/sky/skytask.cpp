@@ -2,8 +2,8 @@
 
 #include <imgui/imgui.h>
 
-#include <bruneton/model.h>
-#include <bruneton/definitions.h>
+#include "bruneton/model.h"
+#include "bruneton/model.h"
 
 #include <GLM/gtc/constants.hpp>
 #include <GLM/gtx/transform.hpp>
@@ -17,10 +17,12 @@
 
 #include "../resource/body.h"
 #include "../resource/light.h"
+#include "../resource/bruneton/definitions.h"
 #include "../resource/sky.h"
 #include "../resource/texture.h"
 
 #include "../scene.h"
+
 
 namespace unisim
 {
@@ -61,12 +63,13 @@ struct GpuMoonLightParams
 };
 
 
-SkyTask::AtmosphereRenderState::AtmosphereRenderState() :
+SkyTask::AtmosphereRenderState::AtmosphereRenderState(GraphicContext& context) :
     _moonTexSize(1024),
     _atmosphereHash(0),
     _moonIsDirty(true)
 {
-
+    const bool precomputed_luminance = true;
+    _model.reset(new Atmosphere::Model(context, precomputed_luminance));
 }
 
 SkyTask::AtmosphereRenderState::~AtmosphereRenderState()
@@ -93,7 +96,8 @@ bool SkyTask::defineResources(GraphicContext& context)
 
     if (context.scene.sky()->atmosphere().get() != nullptr)
     {
-        _atmosphereRenderState.reset(new AtmosphereRenderState());
+        _atmosphereRenderState.reset(new AtmosphereRenderState(context));
+
         _atmosphereRenderState->_moonAlbedo.reset(Texture::load("textures/moonAlbedo2d.png"));
         if(!_atmosphereRenderState->_moonAlbedo)
             _atmosphereRenderState->_moonAlbedo.reset(new Texture(Texture::BLACK_UNORM8));
@@ -108,6 +112,7 @@ bool SkyTask::defineResources(GraphicContext& context)
         ok = ok && resources.define<GpuConstantResource>(ResourceName(MoonLightParams), {sizeof(moonLightParams), &moonLightParams});
         ok = ok && resources.define<GpuTextureResource>(ResourceName(MoonAlbedo), {*_atmosphereRenderState->_moonAlbedo});
         ok = ok && resources.define<GpuImageResource>(ResourceName(MoonLighting), {_atmosphereRenderState->_moonTexSize, _atmosphereRenderState->_moonTexSize, GL_RGBA32F});
+        ok = ok && _atmosphereRenderState->_model->defineResources(context);
     }
 
     return ok;
@@ -125,6 +130,9 @@ bool SkyTask::defineShaders(GraphicContext& context)
         _atmosphereRenderState->_moonLightProgram.reset();
         if(!generateComputeProgram(_atmosphereRenderState->_moonLightProgram, "Moon Light", "shaders/moonlight.glsl"))
             return false;
+
+        if(!_atmosphereRenderState->_model->defineShaders(context))
+            return false;
     }
 
     return true;
@@ -139,9 +147,8 @@ bool SkyTask::definePathTracerModules(
         if(!addPathTracerModule(modules, "Atmospheric Sky", context.settings, "shaders/atmosphericsky.glsl"))
             return false;
 
-        std::shared_ptr<GraphicShader> modelShader(new GraphicShader("Sky Model", std::move(GraphicShaderHandle(context.scene.sky()->atmosphere()->model().shader(), false))));
-        std::shared_ptr<PathTracerModule> modelModule(new PathTracerModule("Sky Model", modelShader));
-        modules.push_back(modelModule);
+        if(!_atmosphereRenderState->_model->definePathTracerModules(context, modules))
+            return false;
     }
     else
     {
@@ -166,11 +173,7 @@ bool SkyTask::definePathTracerInterface(
         ok = ok && interface.declareConstant({"AtmosphereParams"});
         ok = ok && interface.declareTexture({"Moon"});
 
-        // Bruneton
-        ok = ok && interface.declareTexture({"transmittance_texture"});
-        ok = ok && interface.declareTexture({"scattering_texture"});
-        //ok = ok && interface.declareTexture({"irradiance_texture"});
-        ok = ok && interface.declareTexture({"single_mie_scattering_texture"});
+        ok = ok && _atmosphereRenderState->_model->definePathTracerInterface(context, interface);
     }
 
     return ok;
@@ -190,17 +193,13 @@ void SkyTask::bindPathTracerResources(
 
     if (_atmosphereRenderState)
     {
-        const Atmosphere::Model& model = context.scene.sky()->atmosphere()->model();
-        model.SetProgramUniforms(compiledGpi.getTextureBindPoint("transmittance_texture").bindPoint,
-                                 compiledGpi.getTextureBindPoint("scattering_texture").bindPoint,
-                                 GpuProgramTextureBindPoint::invalid().bindPoint,// *compiledGpi.getTextureBindPoint("irradiance_texture").bindPoint*/,
-                                 compiledGpi.getTextureBindPoint("single_mie_scattering_texture").bindPoint);
-
         context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(AtmosphereParams)),
                                   compiledGpi.getConstantBindPoint("AtmosphereParams"));
 
         context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(MoonLighting)),
                                    compiledGpi.getTextureBindPoint("Moon"));
+
+        _atmosphereRenderState->_model->bindPathTracerResources(context, compiledGpi);
     }
 }
 
@@ -269,6 +268,9 @@ void SkyTask::update(GraphicContext& context)
         _atmosphereRenderState->_atmosphereHash = atmosphereHash;
         _hash = combineHashes(atmosphereHash, _hash);
 
+        _atmosphereRenderState->_model->update(context);
+        _hash = combineHashes(_atmosphereRenderState->_model->hash(), _hash);
+
         GpuResourceManager& resources = context.resources;
         resources.update<GpuConstantResource>(ResourceName(AtmosphereParams), {sizeof(atmosphereParams), &atmosphereParams});
         resources.update<GpuConstantResource>(ResourceName(MoonLightParams), {sizeof(moonLightParams), &moonLightParams});
@@ -281,6 +283,10 @@ void SkyTask::render(GraphicContext& context)
     {
         ProfileGpu(Sky);
 
+        // Atmosphere
+        _atmosphereRenderState->_model->render(context);
+
+        // Moon light
         if(!_atmosphereRenderState->_moonLightProgram->isValid())
             return;
 
@@ -345,7 +351,7 @@ uint64_t SkyTask::toGpu(
     atmosphereParams.moonDirection = glm::vec4(atmosphere.moon()->direction(), 0);
     atmosphereParams.moonQuaternion = _atmosphereRenderState->_moonQuaternion;
     atmosphereParams.sunToMoonRatio = atmosphere.moon()->emissionLuminance() / atmosphere.sun()->emissionLuminance();
-    atmosphereParams.groundHeightKM = atmosphere.params().bottom_radius.to(atmosphere::reference::km);
+    atmosphereParams.groundHeightKM = atmosphere.params().bottom_radius.to(bruneton::km);
 
     uint64_t hash = 0;
     hash = hashVal(moonLightParams, hash);

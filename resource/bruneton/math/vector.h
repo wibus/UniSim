@@ -30,7 +30,7 @@
 #ifndef MATH_VECTOR_H_
 #define MATH_VECTOR_H_
 
-#include "math/scalar.h"
+#include "scalar.h"
 
 namespace dimensional {
 

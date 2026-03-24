@@ -2,8 +2,7 @@
 
 #include <imgui/imgui.h>
 
-#include <bruneton/model.h>
-#include <bruneton/definitions.h>
+#include <resource/bruneton/definitions.h>
 
 #include "../system/units.h"
 
@@ -12,15 +11,12 @@
 #include "../resource/texture.h"
 
 
-using namespace atmosphere::reference;
 
 
 namespace unisim
 {
-constexpr Length kLengthUnit = 1.0 * km;
-constexpr Wavelength kLambdaR = atmosphere::Model::kLambdaR * nm;
-constexpr Wavelength kLambdaG = atmosphere::Model::kLambdaG * nm;
-constexpr Wavelength kLambdaB = atmosphere::Model::kLambdaB * nm;
+
+using namespace bruneton;
 
 
 // SKY LOCALIZATION //
@@ -161,8 +157,6 @@ void Stars::ui()
 
 Atmosphere::Atmosphere()
 {
-    bool precomputed_luminance = true;
-
     // Values from "Reference Solar Spectral Irradiance: ASTM G-173", ETR column
     // (see http://rredc.nrel.gov/solar/spectra/am1.5/ASTMG173/ASTMG173.html),
     // summed and averaged in each bin (e.g. the value for 360nm is the average
@@ -227,86 +221,57 @@ Atmosphere::Atmosphere()
                                         kOzoneCrossSection[(l - kLambdaMin) / 10] * m2);
     }
 
-    AtmosphereParameters atmosphere_parameters_;
-    atmosphere_parameters_.solar_irradiance = IrradianceSpectrum(
+    AtmosphereParameters atmosphere_parameters;
+    atmosphere_parameters.solar_irradiance = IrradianceSpectrum(
         kLambdaMin * nm, kLambdaMax * nm, solar_irradiance);
-    atmosphere_parameters_.sun_angular_radius = 0.2678 * deg;
-    atmosphere_parameters_.bottom_radius = 6360.0 * km;
-    atmosphere_parameters_.top_radius = 6420.0 * km;
-    atmosphere_parameters_.rayleigh_density.layers[1] = DensityProfileLayer(
+    atmosphere_parameters.sun_angular_radius = 0.2678 * deg;
+    atmosphere_parameters.bottom_radius = 6360.0 * km;
+    atmosphere_parameters.top_radius = 6420.0 * km;
+    atmosphere_parameters.rayleigh_density.layers[1] = ParameterDensityProfileLayer(
         0.0 * m, 1.0, -1.0 / kRayleighScaleHeight, 0.0 / m, 0.0);
-    atmosphere_parameters_.rayleigh_scattering = ScatteringSpectrum(
+    atmosphere_parameters.rayleigh_scattering = ScatteringSpectrum(
         kLambdaMin * nm, kLambdaMax * nm, rayleigh_scattering);
-    atmosphere_parameters_.mie_density.layers[1] = DensityProfileLayer(
+    atmosphere_parameters.mie_density.layers[1] = ParameterDensityProfileLayer(
         0.0 * m, 1.0, -1.0 / kMieScaleHeight, 0.0 / m, 0.0);
-    atmosphere_parameters_.mie_scattering = ScatteringSpectrum(
+    atmosphere_parameters.mie_scattering = ScatteringSpectrum(
         kLambdaMin * nm, kLambdaMax * nm, mie_scattering);
-    atmosphere_parameters_.mie_extinction = ScatteringSpectrum(
+    atmosphere_parameters.mie_extinction = ScatteringSpectrum(
         kLambdaMin * nm, kLambdaMax * nm, mie_extinction);
-    atmosphere_parameters_.mie_phase_function_g = kMiePhaseFunctionG;
+    atmosphere_parameters.mie_phase_function_g = kMiePhaseFunctionG;
     // Density profile increasing linearly from 0 to 1 between 10 and 25km, and
     // decreasing linearly from 1 to 0 between 25 and 40km. Approximate profile
     // from http://www.kln.ac.lk/science/Chemistry/Teaching_Resources/Documents/
     // Introduction%20to%20atmospheric%20chemistry.pdf (page 10).
-    atmosphere_parameters_.absorption_density.layers[0] = DensityProfileLayer(
+    atmosphere_parameters.absorption_density.layers[0] = ParameterDensityProfileLayer(
         25.0 * km, 0.0, 0.0 / km, 1.0 / (15.0 * km), -2.0 / 3.0);
-    atmosphere_parameters_.absorption_density.layers[1] = DensityProfileLayer(
+    atmosphere_parameters.absorption_density.layers[1] = ParameterDensityProfileLayer(
         0.0 * km, 0.0, 0.0 / km, -1.0 / (15.0 * km), 8.0 / 3.0);
-    atmosphere_parameters_.absorption_extinction = ScatteringSpectrum(
+    atmosphere_parameters.absorption_extinction = ScatteringSpectrum(
         kLambdaMin * nm, kLambdaMax * nm, absorption_extinction);
-    atmosphere_parameters_.ground_albedo = DimensionlessSpectrum(0.18);
-    atmosphere_parameters_.mu_s_min = cos(102.0 * deg);
+    atmosphere_parameters.ground_albedo = DimensionlessSpectrum(0.18);
+    atmosphere_parameters.mu_s_min = cos(102.0 * deg);
 
     Position earth_center_ =
-        Position(0.0 * m, 0.0 * m, -atmosphere_parameters_.bottom_radius);
+        Position(0.0 * m, 0.0 * m, -atmosphere_parameters.bottom_radius);
 
     dimensional::vec2 sun_size_ = dimensional::vec2(
-        tan(atmosphere_parameters_.sun_angular_radius),
-        cos(atmosphere_parameters_.sun_angular_radius));
+        tan(atmosphere_parameters.sun_angular_radius),
+        cos(atmosphere_parameters.sun_angular_radius));
 
-    std::vector<double> wavelengths;
-    const auto& spectrum = atmosphere_parameters_.solar_irradiance;
+    const auto& spectrum = atmosphere_parameters.solar_irradiance;
     for (unsigned int i = 0; i < spectrum.size(); ++i) {
-        wavelengths.push_back(spectrum.GetSample(i).to(nm));
+        atmosphere_parameters.wavelengths.push_back(spectrum.GetSample(i).to(nm));
     }
-    auto profile = [](DensityProfileLayer layer) {
-        return atmosphere::DensityProfileLayer(layer.width.to(m),
-                                               layer.exp_term(), layer.exp_scale.to(1.0 / m),
-                                               layer.linear_term.to(1.0 / m), layer.constant_term());
-    };
 
-    _params.reset(new Params(atmosphere_parameters_));
-
-    _model.reset(new atmosphere::Model(
-        wavelengths,
-        atmosphere_parameters_.solar_irradiance.to(
-            watt_per_square_meter_per_nm),
-        atmosphere_parameters_.sun_angular_radius.to(rad),
-        atmosphere_parameters_.bottom_radius.to(m),
-        atmosphere_parameters_.top_radius.to(m),
-        {profile(atmosphere_parameters_.rayleigh_density.layers[1])},
-        atmosphere_parameters_.rayleigh_scattering.to(1.0 / m),
-        {profile(atmosphere_parameters_.mie_density.layers[1])},
-        atmosphere_parameters_.mie_scattering.to(1.0 / m),
-        atmosphere_parameters_.mie_extinction.to(1.0 / m),
-        atmosphere_parameters_.mie_phase_function_g(),
-        {profile(atmosphere_parameters_.absorption_density.layers[0]),
-         profile(atmosphere_parameters_.absorption_density.layers[1])},
-        atmosphere_parameters_.absorption_extinction.to(1.0 / m),
-        atmosphere_parameters_.ground_albedo.to(Number::Unit()),
-        acos(atmosphere_parameters_.mu_s_min()),
-        kLengthUnit.to(m),
-        precomputed_luminance ? 15 : 3 /* num_computed_wavelengths */));
-
-    _model->Init();
+    _params.reset(new Params(atmosphere_parameters));
 
     glm::dvec3 sunIrradiance;
-    Model::ConvertSpectrumToLinearSrgb(wavelengths,
-                                       atmosphere_parameters_.solar_irradiance.to(watt_per_square_meter_per_nm),
-                                       &sunIrradiance[0], &sunIrradiance[1], &sunIrradiance[2]);
+    ConvertSpectrumToLinearSrgb(atmosphere_parameters.wavelengths,
+                                atmosphere_parameters.solar_irradiance.to(watt_per_square_meter_per_nm),
+                                &sunIrradiance[0], &sunIrradiance[1], &sunIrradiance[2]);
     _sunIrradiance = sunIrradiance;
 
-    float sunSolidAngle = 2 * glm::pi<float>() *(1 - glm::cos(atmosphere_parameters_.sun_angular_radius.to(rad)));
+    float sunSolidAngle = 2 * glm::pi<float>() *(1 - glm::cos(atmosphere_parameters.sun_angular_radius.to(rad)));
     float maxComp = glm::max(glm::max(_sunIrradiance[0], _sunIrradiance[1]), _sunIrradiance[2]);
     _sunIrradiance /= maxComp;
     float luminance = maxComp / sunSolidAngle;
