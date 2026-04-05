@@ -13,6 +13,7 @@ GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
 {
     _handle.reset(new GpuTextureResourceHandle());
     _handle->dimension = GL_TEXTURE_2D;
+    PILS_ASSERT(def.texture.depth == 1, "3D textures not implemented");
 
     glGenTextures(1, &_handle->texId);
     glActiveTexture(GL_TEXTURE0);
@@ -74,12 +75,18 @@ GpuImageResource::GpuImageResource(ResourceId id, Definition def) :
 {
     _handle.reset(new GpuImageResourceHandle());
     _handle->format = def.format;
-    _handle->dimension = GL_TEXTURE_2D;
+    _handle->dimension = def.depth > 1 ? GL_TEXTURE_3D : GL_TEXTURE_2D;
 
     glGenTextures(1, &_handle->texId);
-
     glBindTexture(_handle->dimension, _handle->texId);
-    glTexStorage2D(_handle->dimension, 1, def.format, def.width, def.height);
+
+    if (_handle->dimension == GL_TEXTURE_2D)
+        glTexStorage2D(_handle->dimension, 1, def.format, def.width, def.height);
+    else if (_handle->dimension == GL_TEXTURE_3D)
+        glTexStorage3D(_handle->dimension, 1, def.format, def.width, def.height, def.depth);
+    else
+        PILS_FATAL("Unexpected texture dimension");
+
     glBindTexture(_handle->dimension, 0);
 }
 
@@ -91,7 +98,14 @@ GpuImageResource::~GpuImageResource()
 void GpuImageResource::update(const Definition& def) const
 {
     glBindTexture(_handle->dimension, _handle->texId);
-    glTexStorage2D(_handle->dimension, 1, def.format, def.width, def.height);
+
+    if (_handle->dimension == GL_TEXTURE_2D)
+        glTexStorage2D(_handle->dimension, 1, def.format, def.width, def.height);
+    else if (_handle->dimension == GL_TEXTURE_3D)
+        glTexStorage3D(_handle->dimension, 1, def.format, def.width, def.height, def.depth);
+    else
+        PILS_FATAL("Unexpected texture dimension");
+
     glBindTexture(_handle->dimension, 0);
 }
 
@@ -113,6 +127,8 @@ GpuBindlessResource::GpuBindlessResource(ResourceId id, Definition def) :
         case TextureFormat::Float32:
             format = def.texture->numComponents == 3 ? GL_RGB32F : GL_RGBA32F;
             break;
+        default:
+            PILS_FATAL("Texture format not supported");
         }
     }
 

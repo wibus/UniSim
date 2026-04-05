@@ -122,9 +122,10 @@ bool PathTracerTask::defineResources(GraphicContext& context)
 
     ok = ok && resources.define<GpuImageResource>(
              ResourceName(PathTracerResult), {
-              _viewport->width,
-              _viewport->height,
-              GL_RGBA32F});
+              .width  = _viewport->width,
+              .height = _viewport->height,
+              .depth  = 1,
+              .format = GL_RGBA32F});
 
     return ok;
 }
@@ -214,9 +215,10 @@ void PathTracerTask::update(GraphicContext& context)
         *_viewport = viewport;
         resources.update<GpuImageResource>(
                     ResourceName(PathTracerResult), {
-                        viewport.width,
-                        viewport.height,
-                        GL_RGBA32F});
+                        .width  = viewport.width,
+                        .height = viewport.height,
+                        .depth  = 1,
+                        .format = GL_RGBA32F});
     }
 
     GpuPathTracerCommonParams gpuCommonParams;

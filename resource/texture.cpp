@@ -43,6 +43,7 @@ const Texture Texture::BLACK_Float32= Texture(TextureFormat::Float32, (unsigned 
 Texture::Texture() :
     width(0),
     height(0),
+    depth(1),
     format(TextureFormat::UNORM8),
     numComponents(4),
     handle(0)
@@ -57,6 +58,7 @@ Texture::~Texture()
 Texture::Texture(TextureFormat format, unsigned char* pixelData) :
     width(1),
     height(1),
+    depth(1),
     format(format),
     numComponents(4),
     handle(0)

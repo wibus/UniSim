@@ -207,25 +207,15 @@ public:
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
 
-    GLuint shader() const
-    {
-        return atmosphere_shader_;
-    }
-
-    void SetProgramUniforms(
-        GLuint transmittance_texture_unit,
-        GLuint scattering_texture_unit,
-        GLuint irradiance_texture_unit,
-        GLuint optional_single_mie_scattering_texture_unit = 0) const;
-
-    static GLenum format();
-    static GLenum internalFormat();
+    static constexpr GLenum format();
+    static constexpr GLenum internalFormat();
 
 private:
     typedef std::array<double, 3> vec3;
     typedef std::array<float, 9> mat3;
 
     void Init(
+        GraphicContext& context,
         // The wavelength values, in nanometers, and sorted in increasing order, for
         // which the solar_irradiance, rayleigh_scattering, mie_scattering,
         // mie_extinction and ground_albedo samples are provided. If your shaders
@@ -304,9 +294,15 @@ private:
         // which must be used when calling the atmosphere model shader functions.
         double length_unit_in_meters);
 
-    void Update(unsigned int num_scattering_orders = 4);
+    void Recompute(
+        GraphicContext& context,
+        unsigned int num_scattering_orders = 4);
 
     void Precompute(
+        GLuint transmittance_texture,
+        GLuint scattering_texture,
+        GLuint irradiance_texture,
+        GLuint single_mie_scattering_texture,
         GLuint delta_irradiance_texture,
         GLuint delta_rayleigh_scattering_texture,
         GLuint delta_mie_scattering_texture,
@@ -319,10 +315,6 @@ private:
 
     unsigned int num_precomputed_wavelengths_;
     std::function<std::string(const vec3&)> glsl_header_factory_;
-    GLuint transmittance_texture_;
-    GLuint scattering_texture_;
-    GLuint single_mie_scattering_texture_;
-    GLuint irradiance_texture_;
     GLuint atmosphere_shader_;
     bool _isDirty;
 };

@@ -68,7 +68,8 @@ public:
     {
         int width;
         int height;
-        GLint format;
+        int depth;
+        GLenum format;
     };
 
     GpuImageResource(ResourceId id, Definition def);

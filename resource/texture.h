@@ -32,6 +32,7 @@ struct Texture
 
     int width;
     int height;
+    int depth{1};
     TextureFormat format;
     int numComponents;
     std::vector<unsigned char> data;

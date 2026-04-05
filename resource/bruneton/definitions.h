@@ -344,6 +344,24 @@ void ConvertSpectrumToLinearSrgb(const std::vector<double> &wavelengths,
                                  double *g,
                                  double *b);
 
+
+
+
+/*
+<p>We can then implement a utility function to compute the "spectral radiance to
+luminance" conversion constants (see Section 14.3 in <a
+href="https://arxiv.org/pdf/1612.04336.pdf">A Qualitative and Quantitative
+Evaluation of 8 Clear Sky Models</a> for their definitions):
+*/
+
+// The returned constants are in lumen.nm / watt.
+void ComputeSpectralRadianceToLuminanceFactors(const std::vector<double> &wavelengths,
+                                               const std::vector<double> &solar_irradiance,
+                                               double lambda_power,
+                                               double *k_r,
+                                               double *k_g,
+                                               double *k_b);
+
 } // namespace bruneton
 } // namespace unisim
 

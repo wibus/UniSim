@@ -111,7 +111,11 @@ bool SkyTask::defineResources(GraphicContext& context)
         ok = ok && resources.define<GpuConstantResource>(ResourceName(AtmosphereParams), {sizeof(atmosphereParams), &atmosphereParams});
         ok = ok && resources.define<GpuConstantResource>(ResourceName(MoonLightParams), {sizeof(moonLightParams), &moonLightParams});
         ok = ok && resources.define<GpuTextureResource>(ResourceName(MoonAlbedo), {*_atmosphereRenderState->_moonAlbedo});
-        ok = ok && resources.define<GpuImageResource>(ResourceName(MoonLighting), {_atmosphereRenderState->_moonTexSize, _atmosphereRenderState->_moonTexSize, GL_RGBA32F});
+        ok = ok && resources.define<GpuImageResource>(ResourceName(MoonLighting), {
+            .width  = _atmosphereRenderState->_moonTexSize,
+            .height = _atmosphereRenderState->_moonTexSize,
+            .depth  = 1,
+            .format = GL_RGBA32F});
         ok = ok && _atmosphereRenderState->_model->defineResources(context);
     }
 
