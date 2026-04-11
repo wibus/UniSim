@@ -83,6 +83,19 @@ SkyTask::SkyTask() :
 {
 }
 
+void SkyTask::registerDynamicResources(GraphicContext& context)
+{
+    if (context.scene.sky()->atmosphere().get() != nullptr)
+    {
+        _atmosphereRenderState.reset(new AtmosphereRenderState(context));
+    }
+
+    if (_atmosphereRenderState)
+    {
+        _atmosphereRenderState->_model->registerDynamicResources(context);
+    }
+}
+
 bool SkyTask::defineResources(GraphicContext& context)
 {
     bool ok = true;
@@ -94,10 +107,8 @@ bool SkyTask::defineResources(GraphicContext& context)
     ok = ok && resources.define<GpuConstantResource>(ResourceName(StarsParams), {sizeof(starsParams), &starsParams});
     ok = ok && resources.define<GpuTextureResource>(ResourceName(Stars), {*context.scene.sky()->stars()->starsTexture()});
 
-    if (context.scene.sky()->atmosphere().get() != nullptr)
+    if (_atmosphereRenderState)
     {
-        _atmosphereRenderState.reset(new AtmosphereRenderState(context));
-
         _atmosphereRenderState->_moonAlbedo.reset(Texture::load("textures/moonAlbedo2d.png"));
         if(!_atmosphereRenderState->_moonAlbedo)
             _atmosphereRenderState->_moonAlbedo.reset(new Texture(Texture::BLACK_UNORM8));

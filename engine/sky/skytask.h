@@ -14,6 +14,7 @@ class SkyTask : public PathTracerProviderTask
 public:
     SkyTask();
 
+    void registerDynamicResources(GraphicContext& context) override;
     bool defineResources(GraphicContext& context) override;
     bool defineShaders(GraphicContext& context) override;
 

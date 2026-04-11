@@ -177,8 +177,8 @@ GpuStorageResource::~GpuStorageResource()
 
 void GpuStorageResource::update(const Definition& def) const
 {
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _handle->bufferId);
     GLsizei dataSize = def.elemSize * def.elemCount;
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _handle->bufferId);
     glBufferData(GL_SHADER_STORAGE_BUFFER, dataSize, def.data, GL_STATIC_DRAW);
 }
 
@@ -200,7 +200,6 @@ GpuConstantResource::~GpuConstantResource()
 
 void GpuConstantResource::update(const Definition& def) const
 {
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _handle->bufferId);
     glBindBuffer(GL_UNIFORM_BUFFER, _handle->bufferId);
     glBufferData(GL_UNIFORM_BUFFER, def.size, def.data, GL_STREAM_DRAW);
 }

@@ -33,6 +33,7 @@
 
 # Misc
 *.user
+*.user.*
 
 # ImGui
 imgui.ini
