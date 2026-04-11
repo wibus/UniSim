@@ -18,10 +18,10 @@ GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
     glGenTextures(1, &_handle->texId);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(  _handle->dimension, _handle->texId);
-    glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(_handle->dimension, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(_handle->dimension, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     GLint internalFormat = 0;
     GLenum type = 0;
@@ -79,6 +79,15 @@ GpuImageResource::GpuImageResource(ResourceId id, Definition def) :
 
     glGenTextures(1, &_handle->texId);
     glBindTexture(_handle->dimension, _handle->texId);
+
+    glTexParameteri(_handle->dimension, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(_handle->dimension, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (_handle->dimension == GL_TEXTURE_3D)
+        glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     if (_handle->dimension == GL_TEXTURE_2D)
         glTexStorage2D(_handle->dimension, 1, def.format, def.width, def.height);
