@@ -312,10 +312,6 @@ void SkyTask::render(GraphicContext& context)
         if (!_atmosphereRenderState->_moonLightGpi->compile(compiledGpi, *_atmosphereRenderState->_moonLightProgram))
             return;
 
-        GpuMoonLightParams moonParams;
-        GpuAtmosphereParams skyParams;
-        toGpu(context, moonParams, skyParams);
-
         GraphicProgramScope programScope(*_atmosphereRenderState->_moonLightProgram);
 
         GpuResourceManager& resources = context.resources;

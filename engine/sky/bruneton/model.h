@@ -174,7 +174,7 @@ public:
     DensityProfileLayer(double width, double exp_term, double exp_scale,
                         double linear_term, double constant_term)
         : width(width), exp_term(exp_term), exp_scale(exp_scale),
-          linear_term(linear_term), constant_term(constant_term)
+        linear_term(linear_term), constant_term(constant_term)
     {
     }
     double width;
@@ -214,6 +214,26 @@ public:
 private:
     typedef std::array<double, 3> vec3;
     typedef std::array<float, 9> mat3;
+
+    struct PrecomputeSubPass
+    {
+        GraphicProgramPtr program;
+        GpuProgramInterfacePtr interface;
+    };
+
+    struct PrecomputePass
+    {
+        mat3 luminance_from_radiance;
+        vec3 lambdas;
+        bool blend{false};
+
+        PrecomputeSubPass transmittance;
+        PrecomputeSubPass direct_irradiance;
+        PrecomputeSubPass single_scattering;
+        PrecomputeSubPass scattering_density;
+        PrecomputeSubPass indirect_irradiance;
+        PrecomputeSubPass multiple_scattering;
+    };
 
     void Init(
         GraphicContext& context,
@@ -301,18 +321,7 @@ private:
 
     void Precompute(
         GraphicContext& context,
-        GLuint transmittance_texture,
-        GLuint scattering_texture,
-        GLuint irradiance_texture,
-        GLuint single_mie_scattering_texture,
-        GLuint delta_irradiance_texture,
-        GLuint delta_rayleigh_scattering_texture,
-        GLuint delta_mie_scattering_texture,
-        GLuint delta_scattering_density_texture,
-        GLuint delta_multiple_scattering_texture,
-        const vec3& lambdas,
-        const mat3& luminance_from_radiance,
-        bool blend,
+        const PrecomputePass& pass,
         unsigned int num_scattering_orders);
 
     bool precomputeIlluminance() { return num_precomputed_wavelengths_ > 3; }
@@ -321,27 +330,7 @@ private:
     std::function<std::string(const vec3&, bool)> glsl_header_factory_;
     bool is_dirty_;
 
-    struct PrecomputeSubPass
-    {
-        GraphicProgramPtr program;
-        GpuProgramInterfacePtr interface;
-    };
-
-    struct PrecomputeIteration
-    {
-        mat3 luminance_from_radiance;
-        vec3 lambdas;
-        bool blend{false};
-
-        PrecomputeSubPass transmittance;
-        PrecomputeSubPass direct_irradiance;
-        PrecomputeSubPass single_scattering;
-        PrecomputeSubPass scattering_density;
-        PrecomputeSubPass indirect_irradiance;
-        PrecomputeSubPass multiple_scattering;
-    };
-
-    std::vector<PrecomputeIteration> precompute_passes_;
+    std::vector<PrecomputePass> precompute_passes_;
     std::unique_ptr<PrecomputeSubPass> final_compute_transmittance_;
 };
 

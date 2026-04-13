@@ -36,6 +36,8 @@ private:
     std::unique_ptr<GraphicShaderHandle> _handle;
 };
 
+using GraphicShaderPtr = std::shared_ptr<GraphicShader>;
+
 
 class GraphicProgram
 {
@@ -61,6 +63,7 @@ private:
 };
 
 using GraphicProgramPtr = std::shared_ptr<GraphicProgram>;
+
 
 class GraphicProgramScope
 {
@@ -112,7 +115,6 @@ bool generateComputeProgram(
 bool generateComputeProgram(
     GraphicProgramPtr& program,
     const std::string& name,
-    const std::string programName,
     const std::vector<std::shared_ptr<GraphicShader>>& shaders);
 
 }

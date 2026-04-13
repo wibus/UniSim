@@ -162,7 +162,7 @@ bool PathTracerTask::defineShaders(GraphicContext& context)
 
     // Generate program
     _pathTracerProgram.reset();
-    if(!generateComputeProgram(_pathTracerProgram, "Path Tracer", "pathtracer", shaders))
+    if(!generateComputeProgram(_pathTracerProgram, "Path Tracer", {shaders}))
         return false;
 
     return true;

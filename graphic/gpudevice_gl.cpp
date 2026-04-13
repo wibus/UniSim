@@ -53,12 +53,13 @@ void GpuDevice::bindImage(const GpuImageResource& resource, const GpuProgramImag
 {
     PILS_ASSERT(resource.handle().texId > 0, "Invalid image index");
 
-    glBindImageTexture(unit.bindPoint, resource.handle().texId, 0, false, 0, GL_WRITE_ONLY, resource.handle().format);
+    glBindImageTexture(unit.bindPoint, resource.handle().texId, 0, resource.handle().dimension == GL_TEXTURE_3D, 0, GL_WRITE_ONLY, resource.handle().format);
 }
 
 void GpuDevice::dispatch(unsigned int workGroupCountX, unsigned int workGroupCountY, unsigned int workGroupCountZ)
 {
     glDispatchCompute(workGroupCountX, workGroupCountY, workGroupCountZ);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
 void GpuDevice::draw(const GpuGeometryResource& resource)

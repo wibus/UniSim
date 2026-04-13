@@ -332,7 +332,6 @@ bool generateComputeProgram(
 bool generateComputeProgram(
     GraphicProgramPtr& program,
     const std::string& name,
-    const std::string programName,
     const std::vector<std::shared_ptr<GraphicShader>>& shaders)
 {
     GLuint programId = glCreateProgram();
@@ -342,7 +341,7 @@ bool generateComputeProgram(
 
     glLinkProgram(programId);
 
-    if(!validateProgram(programId, programName))
+    if(!validateProgram(programId, name))
     {
         glDeleteProgram(programId);
         return false;
