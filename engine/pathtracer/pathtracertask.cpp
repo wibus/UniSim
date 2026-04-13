@@ -83,7 +83,7 @@ bool PathTracerTask::defineResources(GraphicContext& context)
             texture = new Texture();
             texture->width = 64;
             texture->height = 64;
-            texture->format = TextureFormat::UNORM8;
+            texture->format = TextureFormat::R8G8B8A8_UNORM;
             texture->numComponents = 4;
             texture->data.resize(64*64*4);
 
@@ -125,7 +125,7 @@ bool PathTracerTask::defineResources(GraphicContext& context)
               .width  = _viewport->width,
               .height = _viewport->height,
               .depth  = 1,
-              .format = GL_RGBA32F});
+              .format = TextureFormat::R32G32B32A32_FLOAT});
 
     return ok;
 }
@@ -218,7 +218,7 @@ void PathTracerTask::update(GraphicContext& context)
                         .width  = viewport.width,
                         .height = viewport.height,
                         .depth  = 1,
-                        .format = GL_RGBA32F});
+                        .format = TextureFormat::R32G32B32A32_FLOAT});
     }
 
     GpuPathTracerCommonParams gpuCommonParams;

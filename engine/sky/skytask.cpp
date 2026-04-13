@@ -126,7 +126,7 @@ bool SkyTask::defineResources(GraphicContext& context)
             .width  = _atmosphereRenderState->_moonTexSize,
             .height = _atmosphereRenderState->_moonTexSize,
             .depth  = 1,
-            .format = GL_RGBA32F});
+            .format = TextureFormat::R32G32B32A32_FLOAT});
         ok = ok && _atmosphereRenderState->_model->defineResources(context);
     }
 

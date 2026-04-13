@@ -10,6 +10,8 @@
 #include <tinyexr.h>
 #include <imgui/imgui.h>
 
+#include <PilsCore/Utils/Assert.h>
+
 namespace unisim
 {
 
@@ -34,17 +36,17 @@ void OutputMessage(j_common_ptr cinfo)
 }
 
 unsigned char BLACK_UNORM8_DATA[4] = {0, 0, 0, 0};
-const Texture Texture::BLACK_UNORM8 = Texture(TextureFormat::UNORM8, BLACK_UNORM8_DATA);
+const Texture Texture::BLACK_UNORM8 = Texture(TextureFormat::R8G8B8A8_UNORM, BLACK_UNORM8_DATA);
 
 float BLACK_Float32_DATA[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-const Texture Texture::BLACK_Float32= Texture(TextureFormat::Float32, (unsigned char*)BLACK_Float32_DATA);
+const Texture Texture::BLACK_Float32= Texture(TextureFormat::R32G32B32A32_FLOAT, (unsigned char*)BLACK_Float32_DATA);
 
 
 Texture::Texture() :
     width(0),
     height(0),
     depth(1),
-    format(TextureFormat::UNORM8),
+    format(TextureFormat::R8G8B8A8_UNORM),
     numComponents(4),
     handle(0)
 {
@@ -53,6 +55,7 @@ Texture::Texture() :
 
 Texture::~Texture()
 {
+    PILS_ASSERT(numComponents == 4, "Only support 4 channel texture formats");
 }
 
 Texture::Texture(TextureFormat format, unsigned char* pixelData) :
@@ -120,7 +123,7 @@ Texture* Texture::loadJpeg(const std::string& fileName)
     texture = new Texture();
     texture->width = cinfo.image_width;
     texture->height = cinfo.image_height;
-    texture->format = TextureFormat::UNORM8;
+    texture->format = TextureFormat::R8G8B8A8_UNORM;
     texture->numComponents = 4;//cinfo.num_components;
     texture->data.resize(texture->width * texture->height * texture->numComponents);
 
@@ -191,7 +194,7 @@ Texture* Texture::loadPng(const std::string& fileName)
     Texture* texture = new Texture();
     texture->width      = png_get_image_width(png, info);
     texture->height     = png_get_image_height(png, info);
-    texture->format = TextureFormat::UNORM8;
+    texture->format     = TextureFormat::R8G8B8A8_UNORM;
     texture->numComponents = 4;
     texture->data.resize(texture->width * texture->height * texture->numComponents);
 
@@ -278,7 +281,7 @@ Texture* Texture::loadExr(const std::string& fileName)
         Texture* texture = new Texture();
         texture->width = width;
         texture->height = height;
-        texture->format = TextureFormat::Float32;
+        texture->format = TextureFormat::R32G32B32A32_FLOAT;
         texture->numComponents = 4;
 
         unsigned int byteCount = sizeof(float) * (unsigned int)(texture->width * texture->height * texture->numComponents);
@@ -296,7 +299,7 @@ void Texture::ui()
 {
     int dimensions[2] = {width, height};
     ImGui::InputInt2("Dimensions", &dimensions[0], ImGuiInputTextFlags_ReadOnly);
-    ImGui::Text("Format %s", format == TextureFormat::UNORM8 ? "UNORM8" : "Float32");
+    ImGui::Text("Format %s", format == TextureFormat::R8G8B8A8_UNORM ? "UNORM8" : "Float32");
     ImGui::Text("Num Components %d", numComponents);
     uint64_t handle64 = handle;
     ImGui::Image((void*)handle64, ImVec2(512, (512.0f / dimensions[0]) * dimensions[1]));

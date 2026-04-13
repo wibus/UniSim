@@ -27,11 +27,11 @@ GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
     GLenum type = 0;
     switch(def.texture.format)
     {
-    case TextureFormat::UNORM8 :
+    case TextureFormat::R8G8B8A8_UNORM :
         internalFormat = def.texture.numComponents == 3 ? GL_RGB8 : GL_RGBA8;
         type = GL_UNSIGNED_BYTE;
         break;
-    case TextureFormat::Float32:
+    case TextureFormat::R32G32B32A32_FLOAT:
         internalFormat = GL_RGBA32F;
         type = GL_FLOAT;
         break;
@@ -74,7 +74,20 @@ GpuImageResource::GpuImageResource(ResourceId id, Definition def) :
     GpuResource(id)
 {
     _handle.reset(new GpuImageResourceHandle());
-    _handle->format = def.format;
+
+    switch(def.format)
+    {
+    case TextureFormat::R8G8B8A8_UNORM:
+        _handle->internalFormat = GL_RGBA8;
+        break;
+    case TextureFormat::R32G32B32A32_FLOAT:
+        _handle->internalFormat = GL_RGBA32F;
+        break;
+    default:
+        PILS_FATAL("Texture format not supported");
+        _handle->internalFormat = GL_RGBA8;
+    }
+
     _handle->dimension = def.depth > 1 ? GL_TEXTURE_3D : GL_TEXTURE_2D;
 
     glGenTextures(1, &_handle->texId);
@@ -90,9 +103,9 @@ GpuImageResource::GpuImageResource(ResourceId id, Definition def) :
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     if (_handle->dimension == GL_TEXTURE_2D)
-        glTexStorage2D(_handle->dimension, 1, def.format, def.width, def.height);
+        glTexStorage2D(_handle->dimension, 1, _handle->internalFormat, def.width, def.height);
     else if (_handle->dimension == GL_TEXTURE_3D)
-        glTexStorage3D(_handle->dimension, 1, def.format, def.width, def.height, def.depth);
+        glTexStorage3D(_handle->dimension, 1, _handle->internalFormat, def.width, def.height, def.depth);
     else
         PILS_FATAL("Unexpected texture dimension");
 
@@ -106,12 +119,25 @@ GpuImageResource::~GpuImageResource()
 
 void GpuImageResource::update(const Definition& def) const
 {
+    switch(def.format)
+    {
+    case TextureFormat::R8G8B8A8_UNORM:
+        _handle->internalFormat = GL_RGBA8;
+        break;
+    case TextureFormat::R32G32B32A32_FLOAT:
+        _handle->internalFormat = GL_RGBA32F;
+        break;
+    default:
+        PILS_FATAL("Texture format not supported");
+        _handle->internalFormat = GL_RGBA8;
+    }
+
     glBindTexture(_handle->dimension, _handle->texId);
 
     if (_handle->dimension == GL_TEXTURE_2D)
-        glTexStorage2D(_handle->dimension, 1, def.format, def.width, def.height);
+        glTexStorage2D(_handle->dimension, 1, _handle->internalFormat, def.width, def.height);
     else if (_handle->dimension == GL_TEXTURE_3D)
-        glTexStorage3D(_handle->dimension, 1, def.format, def.width, def.height, def.depth);
+        glTexStorage3D(_handle->dimension, 1, _handle->internalFormat, def.width, def.height, def.depth);
     else
         PILS_FATAL("Unexpected texture dimension");
 
@@ -130,10 +156,10 @@ GpuBindlessResource::GpuBindlessResource(ResourceId id, Definition def) :
     {
         switch(def.texture->format)
         {
-        case TextureFormat::UNORM8:
+        case TextureFormat::R8G8B8A8_UNORM:
             format = def.texture->numComponents == 3 ? GL_RGB8 : GL_RGBA8;
             break;
-        case TextureFormat::Float32:
+        case TextureFormat::R32G32B32A32_FLOAT:
             format = def.texture->numComponents == 3 ? GL_RGB32F : GL_RGBA32F;
             break;
         default:

@@ -19,10 +19,10 @@ public:
 class GpuImageResourceHandle
 {
 public:
-    GpuImageResourceHandle() : texId(0), format(-1) {}
+    GpuImageResourceHandle() : texId(0), internalFormat(-1) {}
 
     GLuint texId;
-    GLint format;
+    GLenum internalFormat;
     GLenum dimension;
 };
 

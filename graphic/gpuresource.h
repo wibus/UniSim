@@ -9,6 +9,8 @@
 
 #include <PilsCore/Utils/Assert.h>
 
+#include "../resource/texture.h"
+
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
 #include "gpuresource_gl.h"
 #endif // UNISIM_GRAPHIC_BACKEND_GL
@@ -20,7 +22,6 @@
 namespace unisim
 {
 
-struct Texture;
 class GraphicContext;
 class CompiledGpuProgramInterface;
 
@@ -69,7 +70,7 @@ public:
         int width;
         int height;
         int depth;
-        GLenum format;
+        TextureFormat format;
     };
 
     GpuImageResource(ResourceId id, Definition def);

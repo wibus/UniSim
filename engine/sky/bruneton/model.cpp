@@ -1274,14 +1274,9 @@ void Model::Precompute(
     }
 }
 
-constexpr GLenum Model::format()
+constexpr TextureFormat Model::internalFormat()
 {
-    return GL_RGBA;
-}
-
-constexpr GLenum Model::internalFormat()
-{
-    return GL_RGBA32F;
+    return TextureFormat::R32G32B32A32_FLOAT;
 }
 
 }  // namespace bruneton

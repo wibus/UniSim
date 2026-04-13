@@ -10,8 +10,8 @@ namespace unisim
 
 enum class TextureFormat
 {
-    UNORM8,
-    Float32
+    R8G8B8A8_UNORM,
+    R32G32B32A32_FLOAT
 };
 
 struct Texture

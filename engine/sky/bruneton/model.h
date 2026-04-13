@@ -208,8 +208,7 @@ public:
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
 
-    static constexpr GLenum format();
-    static constexpr GLenum internalFormat();
+    static constexpr TextureFormat internalFormat();
 
 private:
     typedef std::array<double, 3> vec3;
