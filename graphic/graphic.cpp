@@ -26,4 +26,31 @@ std::string loadSource(const std::string& fileName)
     return str;
 }
 
+bool generateVertexShader(
+    std::shared_ptr<GraphicShader>& shader,
+    const std::string& fileName,
+    const std::vector<std::string>& defines)
+{
+    std::string src = loadSource(fileName);
+    return generateShader(shader, ShaderType::Vertex, fileName, {src}, defines);
+}
+
+bool generateFragmentShader(
+    std::shared_ptr<GraphicShader>& shader,
+    const std::string& fileName,
+    const std::vector<std::string>& defines)
+{
+    std::string src = loadSource(fileName);
+    return generateShader(shader, ShaderType::Fragment, fileName, {src}, defines);
+}
+
+bool generateComputerShader(
+    std::shared_ptr<GraphicShader>& shader,
+    const std::string& fileName,
+    const std::vector<std::string>& defines)
+{
+    std::string src = loadSource(fileName);
+    return generateShader(shader, ShaderType::Compute, fileName, {src}, defines);
+}
+
 }

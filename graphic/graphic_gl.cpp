@@ -9,23 +9,20 @@ namespace unisim
 {
 
 GraphicShaderHandle::GraphicShaderHandle(GraphicShaderHandle&& other) :
-    _shaderId(other._shaderId),
-    _releaseOnDestroy(other._releaseOnDestroy)
+    _shaderId(other._shaderId)
 {
     other._shaderId = 0;
-    other._releaseOnDestroy = false;
 }
 
-GraphicShaderHandle::GraphicShaderHandle(GLuint shaderId, bool releaseOnDestroy) :
-    _shaderId(shaderId),
-    _releaseOnDestroy(releaseOnDestroy)
+GraphicShaderHandle::GraphicShaderHandle(GLuint shaderId) :
+    _shaderId(shaderId)
 {
     std::cout << "Creating shader handle '" << _shaderId << "'" << std::endl;
 }
 
 GraphicShaderHandle::~GraphicShaderHandle()
 {
-    if (_releaseOnDestroy && _shaderId != 0)
+    if (_shaderId != 0)
     {
         std::cout << "Destroying shader handle '" << _shaderId << "'" << std::endl;
         glDeleteShader(_shaderId);
@@ -226,33 +223,6 @@ bool generateShader(
         shader.reset(new GraphicShader(shaderName, GraphicShaderHandle(shaderId)));
         return true;
     }
-}
-
-bool generateVertexShader(
-    std::shared_ptr<GraphicShader>& shader,
-    const std::string& fileName,
-    const std::vector<std::string>& defines)
-{
-    std::string src = loadSource(fileName);
-    return generateShader(shader, ShaderType::Vertex, fileName, {src}, defines);
-}
-
-bool generateFragmentShader(
-    std::shared_ptr<GraphicShader>& shader,
-    const std::string& fileName,
-    const std::vector<std::string>& defines)
-{
-    std::string src = loadSource(fileName);
-    return generateShader(shader, ShaderType::Fragment, fileName, {src}, defines);
-}
-
-bool generateComputerShader(
-    std::shared_ptr<GraphicShader>& shader,
-    const std::string& fileName,
-    const std::vector<std::string>& defines)
-{
-    std::string src = loadSource(fileName);
-    return generateShader(shader, ShaderType::Compute, fileName, {src}, defines);
 }
 
 bool generateGraphicProgram(

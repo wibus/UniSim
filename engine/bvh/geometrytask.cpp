@@ -33,25 +33,25 @@ DefineResource(VerticesData);
 
 struct GpuPrimitive
 {
-    GLuint type;
-    GLuint index;
-    GLuint material;
-    GLuint pad1;
+    glm::uint type;
+    glm::uint index;
+    glm::uint material;
+    glm::uint pad1;
 };
 
 struct GpuMesh
 {
-    GLuint bvhNode;
+    glm::uint bvhNode;
 };
 
 struct GpuSphere
 {
-    GLfloat radius;
+    glm::float_t radius;
 };
 
 struct GpuPlane
 {
-    GLfloat invScale;
+    glm::float_t invScale;
 };
 
 struct GpuInstance
@@ -79,7 +79,7 @@ struct GpuTriangle
     uint v0;
     uint v1;
     uint v2;
-    GLfloat inv2Area;
+    glm::float_t inv2Area;
 };
 
 struct GpuVertexPos

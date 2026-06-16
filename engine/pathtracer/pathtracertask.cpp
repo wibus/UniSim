@@ -30,11 +30,11 @@ struct GpuPathTracerCommonParams
     glm::mat4 rayMatrix;
     glm::vec4 lensePosition;
     glm::vec4 lenseDirection;
-    GLfloat focusDistance;
-    GLfloat apertureRadius;
-    GLfloat exposure;
+    glm::float32 focusDistance;
+    glm::float32 apertureRadius;
+    glm::float32 exposure;
 
-    GLuint frameIndex;
+    glm::uint32 frameIndex;
     
     GpuBindlessTextureDescriptor blueNoise[PathTracerTask::BLUE_NOISE_TEX_COUNT];
     glm::vec4 halton[PathTracerTask::HALTON_SAMPLE_COUNT];

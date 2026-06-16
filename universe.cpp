@@ -60,7 +60,7 @@ int Universe::launch()
 
     while (!_mainWindow->shouldClose() && ok)
     {
-        Profiler::GetInstance().swapFrames();
+        Profiler_SwapFrames();
 
         {
             Profile(PollEvents);
@@ -157,7 +157,7 @@ void Universe::onWindowMouseScroll(const Window& window, const MouseScrollEvent&
 
 bool Universe::setup()
 {
-    Profiler::GetInstance().initize();
+    Profiler_Initialize();
 
     _mainView.reset(new View(*_mainWindow));
 
@@ -238,6 +238,7 @@ void Universe::ui()
                 if(ImGui::SliderFloat("Time of Day", &timeOfDay, 0, SkyLocalization::MAX_TIME_OF_DAY))
                     local.setTimeOfDay(timeOfDay);
 
+#if UNISIM_PROFILE_ENABLED
                 ImGui::Separator();
 
                 ImGui::Text("CPU Time %.3gms   (Sync %.3gms)",
@@ -248,6 +249,7 @@ void Universe::ui()
                             Profiler::GetInstance().getGpuSyncNs() * 1e-6);
                 ImGui::Text("Path Tracer %.3gms",
                             Profiler::GetInstance().getGpuPointNs(PID_GPU(PathTracer)) * 1e-6);
+#endif // UNISIM_PROFILE_ENABLED
 
                 ImGui::Separator();
 
@@ -287,7 +289,11 @@ void Universe::ui()
 
             if(ImGui::BeginTabItem("Profiler"))
             {
+#if UNISIM_PROFILE_ENABLED
                 Profiler::GetInstance().ui();
+#else
+                ImGui::TextColored(ImVec4(1, 0, 0, 1), "Profiler is disabled");
+#endif // UNISIM_PROFILE_ENABLED
                 ImGui::EndTabItem();
             }
 

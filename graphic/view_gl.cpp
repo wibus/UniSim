@@ -1,6 +1,8 @@
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+
 #include "view.h"
 
-#include "graphic_gl.h"
+#include "graphic.h"
 
 
 namespace unisim
@@ -12,3 +14,5 @@ void View::setViewportNative() const
 }
 
 }
+
+#endif // UNISIM_GRAPHIC_BACKEND_GL

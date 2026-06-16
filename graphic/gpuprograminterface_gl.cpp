@@ -1,3 +1,5 @@
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+
 #include "gpuprograminterface.h"
 
 #include <PilsCore/Utils/Assert.h>
@@ -202,3 +204,5 @@ bool CompiledGpuProgramInterface::set(const GraphicProgram& program, const GpuPr
 }
 
 }
+
+#endif // UNISIM_GRAPHIC_BACKEND_GL

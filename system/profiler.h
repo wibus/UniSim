@@ -7,8 +7,12 @@
 struct ImVec2;
 class ImDrawList;
 
+#define UNISIM_PROFILE_ENABLED 0
+
 namespace unisim
 {
+
+#if UNISIM_PROFILE_ENABLED
 
 typedef unsigned int ProfileIdCpu;
 typedef unsigned int ProfileIdGpu;
@@ -45,7 +49,7 @@ public:
     ProfileIdCpu registerCpuPoint(const std::string& name);
     ProfileIdGpu registerGpuPoint(const std::string& name);
 
-    void initize();
+    void initialize();
     void swapFrames();
 
     void startCpuPoint(ProfileIdCpu id);
@@ -119,6 +123,9 @@ private:
     ProfileIdGpu _id;
 };
 
+#define Profiler_Initialize() Profiler::GetInstance().initialize()
+#define Profiler_SwapFrames() Profiler::GetInstance().swapFrames()
+
 #define PID_CPU(name) ProfileIdCpu_##name
 #define DefineProfilePoint(name) ProfileIdCpu PID_CPU(name) = Profiler::GetInstance().registerCpuPoint(#name)
 #define DeclareProfilePoint(name) extern ProfileIdCpu PID_CPU(name);
@@ -128,6 +135,23 @@ private:
 #define DefineProfilePointGpu(name) ProfileIdGpu PID_GPU(name) = Profiler::GetInstance().registerGpuPoint(#name)
 #define DeclareProfilePointGpu(name) extern ProfileIdGpu PID_GPU(name);
 #define ProfileGpu(name) ScoppedGpuPoint profilePointGpu_##name(PID_GPU(name))
+
+#else
+
+#define Profiler_Initialize()
+#define Profiler_SwapFrames()
+
+#define PID_CPU(name)
+#define DefineProfilePoint(name)
+#define DeclareProfilePoint(name)
+#define Profile(name)
+
+#define PID_GPU(name)
+#define DefineProfilePointGpu(name)
+#define DeclareProfilePointGpu(name)
+#define ProfileGpu(name)
+
+#endif // UNISIM_PROFILE_ENABLED
 
 }
 

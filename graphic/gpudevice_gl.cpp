@@ -1,3 +1,5 @@
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+
 #include "gpudevice.h"
 
 #include "PilsCore/Utils/Assert.h"
@@ -74,3 +76,5 @@ void GpuDevice::clearSwapChain()
 }
 
 }
+
+#endif // UNISIM_GRAPHIC_BACKEND_GL

@@ -1,3 +1,5 @@
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+
 #include "window.h"
 
 #include "graphic.h"
@@ -32,3 +34,5 @@ void Window::ImGuiNewFrameNative()
 }
 
 }
+
+#endif // UNISIM_GRAPHIC_BACKEND_GL

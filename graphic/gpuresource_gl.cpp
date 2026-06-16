@@ -1,3 +1,5 @@
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+
 #include "gpuresource.h"
 
 #include "../resource/texture.h"
@@ -255,3 +257,5 @@ GpuGeometryResource::~GpuGeometryResource()
 }
 
 }
+
+#endif // UNISIM_GRAPHIC_BACKEND_GL

@@ -28,8 +28,8 @@ DefineResource(Emitters);
 
 struct GpuEmitter
 {
-    GLuint instance;
-    GLuint primitive;
+    glm::uint instance;
+    glm::uint primitive;
 };
 
 struct GpuDirectionalLight

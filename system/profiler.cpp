@@ -13,6 +13,8 @@
 namespace unisim
 {
 
+#if UNISIM_PROFILE_ENABLED
+
 DefineProfilePoint(Frame);
 DefineProfilePointGpu(Frame);
 
@@ -36,8 +38,8 @@ struct GpuProfilePoint
     ProfileIdCpu id;
     std::string name;
 
-    GLuint start[2];
-    GLuint stop[2];
+    glm::uint start[2];
+    glm::uint stop[2];
 };
 
 CpuTime g_cpuEpoch = CpuTimeNow();
@@ -444,5 +446,7 @@ void Profiler::renderPointRect(const ResolvedPoint& pt, double scale, double bia
 
     draw_list->AddRectFilled(min, max, color);
 }
+
+#endif // UNISIM_PROFILE_ENABLED
 
 }

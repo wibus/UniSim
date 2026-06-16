@@ -114,6 +114,7 @@ set(GraphicFiles
     graphic/window.h
     graphic/window.cpp
     graphic/window_gl.cpp
+    graphic/window_vk.cpp
 )
 
 # Engine files

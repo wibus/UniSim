@@ -1,8 +1,6 @@
 #ifndef GPUDEVICE_GL_H
 #define GPUDEVICE_GL_H
 
-#include "gpuprograminterface_gl.h"
-
 
 namespace unisim
 {
