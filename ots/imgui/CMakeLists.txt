@@ -21,4 +21,6 @@ add_library(imgui
     imgui_impl_opengl3.cpp
     imgui_impl_opengl3.h
     imgui_impl_opengl3_loader.h
+    imgui_impl_vulkan.h
+    imgui_impl_vulkan.cpp
 )

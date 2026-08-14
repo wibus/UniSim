@@ -302,6 +302,7 @@ void Texture::ui()
     ImGui::Text("Format %s", format == TextureFormat::R8G8B8A8_UNORM ? "UNORM8" : "Float32");
     ImGui::Text("Num Components %d", numComponents);
     uint64_t handle64 = handle;
-    ImGui::Image((void*)handle64, ImVec2(512, (512.0f / dimensions[0]) * dimensions[1]));
+    ImTextureRef texRef((void*)handle64);
+    ImGui::Image(texRef, ImVec2(512, (512.0f / dimensions[0]) * dimensions[1]));
 }
 }

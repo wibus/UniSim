@@ -50,6 +50,8 @@ bool Window::CreateGlfwSurface()
 
 void Window::ImGuiInitNative()
 {
+    PILS_ASSERT(false, "Not implemented!");
+
     // Setup ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
