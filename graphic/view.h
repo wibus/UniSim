@@ -2,6 +2,7 @@
 #define VIEW_H
 
 #include <set>
+#include <memory>
 
 #include "window.h"
 
@@ -12,6 +13,17 @@
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
 #include "view_vk.h"
 #endif // UNISIM_GRAPHIC_BACKEND_VK
+
+
+namespace pils
+{
+namespace gpu
+{
+class RenderPass;
+class FrameBuffer;
+}
+}
+
 
 namespace unisim
 {
@@ -61,12 +73,19 @@ public:
 
     void setViewport() const;
 
+    const pils::gpu::RenderPass& renderPass() const {  return *_renderPass; }
+    const pils::gpu::FrameBuffer& frameBuffer() const { return *_frameBuffer; }
+
 private:
+    void resizeViewportNative();
     void setViewportNative() const;
 
     Window& _window;
     Viewport _viewport;
     std::set<ViewEventListener*> _eventListeners;
+
+    std::unique_ptr<pils::gpu::RenderPass> _renderPass;
+    std::unique_ptr<pils::gpu::FrameBuffer> _frameBuffer;
 };
 
 }

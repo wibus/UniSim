@@ -8,6 +8,11 @@
 namespace unisim
 {
 
+void View::resizeViewportNative()
+{
+
+}
+
 void View::setViewportNative() const
 {
     glViewport(0, 0, _viewport.width, _viewport.height);

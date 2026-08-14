@@ -25,6 +25,7 @@ class Universe : public WindowEventListener
 {
 public:
     Universe();
+    ~Universe();
     int launch();
 
     void onWindowResize(const Window& window, int width, int height) override;

@@ -2,6 +2,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include <PilsCore/Gpu/Surface.h>
 
 #include <PilsCore/Utils/Assert.h>
 #include <PilsCore/Utils/Logger.h>
@@ -121,23 +122,22 @@ void glfWHandleScroll(GLFWwindow* window, double xoffset, double yoffset)
     }
 }
 
-Window::Window() :
-    Window(1280, 720)
+Window::Window(const GpuDevice& gpuDevice) :
+    Window(gpuDevice, 1280, 720)
 {
 }
 
-Window::Window(int requestedWidth, int requestedHeight) :
+Window::Window(const GpuDevice& gpuDevice, int requestedWidth, int requestedHeight) :
+    _gpuDevice(gpuDevice),
     _glfwWindow(nullptr),
     _width(-1),
     _height(-1)
 {
-    glfwSetErrorCallback([](int error, const char* description)
+    if (!InitGlfwNative())
     {
-        PILS_ERROR("GLFW Error ", error, ": ",  description, "%s\n");
-    });
-
-    if (!glfwInit())
+        glfwTerminate();
         return;
+    }
 
     int monitorCount;
     GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
@@ -186,6 +186,7 @@ Window::Window(int requestedWidth, int requestedHeight) :
 
     if(!chosenMonitor)
     {
+        glfwTerminate();
         return;
     }
 
@@ -200,7 +201,13 @@ Window::Window(int requestedWidth, int requestedHeight) :
 
     if (!_glfwWindow)
     {
+        glfwTerminate();
+        return;
+    }
 
+    if(!CreateGlfwSurface())
+    {
+        glfwDestroyWindow(_glfwWindow);
         glfwTerminate();
         return;
     }
@@ -215,7 +222,7 @@ Window::Window(int requestedWidth, int requestedHeight) :
 
     glfwSwapInterval(1);
 
-    glfwSetWindowSizeCallback(_glfwWindow, glfWHandleResize);
+    glfwSetFramebufferSizeCallback(_glfwWindow, glfWHandleResize);
     glfwSetKeyCallback(_glfwWindow, glfWHandleKeyboard);
     glfwSetCursorPosCallback(_glfwWindow, glfWHandleMouseMove);
     glfwSetMouseButtonCallback(_glfwWindow, glfWHandleMouseButton);
@@ -226,9 +233,18 @@ Window::Window(int requestedWidth, int requestedHeight) :
 
 Window::~Window()
 {
+    if (_surface)
+    {
+        // Destroy swapchain before surface
+        _swapchain.reset();
+        // Destroy surface before window
+        _surface.reset();
+    }
+
     if (_glfwWindow != nullptr)
     {
         WindowRegistry::getInstance().unregisterWindow(reinterpret_cast<uint64_t>(_glfwWindow));
+        glfwDestroyWindow(_glfwWindow);
     }
 
     PILS_ASSERT(_eventListeners.empty(), "Window is being destroyed with active listeners");

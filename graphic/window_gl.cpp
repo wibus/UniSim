@@ -2,14 +2,34 @@
 
 #include "window.h"
 
-#include "graphic.h"
-
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
+
+#include "graphic.h"
 
 
 namespace unisim
 {
+
+class WindowSurface
+{
+
+};
+
+std::vector<const char*> getUserProvidedVkInstanceExtensions()
+{
+    return {};
+}
+
+bool Window::InitGlfwNative()
+{
+    return true;
+}
+
+bool Window::CreateGlfwSurface()
+{
+    return true;
+}
 
 void Window::ImGuiInitNative()
 {

@@ -45,6 +45,9 @@ public:
 
     void clearSwapChain();
 
+    pils::gpu::Context& context() { return *_deviceContext; }
+    const pils::gpu::Context& context() const { return *_deviceContext; }
+
 private:
     std::unique_ptr<pils::gpu::Context> _deviceContext;
     std::unique_ptr<pils::gpu::CommandList> _commandList;

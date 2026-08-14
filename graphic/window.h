@@ -3,12 +3,23 @@
 
 #include <map>
 #include <set>
+#include <memory>
 
 #include <PilsCore/types.h>
+
+#include "gpudevice.h"
 
 
 class GLFWwindow;
 
+namespace pils
+{
+namespace gpu
+{
+    class Surface;
+    class Swapchain;
+}
+}
 
 namespace unisim
 {
@@ -47,18 +58,23 @@ private:
     std::map<uint64_t, Window*> _windows;
 };
 
+class WindowSurface;
 
 class Window
 {
 public:
-    Window();
-    Window(int requestedWidth, int requestedHeight);
+    Window(const GpuDevice& gpuDevice);
+    Window(const GpuDevice& gpuDevice, int requestedWidth, int requestedHeight);
     ~Window();
 
     bool isValid() const;
     uint64_t handle() const;
     int width() const { return _width; }
     int height() const { return _height; }
+
+    const GpuDevice& gpuDevice() const { return _gpuDevice; }
+    const pils::gpu::Surface& surface() const { return *_surface; }
+    const pils::gpu::Swapchain& swapchain() const { return *_swapchain; }
 
     void registerEventListener(WindowEventListener* listener);
     void unregisterEventListener(WindowEventListener* listener);
@@ -77,11 +93,17 @@ public:
     void close();
 
 private:
+    bool InitGlfwNative();
+    bool CreateGlfwSurface();
     void ImGuiInitNative();
     void ImGuiNewFrameNative();
 
+    const GpuDevice& _gpuDevice;
+
     GLFWwindow* _glfwWindow;
     std::set<WindowEventListener*> _eventListeners;
+    std::unique_ptr<pils::gpu::Surface> _surface;
+    std::unique_ptr<pils::gpu::Swapchain> _swapchain;
 
     int _width;
     int _height;

@@ -2,6 +2,8 @@
 
 #include <PilsCore/Utils/Assert.h>
 
+#include <PilsCore/Gpu/Pass.h>
+
 #include "graphic_gl.h"
 
 #include "window.h"
@@ -29,6 +31,7 @@ View::View(Window& window) :
     _viewport{window.width(), window.height()}
 {
     _window.registerEventListener(this);
+    resizeViewportNative();
     setViewport();
 }
 
@@ -36,6 +39,9 @@ View::~View()
 {
     _window.unregisterEventListener(this);
     PILS_ASSERT(_eventListeners.empty(), "View is being destroyed with active listeners");
+
+    _frameBuffer.reset();
+    _renderPass.reset();
 }
 
 void View::onWindowResize(const Window& window, int width, int height)
@@ -43,6 +49,7 @@ void View::onWindowResize(const Window& window, int width, int height)
     _viewport.width = width;
     _viewport.height = height;
 
+    resizeViewportNative();
     setViewport();
 
     for(auto listener : _eventListeners)

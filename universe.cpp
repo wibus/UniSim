@@ -44,9 +44,19 @@ Universe::Universe() :
 {
 }
 
+Universe::~Universe()
+{
+    // Destroy camera men listening to view
+    _project.reset();
+    // Destroy the view before the window
+    _mainView.reset();
+    // Destroy the window before the GPU Device
+    _mainWindow.reset();
+}
+
 int Universe::launch()
 {
-    _mainWindow.reset(new Window());
+    _mainWindow.reset(new Window(_graphic.device()));
 
     if (!_mainWindow->isValid())
     {
