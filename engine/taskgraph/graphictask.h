@@ -14,6 +14,8 @@ class Scene;
 class Camera;
 class GpuDevice;
 class PathTracerTask;
+class ImGuiRenderer;
+
 
 struct GraphicSettings
 {
@@ -52,6 +54,18 @@ private:
 };
 
 typedef std::shared_ptr<GraphicTask> GraphicTaskPtr;
+
+
+class Ui : public GraphicTask
+{
+public:
+    Ui(const ImGuiRenderer& imGuiRenderer);
+
+    void render(GraphicContext& context) override;
+
+private:
+    const ImGuiRenderer& _imGuiRenderer;
+};
 
 
 class ClearSwapChain : public GraphicTask

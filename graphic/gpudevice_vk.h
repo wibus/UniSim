@@ -48,6 +48,8 @@ public:
     pils::gpu::Context& context() { return *_deviceContext; }
     const pils::gpu::Context& context() const { return *_deviceContext; }
 
+    pils::gpu::CommandList* commandList() const { return _commandList.get(); }
+
 private:
     std::unique_ptr<pils::gpu::Context> _deviceContext;
     std::unique_ptr<pils::gpu::CommandList> _commandList;

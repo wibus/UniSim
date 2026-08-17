@@ -4,8 +4,6 @@
 
 #include <PilsCore/Gpu/Pass.h>
 
-#include "graphic_gl.h"
-
 #include "window.h"
 
 

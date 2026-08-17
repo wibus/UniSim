@@ -8,10 +8,10 @@
 #include "../resource/primitive.h"
 
 #include "../graphic/view.h"
+#include "../graphic/imguirenderer.h"
 
 #include "../camera.h"
 #include "../scene.h"
-#include "../ui.h"
 
 #include "../sky/skytask.h"
 #include "../bvh/geometrytask.h"
@@ -31,6 +31,8 @@ GraphicTaskGraph::GraphicTaskGraph()
 
 bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Camera& camera)
 {
+    _imGuiRenderer.reset(new ImGuiRenderer(view));
+
     createTaskGraph(scene);
 
     GraphicContext context = {_device, view, scene, camera, _resources, _settings};
@@ -130,7 +132,7 @@ void GraphicTaskGraph::createTaskGraph(const Scene& scene)
     addTask(_pathTracerTask);
     addTask(GraphicTaskPtr(new ClearSwapChain()));
     addTask(GraphicTaskPtr(new GradingTask()));
-    addTask(GraphicTaskPtr(new Ui()));
+    addTask(GraphicTaskPtr(new Ui(*_imGuiRenderer)));
 
     // Path Tracer Providers
     std::vector<PathTracerProviderTaskPtr> pathTracerProviders;

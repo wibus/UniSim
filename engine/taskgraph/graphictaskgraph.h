@@ -10,6 +10,9 @@
 namespace unisim
 {
 
+class ImGuiRenderer;
+
+
 class GraphicTaskGraph
 {
 public:
@@ -25,6 +28,8 @@ public:
 
     const GpuResourceManager& resources() const { return _resources; }
 
+    const ImGuiRenderer& imGuiRenderer() const { return *_imGuiRenderer; }
+
 private:
     void createTaskGraph(const Scene& scene);
     void addTask(const GraphicTaskPtr& task);
@@ -33,6 +38,7 @@ private:
     GraphicSettings _settings;
     GpuResourceManager _resources;
     std::vector<GraphicTaskPtr> _tasks;
+    std::unique_ptr<ImGuiRenderer> _imGuiRenderer;
 
     std::shared_ptr<PathTracerTask> _pathTracerTask;
 };

@@ -105,6 +105,12 @@ set(GraphicFiles
     graphic/graphic_gl.cpp
     graphic/graphic_vk.h
     graphic/graphic_vk.cpp
+    graphic/imguirenderer.h
+    graphic/imguirenderer.cpp
+    graphic/imguirenderer_gl.h
+    graphic/imguirenderer_gl.cpp
+    graphic/imguirenderer_vk.h
+    graphic/imguirenderer_vk.cpp
     graphic/view.h
     graphic/view.cpp
     graphic/view_gl.h
@@ -178,8 +184,6 @@ set(EngineFiles
     engine/scene.cpp
     engine/project.h
     engine/project.cpp
-    engine/ui.h
-    engine/ui.cpp
 )
 
 # Shaders

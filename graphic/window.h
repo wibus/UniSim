@@ -9,7 +9,6 @@
 
 #include "gpudevice.h"
 
-
 class GLFWwindow;
 
 namespace pils
@@ -29,6 +28,7 @@ class KeyboardEvent;
 class MouseMoveEvent;
 class MouseButtonEvent;
 class MouseScrollEvent;
+
 
 class WindowEventListener
 {
@@ -72,6 +72,8 @@ public:
     int width() const { return _width; }
     int height() const { return _height; }
 
+    GLFWwindow* glfwWindow() const { return _glfwWindow; }
+
     const GpuDevice& gpuDevice() const { return _gpuDevice; }
     const pils::gpu::Surface& surface() const { return *_surface; }
     const pils::gpu::Swapchain& swapchain() const { return *_swapchain; }
@@ -85,8 +87,6 @@ public:
     void onMouseButton(const MouseButtonEvent& event);
     void onMouseScroll(const MouseScrollEvent& event);
 
-    void ImGuiNewFrame();
-
     bool shouldClose();
     void pollEvents();
     void present();
@@ -95,8 +95,6 @@ public:
 private:
     bool InitGlfwNative();
     bool CreateGlfwSurface();
-    void ImGuiInitNative();
-    void ImGuiNewFrameNative();
 
     const GpuDevice& _gpuDevice;
 

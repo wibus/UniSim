@@ -64,6 +64,7 @@ public:
     View(Window& window);
     virtual ~View();
 
+    const Window& window() const { return _window; }
     const Viewport& viewport() const { return _viewport; }
 
     void onWindowResize(const Window& window, int width, int height) override;

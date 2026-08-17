@@ -6,8 +6,6 @@
 
 #include <GLFW/glfw3.h>
 
-#include <imgui/imgui_impl_glfw.h>
-
 #include <PilsCore/Utils/Assert.h>
 #include <PilsCore/Gpu/Context.h>
 #include <PilsCore/Gpu/Surface.h>
@@ -17,7 +15,6 @@
 
 namespace unisim
 {
-
 
 bool Window::InitGlfwNative()
 {
@@ -46,27 +43,6 @@ bool Window::CreateGlfwSurface()
     _swapchain.reset(new pils::gpu::Swapchain(_gpuDevice.context().device(), *_surface, width, height));
 
     return true;
-}
-
-void Window::ImGuiInitNative()
-{
-    PILS_ASSERT(false, "Not implemented!");
-
-    // Setup ImGui
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-    ImGui::StyleColorsDark();
-
-    ImGui_ImplGlfw_InitForVulkan(_glfwWindow, true);
-}
-
-void Window::ImGuiNewFrameNative()
-{
-    PILS_ASSERT(false, "Not implemented!");
 }
 
 }

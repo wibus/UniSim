@@ -42,7 +42,7 @@ void View::resizeViewportNative()
 
 void View::setViewportNative() const
 {
-    PILS_ASSERT(false, "Not implemented!");
+
 }
 
 }

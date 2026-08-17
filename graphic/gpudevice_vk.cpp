@@ -16,7 +16,7 @@ namespace unisim
 GpuDevice::GpuDevice()
 {
     _deviceContext.reset(new pils::gpu::Context());
-    _commandList.reset(new pils::gpu::CommandList(_deviceContext->device()));
+    //_commandList.reset(new pils::gpu::CommandList(_deviceContext->device()));
 }
 
 GpuDevice::~GpuDevice()

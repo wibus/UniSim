@@ -3,7 +3,9 @@
 #include "../system/profiler.h"
 
 #include "../graphic/gpudevice.h"
+#include "../graphic/imguirenderer.h"
 #include "../graphic/view.h"
+
 
 namespace unisim
 {
@@ -15,6 +17,25 @@ GraphicTask::GraphicTask(const std::string& name) :
 
 GraphicTask::~GraphicTask()
 {
+}
+
+
+DefineProfilePoint(ImGui_Render);
+DefineProfilePointGpu(ImGui_Render);
+
+Ui::Ui(const ImGuiRenderer& imguiRenderer) :
+    GraphicTask("UI"),
+    _imGuiRenderer(imguiRenderer)
+{
+
+}
+
+void Ui::render(GraphicContext& context)
+{
+    Profile(ImGui_Render);
+    ProfileGpu(ImGui_Render);
+
+    _imGuiRenderer.render(context.device);
 }
 
 

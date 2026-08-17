@@ -208,6 +208,7 @@ Window::Window(const GpuDevice& gpuDevice, int requestedWidth, int requestedHeig
     if(!CreateGlfwSurface())
     {
         glfwDestroyWindow(_glfwWindow);
+        _glfwWindow = nullptr;
         glfwTerminate();
         return;
     }
@@ -215,20 +216,15 @@ Window::Window(const GpuDevice& gpuDevice, int requestedWidth, int requestedHeig
     WindowRegistry::getInstance().registerWindow(this, handle());
 
     glfwSetWindowPos(_glfwWindow, viewportX, viewportY);
-    glfwMakeContextCurrent(_glfwWindow);
 
     glewExperimental = GL_TRUE;
     glewInit();
-
-    glfwSwapInterval(1);
 
     glfwSetFramebufferSizeCallback(_glfwWindow, glfWHandleResize);
     glfwSetKeyCallback(_glfwWindow, glfWHandleKeyboard);
     glfwSetCursorPosCallback(_glfwWindow, glfWHandleMouseMove);
     glfwSetMouseButtonCallback(_glfwWindow, glfWHandleMouseButton);
     glfwSetScrollCallback(_glfwWindow, glfWHandleScroll);
-
-    ImGuiInitNative();
 }
 
 Window::~Window()
@@ -245,6 +241,7 @@ Window::~Window()
     {
         WindowRegistry::getInstance().unregisterWindow(reinterpret_cast<uint64_t>(_glfwWindow));
         glfwDestroyWindow(_glfwWindow);
+        glfwTerminate();
     }
 
     PILS_ASSERT(_eventListeners.empty(), "Window is being destroyed with active listeners");
@@ -305,11 +302,6 @@ void Window::onMouseScroll(const MouseScrollEvent& event)
         listener->onWindowMouseScroll(*this, event);
 }
 
-void Window::ImGuiNewFrame()
-{
-    ImGuiNewFrameNative();
-}
-
 bool Window::shouldClose()
 {
     PILS_ASSERT(_glfwWindow != nullptr, "GLFW window pointer is null");
@@ -329,7 +321,6 @@ void Window::present()
 
 void Window::close()
 {
-    glfwTerminate();
 }
 
 }

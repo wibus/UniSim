@@ -13,6 +13,7 @@
 #include "resource/sky.h"
 
 #include "graphic/window.h"
+#include "graphic/imguirenderer.h"
 
 #include "engine/scene.h"
 #include "engine/project.h"
@@ -56,16 +57,6 @@ Universe::~Universe()
 
 int Universe::launch()
 {
-    _mainWindow.reset(new Window(_graphic.device()));
-
-    if (!_mainWindow->isValid())
-    {
-        PILS_ERROR("Could not create window. Exiting.");
-        return -1;
-    }
-
-    _mainWindow->registerEventListener(this);
-
     bool ok = setup();
 
     while (!_mainWindow->shouldClose() && ok)
@@ -80,7 +71,7 @@ int Universe::launch()
         // Start ImGui frame
         {
             Profile(ImGui_NewFrame);
-            _mainWindow->ImGuiNewFrame();
+            _graphic.imGuiRenderer().ImGuiNewFrame();
         }
 
         update();
@@ -97,7 +88,7 @@ int Universe::launch()
     _mainWindow->unregisterEventListener(this);
     _mainWindow->close();
 
-    return 0;
+    return ok ? 0 : -1;
 }
 
 void Universe::onWindowResize(const Window& window, int width, int height)
@@ -169,6 +160,15 @@ bool Universe::setup()
 {
     Profiler_Initialize();
 
+    _mainWindow.reset(new Window(_graphic.device()));
+
+    if (!_mainWindow->isValid())
+    {
+        PILS_ERROR("Could not create window. Exiting.");
+        return false;
+    }
+
+    _mainWindow->registerEventListener(this);
     _mainView.reset(new View(*_mainWindow));
 
     //_project.reset(new SolarSystemProject());
