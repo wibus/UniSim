@@ -2,6 +2,7 @@
 #define VIEW_H
 
 #include <set>
+#include <vector>
 #include <memory>
 
 #include "window.h"
@@ -67,7 +68,8 @@ public:
     const Window& window() const { return _window; }
     const Viewport& viewport() const { return _viewport; }
 
-    void onWindowResize(const Window& window, int width, int height) override;
+    virtual void onWindowResizeBefore(const Window& window, int width, int height) override;
+    virtual void onWindowResizeAfter(const Window& window, int width, int height) override;
 
     void registerEventListener(ViewEventListener* listener);
     void unregisterEventListener(ViewEventListener* listener);
@@ -75,9 +77,10 @@ public:
     void setViewport() const;
 
     const pils::gpu::RenderPass& renderPass() const {  return *_renderPass; }
-    const pils::gpu::FrameBuffer& frameBuffer() const { return *_frameBuffer; }
+    const pils::gpu::FrameBuffer& frameBuffer() const;
 
 private:
+    void resetViewportNative();
     void resizeViewportNative();
     void setViewportNative() const;
 
@@ -86,7 +89,7 @@ private:
     std::set<ViewEventListener*> _eventListeners;
 
     std::unique_ptr<pils::gpu::RenderPass> _renderPass;
-    std::unique_ptr<pils::gpu::FrameBuffer> _frameBuffer;
+    std::vector<std::unique_ptr<pils::gpu::FrameBuffer>> _frameBuffers;
 };
 
 }

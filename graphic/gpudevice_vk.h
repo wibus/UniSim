@@ -2,6 +2,7 @@
 #define GPUDEVICE_VK_H
 
 #include <memory>
+#include <vector>
 
 
 namespace pils
@@ -34,6 +35,15 @@ public:
     GpuDevice();
     ~GpuDevice();
 
+    pils::gpu::Context& context() { return *_deviceContext; }
+    const pils::gpu::Context& context() const { return *_deviceContext; }
+
+    pils::gpu::CommandList& commandList() const;
+    void setCommandList(const std::shared_ptr<pils::gpu::CommandList>& commandList) { _commandList = commandList; }
+
+    void begin();
+    void end();
+
     void bindBuffer(const GpuConstantResource& resource, const GpuProgramConstantBindPoint& bindPoint);
     void bindBuffer(const GpuStorageResource& resource, const GpuProgramStorageBindPoint& bindPoint);
     void bindTexture(const GpuTextureResource& resource, const GpuProgramTextureBindPoint& unit);
@@ -45,14 +55,9 @@ public:
 
     void clearSwapChain();
 
-    pils::gpu::Context& context() { return *_deviceContext; }
-    const pils::gpu::Context& context() const { return *_deviceContext; }
-
-    pils::gpu::CommandList* commandList() const { return _commandList.get(); }
-
 private:
     std::unique_ptr<pils::gpu::Context> _deviceContext;
-    std::unique_ptr<pils::gpu::CommandList> _commandList;
+    std::shared_ptr<pils::gpu::CommandList> _commandList;
 };
 
 }

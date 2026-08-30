@@ -282,9 +282,9 @@ void PathTracerTask::render(GraphicContext& context)
     }
 }
 
-void PathTracerTask::setPathTracerTasks(const std::vector<PathTracerProviderTaskPtr>& tasks)
+void PathTracerTask::setPathTracerProviders(const std::vector<PathTracerProviderTaskPtr>& providers)
 {
-    _pathTracerProviders = tasks;
+    _pathTracerProviders = providers;
 }
 
 uint64_t PathTracerTask::toGpu(

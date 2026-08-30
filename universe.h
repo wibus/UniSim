@@ -28,7 +28,6 @@ public:
     ~Universe();
     int launch();
 
-    void onWindowResize(const Window& window, int width, int height) override;
     void onWindowKeyboard(const Window& window, const KeyboardEvent& event) override;
     void onWindowMouseMove(const Window& window, const MouseMoveEvent& event) override;
     void onWindowMouseButton(const Window& window, const MouseButtonEvent& event) override;

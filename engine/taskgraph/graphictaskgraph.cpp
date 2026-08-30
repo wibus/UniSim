@@ -105,6 +105,8 @@ void GraphicTaskGraph::execute(const View& view, const Scene& scene, const Camer
 {
     GraphicContext context = {_device, view, scene, camera, _resources, _settings};
 
+    _device.begin();
+
     for(const auto& task : _tasks)
     {
         task->update(context);
@@ -114,6 +116,8 @@ void GraphicTaskGraph::execute(const View& view, const Scene& scene, const Camer
     {
         task->render(context);
     }
+
+    _device.end();
 }
 
 void GraphicTaskGraph::createTaskGraph(const Scene& scene)
@@ -124,6 +128,7 @@ void GraphicTaskGraph::createTaskGraph(const Scene& scene)
     // Task Graph
     _tasks.clear();
 
+#ifndef UNISIM_GRAPHIC_BACKEND_VK
     addTask(GraphicTaskPtr(new TerrainTask()));
     addTask(GraphicTaskPtr(new MaterialTask()));
     addTask(GraphicTaskPtr(new GeometryTask()));
@@ -132,6 +137,7 @@ void GraphicTaskGraph::createTaskGraph(const Scene& scene)
     addTask(_pathTracerTask);
     addTask(GraphicTaskPtr(new ClearSwapChain()));
     addTask(GraphicTaskPtr(new GradingTask()));
+#endif //
     addTask(GraphicTaskPtr(new Ui(*_imGuiRenderer)));
 
     // Path Tracer Providers
@@ -143,7 +149,7 @@ void GraphicTaskGraph::createTaskGraph(const Scene& scene)
             pathTracerProviders.push_back(pathTracerProvider);
         }
     }
-    _pathTracerTask->setPathTracerTasks(pathTracerProviders);
+    _pathTracerTask->setPathTracerProviders(pathTracerProviders);
 }
 
 void GraphicTaskGraph::addTask(const GraphicTaskPtr& task)

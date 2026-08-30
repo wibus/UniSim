@@ -29,6 +29,7 @@ DefineProfilePoint(PollEvents);
 DefineProfilePoint(Update);
 DefineProfilePoint(Draw);
 DefineProfilePoint(Ui);
+DefineProfilePoint(Window_NewFrame);
 DefineProfilePoint(ImGui_NewFrame);
 DefineProfilePoint(SwapBuffers);
 
@@ -63,25 +64,36 @@ int Universe::launch()
     {
         Profiler_SwapFrames();
 
+        if(ok)
         {
             Profile(PollEvents);
             _mainWindow->pollEvents();
         }
 
-        // Start ImGui frame
+        if(ok)
+        {
+            Profile(Window_NewFrame);
+            ok = ok && _mainWindow->newFrame();
+        }
+
+        if(ok)
         {
             Profile(ImGui_NewFrame);
             _graphic.imGuiRenderer().ImGuiNewFrame();
         }
 
-        update();
-        ui();
-        draw();
+        if(ok)
+        {
+            update();
+            ui();
+            draw();
+        }
 
+        if(ok)
         {
             Profile(SwapBuffers);
             ProfileGpu(SwapBuffers);
-            _mainWindow->present();
+            ok = ok && _mainWindow->present();
         }
     }
 
@@ -89,11 +101,6 @@ int Universe::launch()
     _mainWindow->close();
 
     return ok ? 0 : -1;
-}
-
-void Universe::onWindowResize(const Window& window, int width, int height)
-{
-
 }
 
 void Universe::onWindowKeyboard(const Window& window, const KeyboardEvent& event)

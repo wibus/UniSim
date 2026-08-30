@@ -16,12 +16,28 @@ namespace unisim
 GpuDevice::GpuDevice()
 {
     _deviceContext.reset(new pils::gpu::Context());
-    //_commandList.reset(new pils::gpu::CommandList(_deviceContext->device()));
 }
 
 GpuDevice::~GpuDevice()
 {
 
+}
+
+pils::gpu::CommandList& GpuDevice::commandList() const
+{
+    PILS_ASSERT(_commandList.get() != nullptr, "No command available to record commands");
+    return *_commandList;
+}
+
+void GpuDevice::begin()
+{
+    _commandList->reset();
+    _commandList->begin(true);
+}
+
+void GpuDevice::end()
+{
+    _commandList->end();
 }
 
 void GpuDevice::bindBuffer(const GpuConstantResource& resource, const GpuProgramConstantBindPoint& bindPoint)

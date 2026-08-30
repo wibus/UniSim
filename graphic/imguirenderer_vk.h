@@ -22,10 +22,12 @@ class ImGuiNativeData
 {
 public:
     explicit ImGuiNativeData(const pils::gpu::Device& device);
+    ~ImGuiNativeData();
 
     VkDescriptorPool descriptorPool() const { return _descriptorPool; }
 
 private:
+    const pils::gpu::Device& _device;
     VkDescriptorPool _descriptorPool;
 };
 

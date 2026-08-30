@@ -22,7 +22,10 @@ class GpuDevice
 public:
     GpuDevice();
     ~GpuDevice();
-    
+
+    void begin();
+    void end();
+
     void bindBuffer(const GpuConstantResource& resource, const GpuProgramConstantBindPoint& bindPoint);
     void bindBuffer(const GpuStorageResource& resource, const GpuProgramStorageBindPoint& bindPoint);
     void bindTexture(const GpuTextureResource& resource, const GpuProgramTextureBindPoint& unit);

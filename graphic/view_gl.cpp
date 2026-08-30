@@ -8,6 +8,11 @@
 namespace unisim
 {
 
+void View::resetViewportNative()
+{
+
+}
+
 void View::resizeViewportNative()
 {
 

@@ -35,7 +35,7 @@ void Ui::render(GraphicContext& context)
     Profile(ImGui_Render);
     ProfileGpu(ImGui_Render);
 
-    _imGuiRenderer.render(context.device);
+    _imGuiRenderer.render(context.device, context.view);
 }
 
 

@@ -14,17 +14,20 @@
 namespace unisim
 {
 
+void View::resetViewportNative()
+{
+    _frameBuffers.clear();
+    _renderPass.reset();
+}
+
 void View::resizeViewportNative()
 {
-    _frameBuffer.reset();
-    _renderPass.reset();
-
     const pils::gpu::Device& device = _window.gpuDevice().context().device();
     const pils::gpu::Swapchain& swapchain = _window.swapchain();
 
     if (swapchain.imageCount() == 0)
     {
-        PILS_ERROR("Swapchain contains no image. Cannot create the main render pass and frame buffers.");
+        PILS_FATAL("Swapchain contains no image. Cannot create the main render pass and frame buffers.");
         return;
     }
 
@@ -36,7 +39,7 @@ void View::resizeViewportNative()
     {
         std::vector<pils::gpu::Attachment> frameBufferAttachements;
         frameBufferAttachements.emplace_back(swapchain.image(i), swapchain.imageView(i));
-        _frameBuffer.reset(new pils::gpu::FrameBuffer(device, *_renderPass, frameBufferAttachements));
+        _frameBuffers.emplace_back(new pils::gpu::FrameBuffer(device, *_renderPass, frameBufferAttachements));
     }
 }
 

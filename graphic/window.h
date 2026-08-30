@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <memory>
+#include <vector>
 
 #include <PilsCore/types.h>
 
@@ -15,8 +16,10 @@ namespace pils
 {
 namespace gpu
 {
+    class Fence;
     class Surface;
     class Swapchain;
+    class CommandList;
 }
 }
 
@@ -36,7 +39,8 @@ public:
     WindowEventListener();
     virtual ~WindowEventListener();
 
-    virtual void onWindowResize(const Window& window, int width, int height);
+    virtual void onWindowResizeBefore(const Window& window, int width, int height);
+    virtual void onWindowResizeAfter(const Window& window, int width, int height);
     virtual void onWindowKeyboard(const Window& window, const KeyboardEvent& event);
     virtual void onWindowMouseMove(const Window& window, const MouseMoveEvent& event);
     virtual void onWindowMouseButton(const Window& window, const MouseButtonEvent& event);
@@ -63,8 +67,8 @@ class WindowSurface;
 class Window
 {
 public:
-    Window(const GpuDevice& gpuDevice);
-    Window(const GpuDevice& gpuDevice, int requestedWidth, int requestedHeight);
+    Window(GpuDevice& gpuDevice);
+    Window(GpuDevice& gpuDevice, int requestedWidth, int requestedHeight);
     ~Window();
 
     bool isValid() const;
@@ -77,6 +81,7 @@ public:
     const GpuDevice& gpuDevice() const { return _gpuDevice; }
     const pils::gpu::Surface& surface() const { return *_surface; }
     const pils::gpu::Swapchain& swapchain() const { return *_swapchain; }
+    uint32_t imageIndex() const;
 
     void registerEventListener(WindowEventListener* listener);
     void unregisterEventListener(WindowEventListener* listener);
@@ -89,19 +94,28 @@ public:
 
     bool shouldClose();
     void pollEvents();
-    void present();
+    bool newFrame();
+    bool present();
     void close();
 
 private:
     bool InitGlfwNative();
     bool CreateGlfwSurface();
+    void resetViewportNative();
+    void resizeViewportNative();
+    bool newFrameNative();
+    bool presentNative();
+    void closeNative();
 
-    const GpuDevice& _gpuDevice;
+    GpuDevice& _gpuDevice;
 
     GLFWwindow* _glfwWindow;
     std::set<WindowEventListener*> _eventListeners;
     std::unique_ptr<pils::gpu::Surface> _surface;
     std::unique_ptr<pils::gpu::Swapchain> _swapchain;
+
+    std::vector<std::unique_ptr<pils::gpu::Fence>> _frameFences;
+    std::vector<std::shared_ptr<pils::gpu::CommandList>> _frameCommandLists;
 
     int _width;
     int _height;

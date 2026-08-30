@@ -26,7 +26,7 @@ PathTracerModule::PathTracerModule(const std::string& name, const std::shared_pt
     _name(name),
     _shader(shader)
 {
-    PILS_INFO("Creating path tracer module '", _name, "' from shader '", shader->name(), "'");
+    PILS_INFO("Creating path tracer module '", _name, "' from shader '", shader ? shader->name() : "null", "'");
 }
 
 PathTracerModule::~PathTracerModule()

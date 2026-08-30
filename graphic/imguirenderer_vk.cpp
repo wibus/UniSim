@@ -15,12 +15,15 @@
 
 #include "window.h"
 #include "view.h"
+#include "graphic.h"
 
 
 namespace unisim
 {
 
-ImGuiNativeData::ImGuiNativeData(const pils::gpu::Device& device)
+ImGuiNativeData::ImGuiNativeData(const pils::gpu::Device& device) :
+    _device(device),
+    _descriptorPool{}
 {
     {
         VkDescriptorPoolSize pool_sizes[] =
@@ -38,10 +41,17 @@ ImGuiNativeData::ImGuiNativeData(const pils::gpu::Device& device)
         pool_info.poolSizeCount = (uint32_t)IM_COUNTOF(pool_sizes);
         pool_info.pPoolSizes = pool_sizes;
 
-        VkResult result = vkCreateDescriptorPool(device.vkDevice(), &pool_info, nullptr, &_descriptorPool);
+        VkResult result = vkCreateDescriptorPool(_device.vkDevice(), &pool_info, nullptr, &_descriptorPool);
 
         PILS_ASSERT(result == VkResult::VK_SUCCESS, "Failed to create ImGui descriptor pool");
     }
+}
+
+ImGuiNativeData::~ImGuiNativeData()
+{
+    ImGui_ImplVulkan_Shutdown();
+
+    vkDestroyDescriptorPool(_device.vkDevice(), _descriptorPool, nullptr);
 }
 
 static void check_vk_result(VkResult err)
@@ -85,10 +95,11 @@ void ImGuiRenderer::ImGuiNewFrameNative() const
     ImGui_ImplVulkan_NewFrame();
 }
 
-void ImGuiRenderer::renderNative(GpuDevice& gpuDevice) const
+void ImGuiRenderer::renderNative(GpuDevice& gpuDevice, const View& view) const
 {
-    PILS_ASSERT(gpuDevice.commandList() != nullptr, "No command buffer available to render ImGui frame");
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), gpuDevice.commandList()->vkCommandBuffer());
+    gpuDevice.commandList().beginRenderPass(view.renderPass(), view.frameBuffer());
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), gpuDevice.commandList().vkCommandBuffer());
+    gpuDevice.commandList().endRenderPass();
 }
 
 }

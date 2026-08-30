@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 
 #include <PilsCore/Gpu/Surface.h>
+#include <PilsCore/Gpu/Command.h>
 
 #include <PilsCore/Utils/Assert.h>
 #include <PilsCore/Utils/Logger.h>
@@ -47,7 +48,12 @@ WindowEventListener::~WindowEventListener()
 {
 }
 
-void WindowEventListener::onWindowResize(const Window& window, int width, int height)
+void WindowEventListener::onWindowResizeBefore(const Window& window, int width, int height)
+{
+
+}
+
+void WindowEventListener::onWindowResizeAfter(const Window& window, int width, int height)
 {
 
 }
@@ -122,12 +128,12 @@ void glfWHandleScroll(GLFWwindow* window, double xoffset, double yoffset)
     }
 }
 
-Window::Window(const GpuDevice& gpuDevice) :
+Window::Window(GpuDevice& gpuDevice) :
     Window(gpuDevice, 1280, 720)
 {
 }
 
-Window::Window(const GpuDevice& gpuDevice, int requestedWidth, int requestedHeight) :
+Window::Window(GpuDevice& gpuDevice, int requestedWidth, int requestedHeight) :
     _gpuDevice(gpuDevice),
     _glfwWindow(nullptr),
     _width(-1),
@@ -257,6 +263,11 @@ uint64_t Window::handle() const
     return reinterpret_cast<uint64_t>(_glfwWindow);
 }
 
+uint32_t Window::imageIndex() const
+{
+    return _swapchain->imageIndex();
+}
+
 void Window::registerEventListener(WindowEventListener* listener)
 {
     if (listener != nullptr)
@@ -271,11 +282,23 @@ void Window::unregisterEventListener(WindowEventListener* listener)
 
 void Window::onResize(int width, int height)
 {
-    _width = width;
-    _height = height;
+    if (width == 0 || height == 0)
+    {
+        glfwGetFramebufferSize(_glfwWindow, &width, &height);
+        glfwWaitEvents();
+    }
+
+    resetViewportNative();
 
     for(auto listener : _eventListeners)
-        listener->onWindowResize(*this, width, height);
+        listener->onWindowResizeBefore(*this, width, height);
+
+    _width = width;
+    _height = height;
+    resizeViewportNative();
+
+    for(auto listener : _eventListeners)
+        listener->onWindowResizeAfter(*this, width, height);
 }
 
 void Window::onKeyboard(const KeyboardEvent& event)
@@ -313,14 +336,19 @@ void Window::pollEvents()
     glfwPollEvents();
 }
 
-void Window::present()
+bool Window::newFrame()
 {
-    PILS_ASSERT(_glfwWindow != nullptr, "GLFW window pointer is null");
-    glfwSwapBuffers(_glfwWindow);
+    return newFrameNative();
+}
+
+bool Window::present()
+{
+    return presentNative();
 }
 
 void Window::close()
 {
+    closeNative();
 }
 
 }

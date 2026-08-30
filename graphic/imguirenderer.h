@@ -22,12 +22,12 @@ public:
 
     void ImGuiNewFrame() const;
 
-    void render(GpuDevice& gpuDevice) const;
+    void render(GpuDevice& gpuDevice, const View& view) const;
 
 private:
     void ImGuiInitNative();
     void ImGuiNewFrameNative() const;
-    void renderNative(GpuDevice& gpuDevice) const;
+    void renderNative(GpuDevice& gpuDevice, const View& view) const;
 
     const View& _view;
 

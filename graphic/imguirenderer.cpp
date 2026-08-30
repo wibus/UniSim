@@ -44,10 +44,10 @@ void ImGuiRenderer::ImGuiNewFrame() const
     ImGui::NewFrame();
 }
 
-void ImGuiRenderer::render(GpuDevice& gpuDevice) const
+void ImGuiRenderer::render(GpuDevice& gpuDevice, const View& view) const
 {
     ImGui::Render();
-    renderNative(gpuDevice);
+    renderNative(gpuDevice, view);
 }
 
 }

@@ -21,6 +21,14 @@ GpuDevice::~GpuDevice()
 
 }
 
+void GpuDevice::begin()
+{
+}
+
+void GpuDevice::end()
+{
+}
+
 void GpuDevice::bindBuffer(const GpuConstantResource& resource, const GpuProgramConstantBindPoint& bindPoint)
 {
     PILS_ASSERT(resource.handle().bufferId > 0, "Invalid constant buffer index");

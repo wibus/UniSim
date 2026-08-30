@@ -24,6 +24,7 @@ public:
 
     void execute(const View& view, const Scene& scene, const Camera& camera);
 
+    GpuDevice& device() { return _device; }
     const GpuDevice& device() const { return _device; }
 
     const GpuResourceManager& resources() const { return _resources; }
