@@ -11,13 +11,11 @@
 
 #include "../resource/texture.h"
 
+
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
-#include "gpuresource_gl.h"
+#include <GL/glew.h>
 #endif // UNISIM_GRAPHIC_BACKEND_GL
 
-#ifdef UNISIM_GRAPHIC_BACKEND_VK
-#include "gpuresource_vk.h"
-#endif // UNISIM_GRAPHIC_BACKEND_VK
 
 namespace unisim
 {
@@ -32,6 +30,83 @@ const ResourceId Invalid_ResourceId = ~0x0;
 #define ResourceName(name) ResourceId_##name
 #define DeclareResource(name) extern ResourceId ResourceName(name)
 #define DefineResource(name) ResourceId ResourceName(name) = GpuResourceManager::registerStaticResource(#name)
+
+
+class GpuTextureResourceHandle
+{
+public:
+    GpuTextureResourceHandle();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint texId;
+    GLenum dimension;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+class GpuImageResourceHandle
+{
+public:
+    GpuImageResourceHandle();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint texId;
+    GLenum internalFormat;
+    GLenum dimension;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+class GpuBindlessResourceHandle
+{
+public:
+    GpuBindlessResourceHandle();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint64 handle;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+class GpuBindlessTextureDescriptor
+{
+public:
+    GpuBindlessTextureDescriptor();
+    GpuBindlessTextureDescriptor(const GpuBindlessResourceHandle& bindless);
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint64 texture;
+    GLuint64 padding;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+class GpuStorageResourceHandle
+{
+public:
+    GpuStorageResourceHandle();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint bufferId;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+class GpuConstantResourceHandle
+{
+public:
+    GpuConstantResourceHandle();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint bufferId;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+class GpuGeometryResourceHandle
+{
+public:
+    GpuGeometryResourceHandle();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint vao;
+    GLuint vbo;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
 
 
 class GpuResource

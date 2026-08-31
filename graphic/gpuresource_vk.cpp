@@ -10,6 +10,49 @@
 namespace unisim
 {
 
+// HANDLES //
+
+GpuTextureResourceHandle::GpuTextureResourceHandle()
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+GpuImageResourceHandle::GpuImageResourceHandle()
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+GpuBindlessResourceHandle::GpuBindlessResourceHandle()
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor()
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const unisim::GpuBindlessResourceHandle& bindless)
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+GpuStorageResourceHandle::GpuStorageResourceHandle()
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+GpuConstantResourceHandle::GpuConstantResourceHandle()
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+GpuGeometryResourceHandle::GpuGeometryResourceHandle()
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+
 // TEXTURE //
 
 GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
@@ -57,13 +100,6 @@ GpuBindlessResource::GpuBindlessResource(ResourceId id, Definition def) :
 }
 
 GpuBindlessResource::~GpuBindlessResource()
-{
-    PILS_ASSERT(false, "Not implemented!");
-}
-
-
-// BINDLESS DESCRIPTOR //
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const unisim::GpuBindlessResourceHandle& bindless)
 {
     PILS_ASSERT(false, "Not implemented!");
 }

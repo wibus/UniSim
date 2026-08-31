@@ -7,14 +7,6 @@
 
 #include "window.h"
 
-#ifdef UNISIM_GRAPHIC_BACKEND_GL
-#include "view_gl.h"
-#endif // UNISIM_GRAPHIC_BACKEND_GL
-
-#ifdef UNISIM_GRAPHIC_BACKEND_VK
-#include "view_vk.h"
-#endif // UNISIM_GRAPHIC_BACKEND_VK
-
 
 namespace pils
 {

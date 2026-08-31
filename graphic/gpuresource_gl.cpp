@@ -8,6 +8,63 @@
 namespace unisim
 {
 
+// HANDLES //
+
+GpuTextureResourceHandle::GpuTextureResourceHandle() :
+    texId(0),
+    dimension(-1)
+{
+
+}
+
+GpuImageResourceHandle::GpuImageResourceHandle() :
+    texId(0),
+    internalFormat(-1),
+    dimension(-1)
+{
+
+}
+
+GpuBindlessResourceHandle::GpuBindlessResourceHandle() :
+    handle(0)
+{
+
+}
+
+GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor() :
+    texture(0),
+    padding(0)
+{
+
+}
+
+GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const unisim::GpuBindlessResourceHandle& bindless) :
+    texture(bindless.handle),
+    padding(0)
+{
+
+}
+
+GpuStorageResourceHandle::GpuStorageResourceHandle() :
+    bufferId(0)
+{
+
+}
+
+GpuConstantResourceHandle::GpuConstantResourceHandle() :
+    bufferId(0)
+{
+
+}
+
+GpuGeometryResourceHandle::GpuGeometryResourceHandle() :
+    vao(0),
+    vbo(0)
+{
+
+}
+
+
 // TEXTURE //
 
 GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
@@ -176,15 +233,6 @@ GpuBindlessResource::GpuBindlessResource(ResourceId id, Definition def) :
 GpuBindlessResource::~GpuBindlessResource()
 {
     glMakeImageHandleNonResidentARB(_handle->handle);
-}
-
-
-// BINDLESS DESCRIPTOR //
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const unisim::GpuBindlessResourceHandle& bindless) :
-    texture(bindless.handle),
-    padding(0)
-{
-
 }
 
 

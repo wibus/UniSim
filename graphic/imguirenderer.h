@@ -6,12 +6,50 @@
 #include <PilsCore/types.h>
 
 
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+#include <vulkan/vulkan.h>
+
+namespace pils
+{
+namespace gpu
+{
+class Device;
+}
+}
+#endif // UNISIM_GRAPHIC_BACKEND_VK
+
+
 namespace unisim
 {
 
 class Window;
 class View;
 class GpuDevice;
+
+
+class ImGuiNativeData
+{
+public:
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    explicit ImGuiNativeData();
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+    explicit ImGuiNativeData(const pils::gpu::Device& device);
+#endif // UNISIM_GRAPHIC_BACKEND_VK
+
+    ~ImGuiNativeData();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+    VkDescriptorPool descriptorPool() const { return _descriptorPool; }
+#endif // UNISIM_GRAPHIC_BACKEND_VK
+
+private:
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+    const pils::gpu::Device& _device;
+    VkDescriptorPool _descriptorPool;
+#endif // UNISIM_GRAPHIC_BACKEND_VK
+};
 
 
 class ImGuiRenderer

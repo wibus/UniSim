@@ -8,18 +8,15 @@
 
 
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
-#include "gpuprograminterface_gl.h"
+#include <GL/glew.h>
 #endif // UNISIM_GRAPHIC_BACKEND_GL
-
-#ifdef UNISIM_GRAPHIC_BACKEND_VK
-#include "gpuprograminterface_vk.h"
-#endif // UNISIM_GRAPHIC_BACKEND_VK
 
 
 namespace unisim
 {
 
 class GraphicProgram;
+
 
 struct GpuProgramConstantInput
 {
@@ -39,6 +36,53 @@ struct GpuProgramTextureInput
 struct GpuProgramImageInput
 {
     std::string name;
+};
+
+
+struct GpuProgramConstantBindPoint
+{
+    static GpuProgramConstantBindPoint first();
+    static GpuProgramConstantBindPoint invalid();
+    static GpuProgramConstantBindPoint next(const GpuProgramConstantBindPoint& current);
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint bindPoint;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+
+struct GpuProgramStorageBindPoint
+{
+
+    static GpuProgramStorageBindPoint first();
+    static GpuProgramStorageBindPoint invalid();
+    static GpuProgramStorageBindPoint next(const GpuProgramStorageBindPoint& current);
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint bindPoint;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+struct GpuProgramTextureBindPoint
+{
+    static GpuProgramTextureBindPoint first();
+    static GpuProgramTextureBindPoint invalid();
+    static GpuProgramTextureBindPoint next(const GpuProgramTextureBindPoint& current);
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint bindPoint;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+struct GpuProgramImageBindPoint
+{
+    static GpuProgramImageBindPoint first();
+    static GpuProgramImageBindPoint invalid();
+    static GpuProgramImageBindPoint next(const GpuProgramImageBindPoint& current);
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint bindPoint;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
 };
 
 

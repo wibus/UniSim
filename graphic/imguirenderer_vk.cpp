@@ -1,6 +1,4 @@
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
-
-#include "imguirenderer_vk.h"
 #include "imguirenderer.h"
 
 #include <imgui/imgui_impl_glfw.h>

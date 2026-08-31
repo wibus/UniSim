@@ -1,6 +1,4 @@
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
-
-#include "imguirenderer_gl.h"
 #include "imguirenderer.h"
 
 #include <imgui/imgui_impl_glfw.h>
@@ -15,6 +13,10 @@ namespace unisim
 {
 
 ImGuiNativeData::ImGuiNativeData()
+{
+}
+
+ImGuiNativeData::~ImGuiNativeData()
 {
 }
 

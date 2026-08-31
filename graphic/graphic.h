@@ -6,17 +6,55 @@
 #include <memory>
 
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
-#include "graphic_gl.h"
+#include <GL/glew.h>
 #endif // UNISIM_GRAPHIC_BACKEND_GL
 
-#ifdef UNISIM_GRAPHIC_BACKEND_VK
-#include "graphic_vk.h"
-#endif // UNISIM_GRAPHIC_BACKEND_VK
 
 namespace unisim
 {
 
 enum class ShaderType {Vertex, Fragment, Compute};
+
+
+class GraphicShaderHandle
+{
+protected:
+    GraphicShaderHandle(const GraphicShaderHandle&) = delete;
+
+public:
+    GraphicShaderHandle(GraphicShaderHandle&& other);
+    ~GraphicShaderHandle();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GraphicShaderHandle(GLuint shaderId);
+    operator GLuint() const { return _shaderId; }
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+
+private:
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint _shaderId;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+class GraphicProgramHandle
+{
+protected:
+    GraphicProgramHandle(const GraphicProgramHandle&) = delete;
+
+public:
+    GraphicProgramHandle(GraphicProgramHandle&& other);
+    ~GraphicProgramHandle();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GraphicProgramHandle(GLuint programId);
+    operator GLuint() const { return _programId; }
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+
+private:
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint _programId;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
 
 
 class GraphicShader

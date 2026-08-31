@@ -5,14 +5,8 @@
 #include "window.h"
 #include "view.h"
 
+#include "imguirenderer.h"
 
-#ifdef UNISIM_GRAPHIC_BACKEND_GL
-#include "imguirenderer_gl.h"
-#endif // UNISIM_GRAPHIC_BACKEND_GL
-
-#ifdef UNISIM_GRAPHIC_BACKEND_VK
-#include "imguirenderer_vk.h"
-#endif // UNISIM_GRAPHIC_BACKEND_VK
 
 namespace unisim
 {

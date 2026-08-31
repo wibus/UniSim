@@ -83,39 +83,27 @@ set(ResourceFiles
 set(GraphicFiles
     graphic/gpudevice.h
     graphic/gpudevice.cpp
-    graphic/gpudevice_gl.h
     graphic/gpudevice_gl.cpp
-    graphic/gpudevice_vk.h
     graphic/gpudevice_vk.cpp
     graphic/gpuprograminterface.h
     graphic/gpuprograminterface.cpp
-    graphic/gpuprograminterface_gl.h
     graphic/gpuprograminterface_gl.cpp
-    graphic/gpuprograminterface_vk.h
     graphic/gpuprograminterface_vk.cpp
     graphic/gpuresource.h
     graphic/gpuresource.cpp
-    graphic/gpuresource_gl.h
     graphic/gpuresource_gl.cpp
-    graphic/gpuresource_vk.h
     graphic/gpuresource_vk.cpp
     graphic/graphic.h
     graphic/graphic.cpp
-    graphic/graphic_gl.h
     graphic/graphic_gl.cpp
-    graphic/graphic_vk.h
     graphic/graphic_vk.cpp
     graphic/imguirenderer.h
     graphic/imguirenderer.cpp
-    graphic/imguirenderer_gl.h
     graphic/imguirenderer_gl.cpp
-    graphic/imguirenderer_vk.h
     graphic/imguirenderer_vk.cpp
     graphic/view.h
     graphic/view.cpp
-    graphic/view_gl.h
     graphic/view_gl.cpp
-    graphic/view_vk.h
     graphic/view_vk.cpp
     graphic/window.h
     graphic/window.cpp
