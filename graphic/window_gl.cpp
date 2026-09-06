@@ -22,6 +22,11 @@ std::vector<const char*> getUserProvidedVkInstanceExtensions()
     return {};
 }
 
+uint32_t Window::frameInFlightCount() const
+{
+    return 1;
+}
+
 bool Window::InitGlfwNative()
 {
     return true;

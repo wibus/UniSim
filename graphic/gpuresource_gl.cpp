@@ -67,8 +67,8 @@ GpuGeometryResourceHandle::GpuGeometryResourceHandle() :
 
 // TEXTURE //
 
-GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
-    GpuResource(id)
+GpuTextureResource::GpuTextureResource(GpuResourceManager& manager, ResourceId id, Definition def) :
+    GpuResource(manager, id)
 {
     _handle.reset(new GpuTextureResourceHandle());
     _handle->dimension = GL_TEXTURE_2D;
@@ -116,8 +116,8 @@ GpuTextureResource::GpuTextureResource(ResourceId id, Definition def) :
     glBindTexture(_handle->dimension, 0);
 }
 
-GpuTextureResource::GpuTextureResource(GpuTextureResourceHandle&& handle) :
-    GpuResource(0),
+GpuTextureResource::GpuTextureResource(GpuResourceManager& manager, GpuTextureResourceHandle&& handle) :
+    GpuResource(manager, Invalid_ResourceId),
     _handle(new GpuTextureResourceHandle(std::move(handle)))
 {
 }
@@ -129,8 +129,8 @@ GpuTextureResource::~GpuTextureResource()
 
 
 // IMAGE //
-GpuImageResource::GpuImageResource(ResourceId id, Definition def) :
-    GpuResource(id)
+GpuImageResource::GpuImageResource(GpuResourceManager& manager, ResourceId id, Definition def) :
+    GpuResource(manager, id)
 {
     _handle.reset(new GpuImageResourceHandle());
 
@@ -176,7 +176,7 @@ GpuImageResource::~GpuImageResource()
     glDeleteTextures(1, &_handle->texId);
 }
 
-void GpuImageResource::update(const Definition& def) const
+void GpuImageResource::update(const Definition& def)
 {
     switch(def.format)
     {
@@ -205,8 +205,8 @@ void GpuImageResource::update(const Definition& def) const
 
 
 // BINDLESS //
-GpuBindlessResource::GpuBindlessResource(ResourceId id, Definition def) :
-    GpuResource(id)
+GpuBindlessResource::GpuBindlessResource(GpuResourceManager& manager, ResourceId id, Definition def) :
+    GpuResource(manager, id)
 {
     _handle.reset(new GpuBindlessResourceHandle());
 
@@ -237,8 +237,8 @@ GpuBindlessResource::~GpuBindlessResource()
 
 
 // STORAGE //
-GpuStorageResource::GpuStorageResource(ResourceId id, Definition def) :
-    GpuResource(id)
+GpuStorageResource::GpuStorageResource(GpuResourceManager& manager, ResourceId id, Definition def) :
+    GpuResource(manager, id)
 {
     _handle.reset(new GpuStorageResourceHandle());
 
@@ -251,7 +251,7 @@ GpuStorageResource::~GpuStorageResource()
     glDeleteBuffers(1, &_handle->bufferId);
 }
 
-void GpuStorageResource::update(const Definition& def) const
+void GpuStorageResource::update(const Definition& def)
 {
     GLsizei dataSize = def.elemSize * def.elemCount;
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, _handle->bufferId);
@@ -260,8 +260,8 @@ void GpuStorageResource::update(const Definition& def) const
 
 
 // CONSTANT //
-GpuConstantResource::GpuConstantResource(ResourceId id, Definition def) :
-    GpuResource(id)
+GpuConstantResource::GpuConstantResource(GpuResourceManager& manager, ResourceId id, Definition def) :
+    GpuResource(manager, id)
 {
     _handle.reset(new GpuConstantResourceHandle());
 
@@ -274,7 +274,7 @@ GpuConstantResource::~GpuConstantResource()
     glDeleteBuffers(1, &_handle->bufferId);
 }
 
-void GpuConstantResource::update(const Definition& def) const
+void GpuConstantResource::update(const Definition& def)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, _handle->bufferId);
     glBufferData(GL_UNIFORM_BUFFER, def.size, def.data, GL_STREAM_DRAW);
@@ -282,8 +282,8 @@ void GpuConstantResource::update(const Definition& def) const
 
 
 // VERTEX ARRAY //
-GpuGeometryResource::GpuGeometryResource(ResourceId id, Definition def) :
-    GpuResource(id)
+GpuGeometryResource::GpuGeometryResource(GpuResourceManager& manager, ResourceId id, Definition def) :
+    GpuResource(manager, id)
 {
     _handle.reset(new GpuGeometryResourceHandle());
 
@@ -302,6 +302,21 @@ GpuGeometryResource::~GpuGeometryResource()
 {
     glDeleteBuffers(1, &_handle->vao);
     glDeleteBuffers(1, &_handle->vbo);
+}
+
+
+// MANAGER //
+
+void GpuResourceManager::initializeNative()
+{
+}
+
+void GpuResourceManager::garbageCollect()
+{
+}
+
+void GpuResourceManager::commitAllocations()
+{
 }
 
 }

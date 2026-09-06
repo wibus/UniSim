@@ -122,17 +122,17 @@ void LightTask::update(GraphicContext& context)
 
     _hash = hash;
 
-    resources.get<GpuStorageResource>(
-                ResourceName(Emitters)).update({
-                    sizeof(gpuEmitters),
-                    gpuEmitters.size(),
-                    gpuEmitters.data()});
+    resources.update<GpuStorageResource>(
+        ResourceName(Emitters), {
+            sizeof(gpuEmitters),
+            gpuEmitters.size(),
+            gpuEmitters.data()});
 
-    resources.get<GpuStorageResource>(
-                ResourceName(DirectionalLights)).update({
-                    sizeof(GpuDirectionalLight),
-                    gpuDirectionalLights.size(),
-                    gpuDirectionalLights.data()});
+    resources.update<GpuStorageResource>(
+        ResourceName(DirectionalLights), {
+            sizeof(GpuDirectionalLight),
+            gpuDirectionalLights.size(),
+            gpuDirectionalLights.data()});
 }
 
 uint64_t LightTask::toGpu(

@@ -24,10 +24,10 @@ public:
 
     void execute(const View& view, const Scene& scene, const Camera& camera);
 
-    GpuDevice& device() { return _device; }
-    const GpuDevice& device() const { return _device; }
+    GpuDevice& device() { return *_device; }
+    const GpuDevice& device() const { return *_device; }
 
-    const GpuResourceManager& resources() const { return _resources; }
+    const GpuResourceManager& resources() const { return *_resources; }
 
     const ImGuiRenderer& imGuiRenderer() const { return *_imGuiRenderer; }
 
@@ -35,9 +35,9 @@ private:
     void createTaskGraph(const Scene& scene);
     void addTask(const GraphicTaskPtr& task);
 
-    GpuDevice _device;
     GraphicSettings _settings;
-    GpuResourceManager _resources;
+    std::unique_ptr<GpuDevice> _device;
+    std::unique_ptr<GpuResourceManager> _resources;
     std::vector<GraphicTaskPtr> _tasks;
     std::unique_ptr<ImGuiRenderer> _imGuiRenderer;
 

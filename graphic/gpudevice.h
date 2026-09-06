@@ -1,6 +1,8 @@
 #ifndef GPUDEVICE_H
 #define GPUDEVICE_H
 
+#include <cstdint>
+
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
 #include <memory>
 #include <vector>
@@ -11,6 +13,7 @@ namespace gpu
 {
 class Context;
 class CommandList;
+class Fence;
 }
 }
 #endif // UNISIM_GRAPHIC_BACKEND_VK
@@ -36,6 +39,11 @@ public:
     GpuDevice();
     ~GpuDevice();
 
+    uint32_t frameInFlightCount() const;
+
+    void setupInitialization();
+    void finalizeInitialization();
+
     void begin();
     void end();
 
@@ -55,13 +63,17 @@ public:
     const pils::gpu::Context& context() const { return *_deviceContext; }
 
     pils::gpu::CommandList& commandList() const;
-    void setCommandList(const std::shared_ptr<pils::gpu::CommandList>& commandList) { _commandList = commandList; }
+    void setCommandList(const std::shared_ptr<pils::gpu::CommandList>& commandList);
+
+    const std::shared_ptr<pils::gpu::Fence>& frameFence() const;
+    void setFrameFence(const std::shared_ptr<pils::gpu::Fence>& fence);
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 
 private:
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
     std::unique_ptr<pils::gpu::Context> _deviceContext;
     std::shared_ptr<pils::gpu::CommandList> _commandList;
+    std::shared_ptr<pils::gpu::Fence> _frameFence;
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 

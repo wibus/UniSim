@@ -214,11 +214,11 @@ void PathTracerTask::update(GraphicContext& context)
     {
         *_viewport = viewport;
         resources.update<GpuImageResource>(
-                    ResourceName(PathTracerResult), {
-                        .width  = viewport.width,
-                        .height = viewport.height,
-                        .depth  = 1,
-                        .format = TextureFormat::R32G32B32A32_FLOAT});
+            ResourceName(PathTracerResult), {
+                .width  = viewport.width,
+                .height = viewport.height,
+                .depth  = 1,
+                .format = TextureFormat::R32G32B32A32_FLOAT});
     }
 
     GpuPathTracerCommonParams gpuCommonParams;
@@ -250,10 +250,10 @@ void PathTracerTask::update(GraphicContext& context)
 
     gpuCommonParams.frameIndex = _frameIndex;
 
-    resources.get<GpuConstantResource>(
-                ResourceName(PathTracerCommonParams)).update({
-                    sizeof(GpuPathTracerCommonParams),
-                    &gpuCommonParams});
+    resources.update<GpuConstantResource>(
+        ResourceName(PathTracerCommonParams), {
+            sizeof(GpuPathTracerCommonParams),
+            &gpuCommonParams});
 }
 
 void PathTracerTask::render(GraphicContext& context)

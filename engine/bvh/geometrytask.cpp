@@ -258,56 +258,56 @@ void GeometryTask::update(GraphicContext& context)
     
     GpuResourceManager& resources = context.resources;
 
-    resources.get<GpuStorageResource>(
-        ResourceName(Primitives)).update({
+    resources.update<GpuStorageResource>(
+        ResourceName(Primitives),{
             sizeof(GpuPrimitive),
             gpuPrimitives.size(),
             gpuPrimitives.data()});
 
-    resources.get<GpuStorageResource>(
-        ResourceName(Meshes)).update({
+    resources.update<GpuStorageResource>(
+        ResourceName(Meshes),{
             sizeof(GpuMesh),
             gpuMeshes.size(),
             gpuMeshes.data()});
 
-    resources.get<GpuStorageResource>(
-        ResourceName(Spheres)).update({
+    resources.update<GpuStorageResource>(
+        ResourceName(Spheres),{
             sizeof(GpuSphere),
             gpuSpheres.size(),
             gpuSpheres.data()});
 
-    resources.get<GpuStorageResource>(
-        ResourceName(Planes)).update({
+    resources.update<GpuStorageResource>(
+        ResourceName(Planes),{
             sizeof(GpuPlane),
             gpuPlanes.size(),
             gpuPlanes.data()});
 
-    resources.get<GpuStorageResource>(
-        ResourceName(Instances)).update({
+    resources.update<GpuStorageResource>(
+        ResourceName(Instances),{
             sizeof(GpuInstance),
             gpuInstances.size(),
             gpuInstances.data()});
 
-    resources.get<GpuStorageResource>(
-        ResourceName(BvhNodes)).update({
+    resources.update<GpuStorageResource>(
+        ResourceName(BvhNodes),{
             sizeof(GpuBvhNode),
             gpuBvhNodes.size(),
             gpuBvhNodes.data()});
 
-    resources.get<GpuStorageResource>(
-        ResourceName(Triangles)).update({
+    resources.update<GpuStorageResource>(
+        ResourceName(Triangles),{
             sizeof(GpuTriangle),
             gpuTriangles.size(),
             gpuTriangles.data()});
 
-    resources.get<GpuStorageResource>(
-        ResourceName(VerticesPos)).update({
+    resources.update<GpuStorageResource>(
+        ResourceName(VerticesPos),{
             sizeof(GpuVertexPos),
             gpuVerticesPos.size(),
             gpuVerticesPos.data()});
 
-    resources.get<GpuStorageResource>(
-        ResourceName(VerticesData)).update({
+    resources.update<GpuStorageResource>(
+        ResourceName(VerticesData),{
             sizeof(GpuVertexData),
             gpuVerticesData.size(),
             gpuVerticesData.data()});

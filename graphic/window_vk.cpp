@@ -11,11 +11,14 @@
 #include <PilsCore/Gpu/Surface.h>
 #include <PilsCore/Gpu/Command.h>
 
-#include "graphic.h"
-
 
 namespace unisim
 {
+
+uint32_t Window::frameInFlightCount() const
+{
+    return _swapchain->frameInFlightCount();
+}
 
 bool Window::InitGlfwNative()
 {
@@ -40,7 +43,7 @@ bool Window::CreateGlfwSurface()
         return false;
 
     _surface.reset(new pils::gpu::Surface(_gpuDevice.context().instance(), surface));
-    _swapchain.reset(new pils::gpu::Swapchain(_gpuDevice.context().device(), *_surface, width, height));
+    _swapchain.reset(new pils::gpu::Swapchain(_gpuDevice.context().device(), *_surface, width, height, _gpuDevice.frameInFlightCount()));
 
     for(uint32_t i = 0; i < _swapchain->frameInFlightCount(); ++i)
     {
@@ -68,6 +71,7 @@ bool Window::newFrameNative()
     device.waitForFence(*_frameFences[_swapchain->frameIndex()]);
 
     _gpuDevice.setCommandList(_frameCommandLists[_swapchain->frameIndex()]);
+    _gpuDevice.setFrameFence(_frameFences[_swapchain->frameIndex()]);
 
     bool acquired = _swapchain->acquireImage();
 
@@ -99,6 +103,7 @@ bool Window::newFrameNative()
 bool Window::presentNative()
 {
     _gpuDevice.setCommandList({});
+    _gpuDevice.setFrameFence({});
 
     if(_frameCommandLists[_swapchain->frameIndex()])
     {

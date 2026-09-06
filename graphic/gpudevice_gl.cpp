@@ -13,10 +13,24 @@ namespace unisim
 
 GpuDevice::GpuDevice()
 {
-
 }
 
 GpuDevice::~GpuDevice()
+{
+
+}
+
+uint32_t GpuDevice::frameInFlightCount() const
+{
+    return 1;
+}
+
+void GpuDevice::setupInitialization()
+{
+
+}
+
+void GpuDevice::finalizeInitialization()
 {
 
 }

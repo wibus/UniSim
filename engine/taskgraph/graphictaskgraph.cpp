@@ -27,22 +27,26 @@ namespace unisim
 GraphicTaskGraph::GraphicTaskGraph()
 {
     _settings.unbiased = false;
+    _device.reset(new GpuDevice());
 }
 
 bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Camera& camera)
 {
+    _device->setupInitialization();
+
+    _resources.reset(new GpuResourceManager(*_device));
     _imGuiRenderer.reset(new ImGuiRenderer(view));
 
     createTaskGraph(scene);
 
-    GraphicContext context = {_device, view, scene, camera, _resources, _settings};
+    GraphicContext context = {*_device, view, scene, camera, *_resources, _settings};
 
     for(const auto& task : _tasks)
     {
         task->registerDynamicResources(context);
     }
 
-    _resources.initialize();
+    _resources->initialize();
 
     for(const auto& task : _tasks)
     {
@@ -74,6 +78,8 @@ bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Ca
         }
     }
 
+    _device->finalizeInitialization();
+
     return true;
 }
 
@@ -85,7 +91,7 @@ bool GraphicTaskGraph::reloadShaders(const View& view, const Scene& scene, const
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
     g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
 
-    GraphicContext context = {_device, view, scene, camera, _resources, _settings};
+    GraphicContext context = {*_device, view, scene, camera, *_resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -103,21 +109,23 @@ bool GraphicTaskGraph::reloadShaders(const View& view, const Scene& scene, const
 
 void GraphicTaskGraph::execute(const View& view, const Scene& scene, const Camera& camera)
 {
-    GraphicContext context = {_device, view, scene, camera, _resources, _settings};
+    GraphicContext context = {*_device, view, scene, camera, *_resources, _settings};
 
-    _device.begin();
+    _device->begin();
 
     for(const auto& task : _tasks)
     {
         task->update(context);
     }
 
+    _resources->commitAllocations();
+
     for(const auto& task : _tasks)
     {
         task->render(context);
     }
 
-    _device.end();
+    _device->end();
 }
 
 void GraphicTaskGraph::createTaskGraph(const Scene& scene)

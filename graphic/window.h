@@ -75,6 +75,7 @@ public:
     uint64_t handle() const;
     int width() const { return _width; }
     int height() const { return _height; }
+    uint32_t frameInFlightCount() const;
 
     GLFWwindow* glfwWindow() const { return _glfwWindow; }
 
@@ -114,7 +115,7 @@ private:
     std::unique_ptr<pils::gpu::Surface> _surface;
     std::unique_ptr<pils::gpu::Swapchain> _swapchain;
 
-    std::vector<std::unique_ptr<pils::gpu::Fence>> _frameFences;
+    std::vector<std::shared_ptr<pils::gpu::Fence>> _frameFences;
     std::vector<std::shared_ptr<pils::gpu::CommandList>> _frameCommandLists;
 
     int _width;

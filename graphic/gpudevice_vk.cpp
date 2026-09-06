@@ -5,6 +5,7 @@
 #include "PilsCore/Utils/Assert.h"
 #include "PilsCore/Gpu/Context.h"
 #include "PilsCore/Gpu/Command.h"
+#include "PilsCore/Gpu/Synchronization.h"
 
 #include "gpuresource.h"
 #include "gpuprograminterface.h"
@@ -23,10 +24,50 @@ GpuDevice::~GpuDevice()
 
 }
 
+uint32_t GpuDevice::frameInFlightCount() const
+{
+    return 2;
+}
+
 pils::gpu::CommandList& GpuDevice::commandList() const
 {
-    PILS_ASSERT(_commandList.get() != nullptr, "No command available to record commands");
+    PILS_ASSERT(_commandList.get() != nullptr, "No command list available to record commands");
     return *_commandList;
+}
+
+void GpuDevice::setCommandList(const std::shared_ptr<pils::gpu::CommandList>& commandList)
+{
+    PILS_ASSERT(_commandList.get() == nullptr || commandList.get() == nullptr, "Command list should not be overriden.");
+    _commandList = commandList;
+}
+
+const std::shared_ptr<pils::gpu::Fence>& GpuDevice::frameFence() const
+{
+    PILS_ASSERT(_frameFence.get() != nullptr, "No fence available for current frame");
+    return _frameFence;
+}
+
+void GpuDevice::setFrameFence(const std::shared_ptr<pils::gpu::Fence>& fence)
+{
+    PILS_ASSERT(_frameFence.get() == nullptr || fence.get() == nullptr, "Frame fence should not be overriden.");
+    _frameFence = fence;
+}
+
+void GpuDevice::setupInitialization()
+{
+    setCommandList(std::make_shared<pils::gpu::CommandList>(_deviceContext->device()));
+    setFrameFence(std::make_shared<pils::gpu::Fence>(_deviceContext->device()));
+    _commandList->begin(true);
+}
+
+void GpuDevice::finalizeInitialization()
+{
+    _commandList->end();
+    _deviceContext->device().submit(*_commandList, {}, {}, &*_frameFence);
+    _deviceContext->device().waitForFence(*_frameFence);
+
+    setCommandList({});
+    setFrameFence({});
 }
 
 void GpuDevice::begin()

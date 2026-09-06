@@ -159,10 +159,17 @@ void MaterialTask::update(GraphicContext& context)
     _hash = hash;
     
     GpuResourceManager& resources = context.resources;
-    resources.get<GpuStorageResource>(ResourceName(BindlessTextures)).update(
-                {sizeof(GpuBindlessTextureDescriptor), gpuTextures.size(), gpuTextures.data()});
-    resources.get<GpuStorageResource>(ResourceName(MaterialDatabase)).update(
-                {sizeof(GpuMaterial), gpuMaterials.size(), gpuMaterials.data()});
+    resources.update<GpuStorageResource>(
+        ResourceName(BindlessTextures), {
+            sizeof(GpuBindlessTextureDescriptor),
+            gpuTextures.size(),
+            gpuTextures.data()});
+
+    resources.update<GpuStorageResource>(
+        ResourceName(MaterialDatabase), {
+            sizeof(GpuMaterial),
+            gpuMaterials.size(),
+            gpuMaterials.data()});
 }
 
 void MaterialTask::render(GraphicContext& context)
