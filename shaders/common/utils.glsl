@@ -127,7 +127,7 @@ vec4 sampleBlueNoise(uint depth)
     ivec2 blueNoiseXY = (ivec2(gl_GlobalInvocationID.xy) + haltonOffset) % 64;
 
     uint bluenNoiseIndex = (frameIndex + depth) % 64;
-    vec4 blueNoise = imageLoad(blueNoise[bluenNoiseIndex], blueNoiseXY);
+    vec4 blueNoise = imageLoad(bindlessTextures[blueNoiseTextures[bluenNoiseIndex]], blueNoiseXY);
 
     vec4 goldenScramble = GOLDEN_RATIO * vec4(1, 2, 3, 4) * cycle;
     vec4 noise = fract(blueNoise + goldenScramble);

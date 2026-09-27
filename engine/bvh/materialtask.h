@@ -39,15 +39,14 @@ public:
 private:
     uint64_t toGpu(
         const GraphicContext& context,
-        std::vector<GpuBindlessTextureDescriptor>& textures,
         std::vector<GpuMaterial>& materials);
 
     struct MaterialResources
     {
         ResourceId textureAlbedo;
         ResourceId textureSpecular;
-        ResourceId bindlessAlbedo;
-        ResourceId bindlessSpecular;
+        BindlessTextureIndex bindlessAlbedo;
+        BindlessTextureIndex bindlessSpecular;
     };
 
     std::vector<MaterialResources> _materialsResourceIds;

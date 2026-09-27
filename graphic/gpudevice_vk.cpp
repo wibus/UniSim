@@ -86,6 +86,11 @@ void GpuDevice::bindBuffer(const GpuConstantResource& resource, const GpuProgram
     PILS_ASSERT(false, "Not implemented!");
 }
 
+void GpuDevice::bindBuffer(const GpuStorageResource& resource, const GpuProgramBindlessBindPoint& bindPoint)
+{
+    // Do nothing
+}
+
 void GpuDevice::bindBuffer(const GpuStorageResource& resource, const GpuProgramStorageBindPoint& bindPoint)
 {
     PILS_ASSERT(false, "Not implemented!");

@@ -40,6 +40,9 @@ class GpuDevice;
 class View;
 class GpuResourceManager;
 
+enum class BindlessTextureIndex : int32_t {};
+constexpr BindlessTextureIndex Invalid_BindlessTextureIndex = BindlessTextureIndex(~0x0);
+
 typedef unsigned int ResourceId;
 const ResourceId Invalid_ResourceId = ~0x0;
 
@@ -81,28 +84,6 @@ public:
 
     const pils::gpu::ImageView& imageView;
 #endif
-};
-
-class GpuBindlessResourceHandle
-{
-public:
-    GpuBindlessResourceHandle();
-
-#ifdef UNISIM_GRAPHIC_BACKEND_GL
-    GLuint64 handle;
-#endif // UNISIM_GRAPHIC_BACKEND_GL
-};
-
-class GpuBindlessTextureDescriptor
-{
-public:
-    GpuBindlessTextureDescriptor();
-    GpuBindlessTextureDescriptor(const GpuBindlessResourceHandle& bindless);
-
-#ifdef UNISIM_GRAPHIC_BACKEND_GL
-    GLuint64 texture;
-    GLuint64 padding;
-#endif // UNISIM_GRAPHIC_BACKEND_GL
 };
 
 class GpuStorageResourceHandle
@@ -231,27 +212,6 @@ private:
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
-
-class GpuBindlessResource : public GpuResource
-{
-public:
-    struct Definition
-    {
-        const Texture* texture;
-        const GpuTextureResource& textureResource;
-    };
-
-    GpuBindlessResource(GpuResourceManager& manager, ResourceId id, Definition def);
-    ~GpuBindlessResource();
-
-    bool accessible() const { return _handle.get() != nullptr; }
-    const GpuBindlessResourceHandle& handle() const { return *_handle; }
-
-private:
-    std::unique_ptr<GpuBindlessResourceHandle> _handle;
-};
-
-
 class GpuStorageResource : public GpuResource
 {
 public:
@@ -318,6 +278,33 @@ private:
 };
 
 
+class GpuBindlessTexture
+{
+public:
+    GpuBindlessTexture(
+        const GpuTextureResource& textureResource,
+        const Texture& texture);
+    ~GpuBindlessTexture();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint64 handle;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+
+class GpuBindlessTextureDescriptor
+{
+public:
+    GpuBindlessTextureDescriptor();
+    GpuBindlessTextureDescriptor(const GpuBindlessTexture& bindlessTexture);
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint64 texture;
+    GLuint64 padding;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
+
+
 class GpuResourceManager
 {
 public:
@@ -346,6 +333,10 @@ public:
     template<typename Resource>
     const Resource& get(ResourceId id) const;
 
+    const std::vector<std::shared_ptr<GpuBindlessTexture>>& bindlessTextures() { return _bindlessTextures; }
+    BindlessTextureIndex registerBindlessTexture(const GpuTextureResource& textureResource, const Texture& texture);
+    void unregisterBindlessTexture(BindlessTextureIndex index);
+
 private:
     void initializeNative();
 
@@ -359,7 +350,12 @@ private:
 
     std::vector<std::shared_ptr<GpuResource>> _resources;
 
-#ifdef UNISIM_GRAPHIC_BACKEND_VK
+    bool _isBindlessTextureDirty;
+    std::vector<BindlessTextureIndex> _bindlessTextureFreeList;
+    std::vector<std::shared_ptr<GpuBindlessTexture>> _bindlessTextures;
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+#elif UNISIM_GRAPHIC_BACKEND_VK
     std::unique_ptr<pils::gpu::BufferSet> _bufferSet;
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };

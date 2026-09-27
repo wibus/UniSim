@@ -135,7 +135,7 @@ HitInfo resolveHit(in Ray ray, in Intersection intersection)
     vec3 albedo = material.albedo.rgb;
     if(material.albedoTexture != -1)
     {
-        layout(rgba8) image2D img = textures[material.albedoTexture];
+        layout(rgba8) image2D img = bindlessTextures[material.albedoTexture];
         ivec2 imgSize = imageSize(img);
         vec3 texel = imageLoad(img, ivec2(imgSize * uv)).rgb;
 
@@ -145,7 +145,7 @@ HitInfo resolveHit(in Ray ray, in Intersection intersection)
     vec3 specular = material.specular.rgb;
     if(material.specularTexture != -1)
     {
-        layout(rgba8) image2D img = textures[material.specularTexture];
+        layout(rgba8) image2D img = bindlessTextures[material.specularTexture];
         ivec2 imgSize = imageSize(img);
         vec3 texel = imageLoad(img, ivec2(imgSize * uv)).rgb;
 
@@ -463,6 +463,9 @@ Ray scatter(Ray rayIn, HitInfo hitInfo)
 
     return rayOut;
 }
+
+
+uniform layout(rgba32f) image2D result;
 
 layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 

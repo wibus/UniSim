@@ -25,26 +25,6 @@ GpuImageResourceHandle::GpuImageResourceHandle() :
 
 }
 
-GpuBindlessResourceHandle::GpuBindlessResourceHandle() :
-    handle(0)
-{
-
-}
-
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor() :
-    texture(0),
-    padding(0)
-{
-
-}
-
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const unisim::GpuBindlessResourceHandle& bindless) :
-    texture(bindless.handle),
-    padding(0)
-{
-
-}
-
 GpuStorageResourceHandle::GpuStorageResourceHandle() :
     bufferId(0)
 {
@@ -204,38 +184,6 @@ void GpuImageResource::update(const Definition& def)
 }
 
 
-// BINDLESS //
-GpuBindlessResource::GpuBindlessResource(GpuResourceManager& manager, ResourceId id, Definition def) :
-    GpuResource(manager, id)
-{
-    _handle.reset(new GpuBindlessResourceHandle());
-
-    GLenum format = GL_RGBA8;
-    if(def.texture != nullptr)
-    {
-        switch(def.texture->format)
-        {
-        case TextureFormat::R8G8B8A8_UNORM:
-            format = def.texture->numComponents == 3 ? GL_RGB8 : GL_RGBA8;
-            break;
-        case TextureFormat::R32G32B32A32_FLOAT:
-            format = def.texture->numComponents == 3 ? GL_RGB32F : GL_RGBA32F;
-            break;
-        default:
-            PILS_FATAL("Texture format not supported");
-        }
-    }
-
-    _handle->handle = glGetImageHandleARB(def.textureResource.handle().texId, 0, GL_FALSE, 0, format);
-    glMakeImageHandleResidentARB(_handle->handle, GL_READ_ONLY);
-}
-
-GpuBindlessResource::~GpuBindlessResource()
-{
-    glMakeImageHandleNonResidentARB(_handle->handle);
-}
-
-
 // STORAGE //
 GpuStorageResource::GpuStorageResource(GpuResourceManager& manager, ResourceId id, Definition def) :
     GpuResource(manager, id)
@@ -302,6 +250,49 @@ GpuGeometryResource::~GpuGeometryResource()
 {
     glDeleteBuffers(1, &_handle->vao);
     glDeleteBuffers(1, &_handle->vbo);
+}
+
+
+// BINDLESS //
+GpuBindlessTexture::GpuBindlessTexture(
+        const GpuTextureResource& textureResource,
+        const Texture& texture)
+{
+    GLenum format = GL_RGBA8;
+    switch(texture.format)
+    {
+    case TextureFormat::R8G8B8A8_UNORM:
+        format = texture.numComponents == 3 ? GL_RGB8 : GL_RGBA8;
+        break;
+    case TextureFormat::R32G32B32A32_FLOAT:
+        format = texture.numComponents == 3 ? GL_RGB32F : GL_RGBA32F;
+        break;
+    default:
+        PILS_FATAL("Texture format not supported");
+    }
+
+    handle = glGetImageHandleARB(textureResource.handle().texId, 0, GL_FALSE, 0, format);
+    glMakeImageHandleResidentARB(handle, GL_READ_ONLY);
+}
+
+GpuBindlessTexture::~GpuBindlessTexture()
+{
+    glMakeImageHandleNonResidentARB(handle);
+}
+
+
+GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor() :
+    texture(0),
+    padding(0)
+{
+
+}
+
+GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const GpuBindlessTexture& bindlessTexture) :
+    texture(bindlessTexture.handle),
+    padding(0)
+{
+
 }
 
 

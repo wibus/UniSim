@@ -24,6 +24,8 @@ DefineProfilePointGpu(PathTracer);
 DefineResource(PathTracerResult);
 DefineResource(PathTracerCommonParams);
 
+DefineResource(BindlessTextures);
+
 
 struct GpuPathTracerCommonParams
 {
@@ -35,8 +37,8 @@ struct GpuPathTracerCommonParams
     glm::float32 exposure;
 
     glm::uint32 frameIndex;
-    
-    GpuBindlessTextureDescriptor blueNoise[PathTracerTask::BLUE_NOISE_TEX_COUNT];
+
+    glm::ivec4 blueNoiseTextures[PathTracerTask::BLUE_NOISE_TEX_COUNT];
     glm::vec4 halton[PathTracerTask::HALTON_SAMPLE_COUNT];
 };
 
@@ -61,7 +63,7 @@ void PathTracerTask::registerDynamicResources(GraphicContext& context)
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
     {
         _blueNoiseTextureResourceIds[i] = resources.registerDynamicResource("Blue Noise Texture " + std::to_string(i));
-        _blueNoiseBindlessResourceIds[i] = resources.registerDynamicResource("Blue Noise Bindless " + std::to_string(i));
+        _blueNoiseBindlessResourceIds[i] = Invalid_BindlessTextureIndex;
     }
 }
 
@@ -102,30 +104,39 @@ bool PathTracerTask::defineResources(GraphicContext& context)
 
         ok = ok && resources.define<GpuTextureResource>(_blueNoiseTextureResourceIds[i], {*texture});
         const auto& textureResource = resources.get<GpuTextureResource>(_blueNoiseTextureResourceIds[i]);
-        ok = ok && resources.define<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i], {texture, textureResource});
+        _blueNoiseBindlessResourceIds[i] = resources.registerBindlessTexture(textureResource, *texture);
+        ok = ok && (_blueNoiseBindlessResourceIds[i] != Invalid_BindlessTextureIndex);
 
         delete texture;
     }
 
     GpuPathTracerCommonParams gpuCommonParams;
+    std::vector<GpuBindlessTextureDescriptor> gpuTextures;
 
     _hash = toGpu(
         context,
-        gpuCommonParams);
-
-    ok = ok && resources.define<GpuConstantResource>(
-             ResourceName(PathTracerCommonParams), {
-              sizeof(GpuPathTracerCommonParams),
-              &gpuCommonParams});
+        gpuCommonParams,
+        gpuTextures);
 
     _viewport.reset(new Viewport(context.camera.viewport()));
 
+    ok = ok && resources.define<GpuConstantResource>(
+            ResourceName(PathTracerCommonParams), {
+                sizeof(GpuPathTracerCommonParams),
+                &gpuCommonParams});
+
+    ok = ok && resources.define<GpuStorageResource>(
+            ResourceName(BindlessTextures), {
+                sizeof (GpuBindlessTextureDescriptor),
+                gpuTextures.size(),
+                gpuTextures.data()});
+
     ok = ok && resources.define<GpuImageResource>(
-             ResourceName(PathTracerResult), {
-              .width  = _viewport->width,
-              .height = _viewport->height,
-              .depth  = 1,
-              .format = TextureFormat::R32G32B32A32_FLOAT});
+            ResourceName(PathTracerResult), {
+                .width  = _viewport->width,
+                .height = _viewport->height,
+                .depth  = 1,
+                .format = TextureFormat::R32G32B32A32_FLOAT});
 
     return ok;
 }
@@ -185,6 +196,7 @@ bool PathTracerTask::definePathTracerInterface(GraphicContext& context, PathTrac
 
     ok = ok && interface.declareConstant({"PathTracerCommonParams"});
     ok = ok && interface.declareImage({"result"});
+    ok = ok && interface.declareBindless({"BindlessTextures"});
 
     return ok;
 }
@@ -194,6 +206,9 @@ void PathTracerTask::bindPathTracerResources(
     CompiledGpuProgramInterface& compiledGpi) const
 {
     GpuResourceManager& resources = context.resources;
+
+    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BindlessTextures)),
+                              compiledGpi.getBindlessBindPoint("BindlessTextures"));
 
     context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)),
                               compiledGpi.getConstantBindPoint("PathTracerCommonParams"));
@@ -222,11 +237,13 @@ void PathTracerTask::update(GraphicContext& context)
     }
 
     GpuPathTracerCommonParams gpuCommonParams;
+    std::vector<GpuBindlessTextureDescriptor> gpuTextures;
 
     // Provier hash
     uint64_t hash = toGpu(
         context,
-        gpuCommonParams);
+        gpuCommonParams,
+        gpuTextures);
 
     if(_hash != hash)
     {
@@ -254,6 +271,12 @@ void PathTracerTask::update(GraphicContext& context)
         ResourceName(PathTracerCommonParams), {
             sizeof(GpuPathTracerCommonParams),
             &gpuCommonParams});
+
+    resources.update<GpuStorageResource>(
+        ResourceName(BindlessTextures), {
+            sizeof(GpuBindlessTextureDescriptor),
+            gpuTextures.size(),
+            gpuTextures.data()});
 }
 
 void PathTracerTask::render(GraphicContext& context)
@@ -289,7 +312,8 @@ void PathTracerTask::setPathTracerProviders(const std::vector<PathTracerProvider
 
 uint64_t PathTracerTask::toGpu(
     GraphicContext& context,
-    GpuPathTracerCommonParams& gpuParams)
+    GpuPathTracerCommonParams& gpuParams,
+    std::vector<GpuBindlessTextureDescriptor>& gpuTextures)
 {
     GpuResourceManager& resources = context.resources;
 
@@ -309,12 +333,20 @@ uint64_t PathTracerTask::toGpu(
     gpuParams.frameIndex = 0; // Must be constant for hasing
 
     for(unsigned int i = 0; i < BLUE_NOISE_TEX_COUNT; ++i)
-        gpuParams.blueNoise[i] = resources.get<GpuBindlessResource>(_blueNoiseBindlessResourceIds[i]).handle();
+        gpuParams.blueNoiseTextures[i].x = int(_blueNoiseBindlessResourceIds[i]);
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
         gpuParams.halton[i] = _halton[i];
 
+    std::size_t bindlessTextureCount = context.resources.bindlessTextures().size();
+    gpuTextures.clear();
+    gpuTextures.resize(bindlessTextureCount);
+    for(std::size_t i = 0; i < bindlessTextureCount; ++i)
+        if (GpuBindlessTexture* texture = context.resources.bindlessTextures()[i].get())
+            gpuTextures[i] = GpuBindlessTextureDescriptor(*texture);
+
     uint64_t hash = 0;
     hash = hashVal(gpuParams, hash);
+    hash = hashVec(gpuTextures, hash);
 
     return hash;
 }

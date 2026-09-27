@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include <PilsCore/Utils/Logger.h>
+
 #include "graphic.h"
 
 
@@ -17,14 +19,14 @@ GraphicShaderHandle::GraphicShaderHandle(GraphicShaderHandle&& other) :
 GraphicShaderHandle::GraphicShaderHandle(GLuint shaderId) :
     _shaderId(shaderId)
 {
-    std::cout << "Creating shader handle '" << _shaderId << "'" << std::endl;
+    PILS_DEBUG("Creating shader handle '", _shaderId, "'");
 }
 
 GraphicShaderHandle::~GraphicShaderHandle()
 {
     if (_shaderId != 0)
     {
-        std::cout << "Destroying shader handle '" << _shaderId << "'" << std::endl;
+        PILS_DEBUG("Destroying shader handle '", _shaderId, "'");
         glDeleteShader(_shaderId);
     }
 }
@@ -51,14 +53,14 @@ GraphicProgramHandle::GraphicProgramHandle(GraphicProgramHandle&& other) :
 GraphicProgramHandle::GraphicProgramHandle(GLuint programId) :
     _programId(programId)
 {
-    std::cout << "Creating program handle '" << _programId << "'" << std::endl;
+    PILS_DEBUG("Creating program handle '", _programId, "'");
 }
 
 GraphicProgramHandle::~GraphicProgramHandle()
 {
     if (_programId != 0)
     {
-        std::cout << "Destroying program handle '" << _programId << "'" << std::endl;
+        PILS_DEBUG("Destroying program handle '", _programId, "'");
         glDeleteProgram(_programId);
     }
 }
@@ -71,12 +73,12 @@ GraphicProgram::GraphicProgram(
     _handle(new GraphicProgramHandle(std::move(programHandle))),
     _shaders(shaders)
 {
-    std::cout << "Creating program '" << _name << "'" << std::endl;
+    PILS_DEBUG("Creating program '", _name, "'");
 }
 
 GraphicProgram::~GraphicProgram()
 {
-    std::cout << "Destroying program '" << _name << "'" << std::endl;
+    PILS_DEBUG("Destroying program '", _name, "'");
 
 }
 
@@ -99,13 +101,13 @@ void printShaderInfoLog(GLuint shaderId)
     int actual_length = 0;
     char shader_log[2048];
     glGetShaderInfoLog(shaderId, max_length, &actual_length, shader_log);
-    std::cout << "shader info log for GL index " << shaderId << ":" << std::endl;
-    std::cout << shader_log << std::endl;
+    PILS_INFO("shader info log for GL index ", shaderId, ":");
+    PILS_INFO(std::string(shader_log));
 }
 
 bool compileShader(GLuint shaderId, const std::string& name)
 {
-    std::cout << "Compiling shader '" << name.c_str() << "'" << std::endl;
+    PILS_DEBUG("Compiling shader '", name.c_str(), "'");
 
     glCompileShader(shaderId);
 
@@ -115,7 +117,7 @@ bool compileShader(GLuint shaderId, const std::string& name)
 
     if (GL_TRUE != params)
     {
-        std::cerr << "ERROR: GL shader index " << shaderId << " did not compile" << std::endl;
+        PILS_FATAL("ERROR: GL shader index ", shaderId, " did not compile");
         printShaderInfoLog(shaderId);
         return false; // or exit or something
     }
@@ -129,19 +131,19 @@ void printProgramInfoLog(GLuint programId)
     int actual_length = 0;
     char program_log[2048];
     glGetProgramInfoLog(programId, max_length, &actual_length, program_log);
-    std::cout << "program info log for GL index " << programId << ":" << std::endl;
-    std::cout << program_log << std::endl;
+    PILS_INFO("program info log for GL index ", programId, ":");
+    PILS_INFO(std::string(program_log));
 }
 
 bool validateProgram(GLuint programId, const std::string& name)
 {
-    std::cout << "Validating program '" << name.c_str() << "'" << std::endl;
+    PILS_DEBUG("Validating program '", name.c_str(), "'");
 
     int linkStatus = -1;
     glGetProgramiv(programId, GL_LINK_STATUS, &linkStatus);
-    std::cout << "program " << programId << " GL_LINK_STATUS = " << (linkStatus ? "SUCCESS" : "FAILURE") << std::endl;
     if (GL_TRUE != linkStatus)
     {
+        PILS_FATAL("Program '", name, "' linking failed");
         printProgramInfoLog(programId);
         return false;
     }
@@ -150,12 +152,14 @@ bool validateProgram(GLuint programId, const std::string& name)
 
     int validationStatus = -1;
     glGetProgramiv(programId, GL_VALIDATE_STATUS, &validationStatus);
-    std::cout << "program " << programId << " GL_VALIDATE_STATUS = " << (validationStatus ? "SUCCESS" : "FAILURE") << std::endl;
     if (GL_TRUE != validationStatus)
     {
+        PILS_FATAL("Program '", name, "' validation failed");
         printProgramInfoLog(programId);
         return false;
     }
+
+    PILS_INFO("Program '", name, "' successfully validated");
 
     return true;
 }
@@ -209,7 +213,7 @@ bool generateShader(
     case ShaderType::Vertex:   shaderId = glCreateShader(GL_VERTEX_SHADER);   break;
     case ShaderType::Fragment: shaderId = glCreateShader(GL_FRAGMENT_SHADER); break;
     case ShaderType::Compute:  shaderId = glCreateShader(GL_COMPUTE_SHADER);  break;
-    default: std::cerr << "Invalid shader type" << std::endl; return false;
+    default: PILS_FATAL("Invalid shader type"); return false;
     }
 
     glShaderSource(shaderId, shaderSrc.size(), &shaderSrc[0], NULL);

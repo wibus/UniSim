@@ -27,6 +27,7 @@ class GpuTextureResource;
 class GpuImageResource;
 class GpuGeometryResource;
 
+struct GpuProgramBindlessBindPoint;
 struct GpuProgramConstantBindPoint;
 struct GpuProgramStorageBindPoint;
 struct GpuProgramTextureBindPoint;
@@ -48,6 +49,7 @@ public:
     void end();
 
     void bindBuffer(const GpuConstantResource& resource, const GpuProgramConstantBindPoint& bindPoint);
+    void bindBuffer(const GpuStorageResource& resource, const GpuProgramBindlessBindPoint& bindPoint);
     void bindBuffer(const GpuStorageResource& resource, const GpuProgramStorageBindPoint& bindPoint);
     void bindTexture(const GpuTextureResource& resource, const GpuProgramTextureBindPoint& unit);
     void bindTexture(const GpuImageResource& resource, const GpuProgramTextureBindPoint& unit);

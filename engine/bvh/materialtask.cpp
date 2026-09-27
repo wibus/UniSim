@@ -21,7 +21,6 @@ namespace unisim
 DefineProfilePoint(Material);
 
 DefineResource(MaterialDatabase);
-DefineResource(BindlessTextures);
 
 
 struct GpuMaterial
@@ -72,8 +71,8 @@ void MaterialTask::registerDynamicResources(GraphicContext& context)
         _materialsResourceIds.push_back({
             resources.registerDynamicResource(material->name() + "_texture_albedo"),
             resources.registerDynamicResource(material->name() + "_texture_specular"),
-            resources.registerDynamicResource(material->name() + "_bindless_albedo"),
-            resources.registerDynamicResource(material->name() + "_bindless_specular"),
+            Invalid_BindlessTextureIndex,
+            Invalid_BindlessTextureIndex,
         });
     }
 }
@@ -94,28 +93,25 @@ bool MaterialTask::defineResources(GraphicContext& context)
         {
             ok = ok && resources.define<GpuTextureResource>(_materialsResourceIds[i].textureAlbedo, {*material.albedo()});
             const auto& albedoTexure = resources.get<GpuTextureResource>(_materialsResourceIds[i].textureAlbedo);
-            ok = ok && resources.define<GpuBindlessResource>(_materialsResourceIds[i].bindlessAlbedo, {material.albedo(), albedoTexure});
+            _materialsResourceIds[i].bindlessAlbedo = resources.registerBindlessTexture(albedoTexure, *material.albedo());
+            ok = ok && (_materialsResourceIds[i].bindlessAlbedo != Invalid_BindlessTextureIndex);
         }
 
         if(material.specular() != nullptr)
         {
             ok = ok && resources.define<GpuTextureResource>(_materialsResourceIds[i].textureSpecular, {*material.specular()});
             const auto& specularTexture = resources.get<GpuTextureResource>(_materialsResourceIds[i].textureSpecular);
-            ok = ok && resources.define<GpuBindlessResource>(_materialsResourceIds[i].bindlessSpecular, {material.specular(), specularTexture});
+            _materialsResourceIds[i].bindlessSpecular = resources.registerBindlessTexture(specularTexture, *material.specular());
+            ok = ok && (_materialsResourceIds[i].bindlessSpecular != Invalid_BindlessTextureIndex);
         }
     }
 
     std::vector<GpuMaterial> gpuMaterials;
-    std::vector<GpuBindlessTextureDescriptor> gpuTextures;
-    _hash = toGpu(context, gpuTextures, gpuMaterials);
+    _hash = toGpu(context, gpuMaterials);
 
     ok = ok && context.resources.define<GpuStorageResource>(
              ResourceName(MaterialDatabase),
              {sizeof (GpuMaterial), gpuMaterials.size(), gpuMaterials.data()});
-
-    ok = ok && context.resources.define<GpuStorageResource>(
-             ResourceName(BindlessTextures),
-             {sizeof (GpuBindlessTextureDescriptor), gpuTextures.size(), gpuTextures.data()});
 
     return ok;
 }
@@ -129,7 +125,6 @@ bool MaterialTask::definePathTracerInterface(GraphicContext& context, PathTracer
 {
     bool ok = true;
 
-    ok = ok && interface.declareStorage({"Textures"});
     ok = ok && interface.declareStorage({"Materials"});
 
     return ok;
@@ -141,7 +136,6 @@ void MaterialTask::bindPathTracerResources(
 {
     GpuResourceManager& resources = context.resources;
 
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BindlessTextures)), compiledGpi.getStorageBindPoint("Textures"));
     context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(MaterialDatabase)), compiledGpi.getStorageBindPoint("Materials"));
 }
 
@@ -150,20 +144,14 @@ void MaterialTask::update(GraphicContext& context)
     Profile(Material);
 
     std::vector<GpuMaterial> gpuMaterials;
-    std::vector<GpuBindlessTextureDescriptor> gpuTextures;
-    uint64_t hash = toGpu(context, gpuTextures, gpuMaterials);
+    uint64_t hash = toGpu(context, gpuMaterials);
 
     if(_hash == hash)
         return;
 
     _hash = hash;
-    
+
     GpuResourceManager& resources = context.resources;
-    resources.update<GpuStorageResource>(
-        ResourceName(BindlessTextures), {
-            sizeof(GpuBindlessTextureDescriptor),
-            gpuTextures.size(),
-            gpuTextures.data()});
 
     resources.update<GpuStorageResource>(
         ResourceName(MaterialDatabase), {
@@ -178,7 +166,6 @@ void MaterialTask::render(GraphicContext& context)
 
 uint64_t MaterialTask::toGpu(
     const GraphicContext& context,
-    std::vector<GpuBindlessTextureDescriptor>& gpuBindless,
     std::vector<GpuMaterial>& gpuMaterials)
 {
     GpuResourceManager& resources = context.resources;
@@ -188,6 +175,7 @@ uint64_t MaterialTask::toGpu(
     for(std::size_t i = 0; i < materials.size(); ++i)
     {
         const Material& material = *materials[i];
+        const MaterialResources& matResources = _materialsResourceIds[i];
 
         GpuMaterial gpuMaterial;
 
@@ -205,30 +193,19 @@ uint64_t MaterialTask::toGpu(
                     0);
 
         if(material.albedo() != nullptr)
-        {
-            gpuMaterial.albedoTexture = gpuBindless.size();
-            gpuBindless.emplace_back(resources.get<GpuBindlessResource>(_materialsResourceIds[i].bindlessAlbedo).handle());
-        }
+            gpuMaterial.albedoTexture = int(matResources.bindlessAlbedo);
         else
-        {
             gpuMaterial.albedoTexture = -1;
-        }
 
         if(material.specular() != nullptr)
-        {
-            gpuMaterial.specularTexture = gpuBindless.size();
-            gpuBindless.emplace_back(resources.get<GpuBindlessResource>(_materialsResourceIds[i].bindlessSpecular).handle());
-        }
+            gpuMaterial.specularTexture = int(matResources.bindlessSpecular);
         else
-        {
             gpuMaterial.specularTexture = -1;
-        }
 
         gpuMaterials.push_back(gpuMaterial);
     }
 
     uint64_t hash = 0;
-    hash = hashVec(gpuBindless, hash);
     hash = hashVec(gpuMaterials, hash);
 
     return hash;

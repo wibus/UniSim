@@ -66,21 +66,6 @@ GpuImageResourceHandle::GpuImageResourceHandle(
 {
 }
 
-GpuBindlessResourceHandle::GpuBindlessResourceHandle()
-{
-    PILS_ASSERT(false, "Not implemented!");
-}
-
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor()
-{
-    PILS_ASSERT(false, "Not implemented!");
-}
-
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const unisim::GpuBindlessResourceHandle& bindless)
-{
-    PILS_ASSERT(false, "Not implemented!");
-}
-
 GpuStorageResourceHandle::GpuStorageResourceHandle(
         const pils::gpu::StorageBuffer& buffer,
         uint64_t offset,
@@ -147,7 +132,9 @@ GpuTextureResource::GpuTextureResource(GpuResourceManager& manager, ResourceId i
 
     glm::uvec3 imgOffset = glm::uvec3(0, 0, 0);
     glm::uvec3 imgExtent = glm::uvec3(def.texture.width, def.texture.height, def.texture.depth);
+    _manager.gpuDevice().commandList().imageBarrier(*_texture, vk::ImageLayout::eTransferDstOptimal);
     _manager.gpuDevice().commandList().copyImageBuffer(*_texture, imgOffset, imgExtent, bufferSet.transferBuffer(), transferMapping.offset);
+    _manager.gpuDevice().commandList().imageBarrier(*_texture, vk::ImageLayout::eReadOnlyOptimal);
 }
 
 GpuTextureResource::GpuTextureResource(GpuResourceManager& manager, GpuTextureResourceHandle&& handle) :
@@ -180,6 +167,8 @@ GpuImageResource::GpuImageResource(GpuResourceManager& manager, ResourceId id, D
 
     _imageView.reset(new pils::gpu::ImageView(device, *_image));
     _handle.reset(new GpuImageResourceHandle(*_imageView));
+
+    _manager.gpuDevice().commandList().imageBarrier(*_image, vk::ImageLayout::eGeneral);
 }
 
 GpuImageResource::~GpuImageResource()
@@ -198,19 +187,6 @@ void GpuImageResource::update(const Definition& def)
             toPils(def.format),
             1)
         );
-}
-
-
-// BINDLESS //
-GpuBindlessResource::GpuBindlessResource(GpuResourceManager& manager, ResourceId id, Definition def) :
-    GpuResource(manager, id)
-{
-    PILS_ASSERT(false, "Not implemented!");
-}
-
-GpuBindlessResource::~GpuBindlessResource()
-{
-    PILS_ASSERT(false, "Not implemented!");
 }
 
 
@@ -336,13 +312,39 @@ GpuGeometryResource::~GpuGeometryResource()
 }
 
 
+// BINDLESS //
+
+GpuBindlessTexture::GpuBindlessTexture(
+        const GpuTextureResource& textureResource,
+        const Texture& texture)
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+GpuBindlessTexture::~GpuBindlessTexture()
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+
+GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor()
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const GpuBindlessTexture& bindlessTexture)
+{
+    PILS_ASSERT(false, "Not implemented!");
+}
+
+
 // MANAGER //
 
 void GpuResourceManager::initializeNative()
 {
     pils::gpu::BufferSet::Settings bufferSettings{};
     bufferSettings.constantBufferSize = pils::pilsMB(1);
-    bufferSettings.transferBufferSize = pils::pilsMB(10);
+    bufferSettings.transferBufferSize = pils::pilsGB(2);
     bufferSettings.storageBufferSize = pils::pilsMB(10);
     bufferSettings.vertexBufferSize = pils::pilsMB(1);
 

@@ -10,6 +10,24 @@
 namespace unisim
 {
 
+// Bindless //
+
+GpuProgramBindlessBindPoint GpuProgramBindlessBindPoint::first()
+{
+    return {0};
+}
+
+GpuProgramBindlessBindPoint GpuProgramBindlessBindPoint::invalid()
+{
+    return {GL_INVALID_INDEX};
+}
+
+GpuProgramBindlessBindPoint GpuProgramBindlessBindPoint::next(const GpuProgramBindlessBindPoint& current)
+{
+    return {current.bindPoint + 1};
+}
+
+
 // Constant //
 
 GpuProgramConstantBindPoint GpuProgramConstantBindPoint::first()
@@ -86,6 +104,35 @@ GpuProgramImageBindPoint GpuProgramImageBindPoint::next(const GpuProgramImageBin
 CompiledGpuProgramInterface::CompiledGpuProgramInterface()
     : _isValid(true)
 {}
+
+bool CompiledGpuProgramInterface::set(const GraphicProgram& program, const GpuProgramBindlessBindPoint& bindPoint, const GpuProgramBindlessInput& input)
+{
+    if (!_isValid)
+        return false;
+
+    PILS_ASSERT(_bindlessBindPoints.find(input.name) == _bindlessBindPoints.end(), "Bindless buffer already declared: ", input.name);
+
+    GLuint location = glGetProgramResourceIndex(program.handle(), GL_SHADER_STORAGE_BLOCK, input.name.c_str());
+
+    if(location == GL_INVALID_ENUM)
+    {
+        PILS_ERROR("Invalid bindless interface type\n");
+        _isValid = false;
+        return false;
+    }
+
+    if(location == GL_INVALID_INDEX)
+    {
+        PILS_ERROR("Could not find bindless block named ", input.name);
+        _isValid = false;
+        return false;
+    }
+
+    glShaderStorageBlockBinding(program.handle(), location, bindPoint.bindPoint);
+    _bindlessBindPoints[input.name] = bindPoint;
+
+    return true;
+}
 
 bool CompiledGpuProgramInterface::set(const GraphicProgram& program, const GpuProgramConstantBindPoint& bindPoint, const GpuProgramConstantInput& input)
 {

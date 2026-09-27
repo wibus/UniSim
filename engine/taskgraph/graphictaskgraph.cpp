@@ -136,7 +136,6 @@ void GraphicTaskGraph::createTaskGraph(const Scene& scene)
     // Task Graph
     _tasks.clear();
 
-#ifndef UNISIM_GRAPHIC_BACKEND_VK
     addTask(GraphicTaskPtr(new TerrainTask()));
     addTask(GraphicTaskPtr(new MaterialTask()));
     addTask(GraphicTaskPtr(new GeometryTask()));
@@ -145,7 +144,6 @@ void GraphicTaskGraph::createTaskGraph(const Scene& scene)
     addTask(_pathTracerTask);
     addTask(GraphicTaskPtr(new ClearSwapChain()));
     addTask(GraphicTaskPtr(new GradingTask()));
-#endif //
     addTask(GraphicTaskPtr(new Ui(*_imGuiRenderer)));
 
     // Path Tracer Providers

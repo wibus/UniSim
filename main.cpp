@@ -14,7 +14,7 @@ void initPilsLogger()
     logSettings.outputToFile = true;
     logSettings.fileName = "unisim_log.txt";
 #ifdef PILS_TARGET_DEBUG
-    logSettings.level = pils::Logger::Debug;
+    logSettings.level = pils::Logger::Info;
 #else
     logSettings.level = pils::Logger::Info;
 #endif

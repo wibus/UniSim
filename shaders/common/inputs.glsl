@@ -9,8 +9,13 @@ layout (std140) uniform PathTracerCommonParams
 
     uint frameIndex;
 
-    layout(rgba8) readonly image2D blueNoise[64];
+    int blueNoiseTextures[64];
     vec4 halton[64];
+};
+
+layout (std140) buffer BindlessTextures
+{
+    layout(rgba8) readonly image2D bindlessTextures[];
 };
 
 layout (std430) buffer Primitives
@@ -68,14 +73,7 @@ layout (std430) buffer DirectionalLights
     DirectionalLight directionalLights[];
 };
 
-layout (std140) buffer Textures
-{
-    layout(rgba8) readonly image2D textures[];
-};
-
 layout (std430) buffer Materials
 {
     Material materials[];
 };
-
-uniform layout(rgba32f) image2D result;

@@ -18,6 +18,11 @@ namespace unisim
 class GraphicProgram;
 
 
+struct GpuProgramBindlessInput
+{
+    std::string name;
+};
+
 struct GpuProgramConstantInput
 {
     std::string name;
@@ -38,6 +43,17 @@ struct GpuProgramImageInput
     std::string name;
 };
 
+
+struct GpuProgramBindlessBindPoint
+{
+    static GpuProgramBindlessBindPoint first();
+    static GpuProgramBindlessBindPoint invalid();
+    static GpuProgramBindlessBindPoint next(const GpuProgramBindlessBindPoint& current);
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    GLuint bindPoint;
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+};
 
 struct GpuProgramConstantBindPoint
 {
@@ -93,6 +109,7 @@ public:
 
     bool isValid() const { return _isValid; }
 
+    GpuProgramBindlessBindPoint getBindlessBindPoint(const std::string& name) const;
     GpuProgramConstantBindPoint getConstantBindPoint(const std::string& name) const;
     GpuProgramStorageBindPoint  getStorageBindPoint(const std::string& name) const;
     GpuProgramTextureBindPoint  getTextureBindPoint(const std::string& name) const;
@@ -101,12 +118,14 @@ public:
 private:
     friend class GpuProgramInterface;
 
-    bool set(const GraphicProgram& program, const GpuProgramConstantBindPoint& bindPoint, const GpuProgramConstantInput& input);
-    bool set(const GraphicProgram& program, const GpuProgramStorageBindPoint& bindPoint, const GpuProgramStorageInput& input);
-    bool set(const GraphicProgram& program, const GpuProgramTextureBindPoint& bindPoint, const GpuProgramTextureInput& input);
-    bool set(const GraphicProgram& program, const GpuProgramImageBindPoint& bindPoint, const GpuProgramImageInput& input);
+    bool set(const GraphicProgram& program, const GpuProgramBindlessBindPoint& bindPoint,   const GpuProgramBindlessInput& input);
+    bool set(const GraphicProgram& program, const GpuProgramConstantBindPoint& bindPoint,   const GpuProgramConstantInput& input);
+    bool set(const GraphicProgram& program, const GpuProgramStorageBindPoint& bindPoint,    const GpuProgramStorageInput& input);
+    bool set(const GraphicProgram& program, const GpuProgramTextureBindPoint& bindPoint,    const GpuProgramTextureInput& input);
+    bool set(const GraphicProgram& program, const GpuProgramImageBindPoint& bindPoint,      const GpuProgramImageInput& input);
 
     bool _isValid;
+    std::map<std::string, GpuProgramBindlessBindPoint> _bindlessBindPoints;
     std::map<std::string, GpuProgramConstantBindPoint> _constantBindPoints;
     std::map<std::string, GpuProgramStorageBindPoint> _storageBindPoints;
     std::map<std::string, GpuProgramTextureBindPoint> _textureBindPoints;
@@ -118,14 +137,17 @@ class GpuProgramInterface
 public:
     GpuProgramInterface();
 
+    bool declareBindless(const GpuProgramBindlessInput& input);
     bool declareConstant(const GpuProgramConstantInput& input);
     bool declareStorage(const GpuProgramStorageInput& input);
     bool declareTexture(const GpuProgramTextureInput& input);
     bool declareImage(const GpuProgramImageInput& input);
 
+
     bool compile(CompiledGpuProgramInterface& compiledGpi, const GraphicProgram& program);
 
 private:
+    std::vector<GpuProgramBindlessInput> _bindless;
     std::vector<GpuProgramConstantInput> _constants;
     std::vector<GpuProgramStorageInput> _storages;
     std::vector<GpuProgramTextureInput> _textures;

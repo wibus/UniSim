@@ -50,6 +50,13 @@ void GpuDevice::bindBuffer(const GpuConstantResource& resource, const GpuProgram
     glBindBufferBase(GL_UNIFORM_BUFFER, bindPoint.bindPoint, resource.handle().bufferId);
 }
 
+void GpuDevice::bindBuffer(const GpuStorageResource& resource, const GpuProgramBindlessBindPoint& bindPoint)
+{
+    PILS_ASSERT(resource.handle().bufferId > 0, "Invalid storage buffer index");
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindPoint.bindPoint, resource.handle().bufferId);
+}
+
 void GpuDevice::bindBuffer(const GpuStorageResource& resource, const GpuProgramStorageBindPoint& bindPoint)
 {
     PILS_ASSERT(resource.handle().bufferId > 0, "Invalid storage buffer index");

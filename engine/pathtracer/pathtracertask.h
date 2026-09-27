@@ -44,10 +44,11 @@ public:
 
 private:
     uint64_t toGpu(GraphicContext& context,
-        struct GpuPathTracerCommonParams& gpuParams);
+                   struct GpuPathTracerCommonParams& gpuParams,
+                   std::vector<GpuBindlessTextureDescriptor>& gpuTextures);
 
     ResourceId _blueNoiseTextureResourceIds[BLUE_NOISE_TEX_COUNT];
-    ResourceId _blueNoiseBindlessResourceIds[BLUE_NOISE_TEX_COUNT];
+    BindlessTextureIndex _blueNoiseBindlessResourceIds[BLUE_NOISE_TEX_COUNT];
 
     glm::vec4 _halton[HALTON_SAMPLE_COUNT];
 

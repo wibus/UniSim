@@ -9,6 +9,16 @@
 namespace unisim
 {
 
+GpuProgramBindlessBindPoint CompiledGpuProgramInterface::getBindlessBindPoint(const std::string& name) const
+{
+    auto it = _bindlessBindPoints.find(name);
+    PILS_ASSERT(it != _bindlessBindPoints.end(), "Could not find bindless buffer named ", name);
+    if(it != _bindlessBindPoints.end())
+        return it->second;
+
+    return GpuProgramBindlessBindPoint::invalid();
+}
+
 GpuProgramConstantBindPoint CompiledGpuProgramInterface::getConstantBindPoint(const std::string& name) const
 {
     auto it = _constantBindPoints.find(name);
@@ -54,6 +64,12 @@ GpuProgramInterface::GpuProgramInterface()
 {
 }
 
+bool GpuProgramInterface::declareBindless(const GpuProgramBindlessInput& input)
+{
+    _bindless.push_back(input);
+    return true;
+}
+
 bool GpuProgramInterface::declareConstant(const GpuProgramConstantInput& input)
 {
     _constants.push_back(input);
@@ -83,27 +99,36 @@ bool GpuProgramInterface::compile(CompiledGpuProgramInterface& compiledGpi, cons
     bool ok = true;
 
     GpuProgramConstantBindPoint nextConstantBindPoint = GpuProgramConstantBindPoint::first();
+    GpuProgramStorageBindPoint nextStorageBindPoint = GpuProgramStorageBindPoint::first();
+    GpuProgramTextureBindPoint nextTextureBindPoint = GpuProgramTextureBindPoint::first();
+    GpuProgramImageBindPoint nextImageBindPoint = GpuProgramImageBindPoint::first();
+
+#ifdef UNISIM_GRAPHIC_BACKEND_GL
+    for(const auto& input : _bindless)
+    {
+        ok = ok && compiledGpi.set(program, {nextStorageBindPoint.bindPoint}, input);
+        nextStorageBindPoint = GpuProgramStorageBindPoint::next(nextStorageBindPoint);
+    }
+#endif // UNISIM_GRAPHIC_BACKEND_GL
+
     for(const auto& input : _constants)
     {
         ok = ok && compiledGpi.set(program, nextConstantBindPoint, input);
         nextConstantBindPoint = GpuProgramConstantBindPoint::next(nextConstantBindPoint);
     }
 
-    GpuProgramStorageBindPoint nextStorageBindPoint = GpuProgramStorageBindPoint::first();
     for(const auto& input : _storages)
     {
         ok = ok && compiledGpi.set(program, nextStorageBindPoint, input);
         nextStorageBindPoint = GpuProgramStorageBindPoint::next(nextStorageBindPoint);
     }
 
-    GpuProgramTextureBindPoint nextTextureBindPoint = GpuProgramTextureBindPoint::first();
     for(const auto& input : _textures)
     {
         ok = ok && compiledGpi.set(program, nextTextureBindPoint, input);
         nextTextureBindPoint = GpuProgramTextureBindPoint::next(nextTextureBindPoint);
     }
 
-    GpuProgramImageBindPoint nextImageBindPoint = GpuProgramImageBindPoint::first();
     for(const auto& input : _images)
     {
         ok = ok && compiledGpi.set(program, nextImageBindPoint, input);

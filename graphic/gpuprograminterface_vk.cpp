@@ -10,6 +10,26 @@
 namespace unisim
 {
 
+// Bindless //
+
+GpuProgramBindlessBindPoint GpuProgramBindlessBindPoint::first()
+{
+    PILS_ASSERT(false, "Not implemented!");
+    return {};
+}
+
+GpuProgramBindlessBindPoint GpuProgramBindlessBindPoint::invalid()
+{
+    PILS_ASSERT(false, "Not implemented!");
+    return {};
+}
+
+GpuProgramBindlessBindPoint GpuProgramBindlessBindPoint::next(const GpuProgramBindlessBindPoint& current)
+{
+    PILS_ASSERT(false, "Not implemented!");
+    return {};
+}
+
 // Constant //
 
 GpuProgramConstantBindPoint GpuProgramConstantBindPoint::first()
@@ -98,6 +118,18 @@ GpuProgramImageBindPoint GpuProgramImageBindPoint::next(const GpuProgramImageBin
 CompiledGpuProgramInterface::CompiledGpuProgramInterface()
     : _isValid(true)
 {}
+
+bool CompiledGpuProgramInterface::set(const GraphicProgram& program, const GpuProgramBindlessBindPoint& bindPoint, const GpuProgramBindlessInput& input)
+{
+    PILS_ASSERT(false, "Not implemented!");
+
+    if (!_isValid)
+        return false;
+
+    PILS_ASSERT(_bindlessBindPoints.find(input.name) == _bindlessBindPoints.end(), "Bindless binding already declared: ", input.name);
+
+    return true;
+}
 
 bool CompiledGpuProgramInterface::set(const GraphicProgram& program, const GpuProgramConstantBindPoint& bindPoint, const GpuProgramConstantInput& input)
 {
