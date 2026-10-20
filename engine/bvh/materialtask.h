@@ -28,10 +28,10 @@ public:
         std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
     bool definePathTracerInterface(
         GraphicContext& context,
-        PathTracerInterface& interface) override;
+        GpuProgramInterfaceTemplate& gpiTemplate) override;
     void bindPathTracerResources(
         GraphicContext& context,
-        CompiledGpuProgramInterface& compiledGpi) const override;
+        GpuProgramInterface& gpi) const override;
     
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;

@@ -581,6 +581,7 @@ bool Model::defineResources(GraphicContext& context)
 
 bool Model::defineShaders(GraphicContext& context)
 {
+    GpuDevice& gpuDevice = context.device;
     GpuResourceManager& resources = context.resources;
 
     for(std::size_t i = 0; i < precompute_passes_.size(); ++i)
@@ -590,113 +591,126 @@ bool Model::defineShaders(GraphicContext& context)
         std::string header = glsl_header_factory_(pass.lambdas, false);
 
         {
-            pass.transmittance.interface.reset(new GpuProgramInterface());
-            pass.transmittance.interface->declareImage({.name = "transmittance_image"});
+            GpuProgramInterfaceTemplate gpiTemplate(ProgramType::Compute);
+            gpiTemplate.declareImage("transmittance_image");
+
+            pass.transmittance.interface.reset(new GpuProgramInterface(context.device, gpiTemplate));
             pass.transmittance.program.reset();
 
             GraphicShaderPtr transmittanceShader;
             if (!generateShader(transmittanceShader, ShaderType::Compute, "Transmittance"+suffix, {header + kComputeTransmittanceShader}, {}))
                 return false;
-            if (!generateComputeProgram(pass.transmittance.program, "Transmittance"+suffix, {transmittanceShader}))
+            if (!generateComputeProgram(gpuDevice, gpiTemplate, pass.transmittance.program, "Transmittance"+suffix, {transmittanceShader}))
                 return false;
         }
 
         {
-            pass.direct_irradiance.interface.reset(new GpuProgramInterface());
-            pass.direct_irradiance.interface->declareConstant({.name = "DirectIrradianceParams"});
-            pass.direct_irradiance.interface->declareTexture({.name = "transmittance_texture"});
-            pass.direct_irradiance.interface->declareImage({.name = "delta_irradiance_texture"});
-            pass.direct_irradiance.interface->declareImage({.name = "irradiance_texture"});
+            GpuProgramInterfaceTemplate gpiTemplate(ProgramType::Compute);
+            gpiTemplate.declareConstant("DirectIrradianceParams");
+            gpiTemplate.declareTexture("transmittance_texture");
+            gpiTemplate.declareImage("delta_irradiance_texture");
+            gpiTemplate.declareImage("irradiance_texture");
+
+            pass.direct_irradiance.interface.reset(new GpuProgramInterface(context.device, gpiTemplate));
             pass.direct_irradiance.program.reset();
 
             GraphicShaderPtr directIrradianceShader;
             if (!generateShader(directIrradianceShader, ShaderType::Compute, "DirectIrradiance"+suffix, {header + kComputeDirectIrradianceShader}, {}))
                 return false;
-            if (!generateComputeProgram(pass.direct_irradiance.program, "DirectIrradiance"+suffix, {directIrradianceShader}))
+            if (!generateComputeProgram(gpuDevice, gpiTemplate, pass.direct_irradiance.program, "DirectIrradiance"+suffix, {directIrradianceShader}))
                 return false;
         }
 
         {
-            pass.single_scattering.interface.reset(new GpuProgramInterface());
-            pass.single_scattering.interface->declareConstant({.name = "SingleScatteringParams"});
-            pass.single_scattering.interface->declareTexture({.name = "transmittance_texture"});
-            pass.single_scattering.interface->declareImage({.name = "delta_rayleigh_scattering_texture"});
-            pass.single_scattering.interface->declareImage({.name = "delta_mie_scattering_texture"});
-            pass.single_scattering.interface->declareImage({.name = "scattering_texture"});
-            pass.single_scattering.interface->declareImage({.name = "single_mie_scattering_texture"});
+            GpuProgramInterfaceTemplate gpiTemplate(ProgramType::Compute);
+            gpiTemplate.declareConstant("SingleScatteringParams");
+            gpiTemplate.declareTexture("transmittance_texture");
+            gpiTemplate.declareImage("delta_rayleigh_scattering_texture");
+            gpiTemplate.declareImage("delta_mie_scattering_texture");
+            gpiTemplate.declareImage("scattering_texture");
+            gpiTemplate.declareImage("single_mie_scattering_texture");
+
+            pass.single_scattering.interface.reset(new GpuProgramInterface(context.device, gpiTemplate));
             pass.single_scattering.program.reset();
 
             GraphicShaderPtr singleScatteringShader;
             if (!generateShader(singleScatteringShader, ShaderType::Compute, "SingleScattering"+suffix, {header + kComputeSingleScatteringShader}, {}))
                 return false;
-            if (!generateComputeProgram(pass.single_scattering.program, "SingleScattering"+suffix, {singleScatteringShader}))
+            if (!generateComputeProgram(gpuDevice, gpiTemplate, pass.single_scattering.program, "SingleScattering"+suffix, {singleScatteringShader}))
                 return false;
         }
 
         {
-            pass.scattering_density.interface.reset(new GpuProgramInterface());
-            pass.scattering_density.interface->declareConstant({.name = "ScatteringDensityParams"});
-            pass.scattering_density.interface->declareTexture({.name = "transmittance_texture"});
-            pass.scattering_density.interface->declareTexture({.name = "single_rayleigh_scattering_texture"});
-            pass.scattering_density.interface->declareTexture({.name = "single_mie_scattering_texture"});
-            pass.scattering_density.interface->declareTexture({.name = "multiple_scattering_texture"});
-            pass.scattering_density.interface->declareTexture({.name = "delta_irradiance_texture"});
-            pass.scattering_density.interface->declareImage({.name = "delta_scattering_density_texture"});
+            GpuProgramInterfaceTemplate gpiTemplate(ProgramType::Compute);
+            gpiTemplate.declareConstant("ScatteringDensityParams");
+            gpiTemplate.declareTexture("transmittance_texture");
+            gpiTemplate.declareTexture("single_rayleigh_scattering_texture");
+            gpiTemplate.declareTexture("single_mie_scattering_texture");
+            gpiTemplate.declareTexture("multiple_scattering_texture");
+            gpiTemplate.declareTexture("delta_irradiance_texture");
+            gpiTemplate.declareImage("delta_scattering_density_texture");
+
+            pass.scattering_density.interface.reset(new GpuProgramInterface(context.device, gpiTemplate));
             pass.scattering_density.program.reset();
 
             GraphicShaderPtr scatteringDensityShader;
             if (!generateShader(scatteringDensityShader, ShaderType::Compute, "ScatteringDensity"+suffix, {header + kComputeScatteringDensityShader}, {}))
                 return false;
-            if (!generateComputeProgram(pass.scattering_density.program, "ScatteringDensity"+suffix, {scatteringDensityShader}))
+            if (!generateComputeProgram(gpuDevice, gpiTemplate, pass.scattering_density.program, "ScatteringDensity"+suffix, {scatteringDensityShader}))
                 return false;
         }
 
         {
-            pass.indirect_irradiance.interface.reset(new GpuProgramInterface());
-            pass.indirect_irradiance.interface->declareConstant({.name = "IndirectIrradianceParams"});
-            pass.indirect_irradiance.interface->declareTexture({.name = "single_rayleigh_scattering_texture"});
-            pass.indirect_irradiance.interface->declareTexture({.name = "single_mie_scattering_texture"});
-            pass.indirect_irradiance.interface->declareTexture({.name = "multiple_scattering_texture"});
-            pass.indirect_irradiance.interface->declareImage({.name = "delta_irradiance_texture"});
-            pass.indirect_irradiance.interface->declareImage({.name = "irradiance_texture"});
+            GpuProgramInterfaceTemplate gpiTemplate(ProgramType::Compute);
+            gpiTemplate.declareConstant("IndirectIrradianceParams");
+            gpiTemplate.declareTexture("single_rayleigh_scattering_texture");
+            gpiTemplate.declareTexture("single_mie_scattering_texture");
+            gpiTemplate.declareTexture("multiple_scattering_texture");
+            gpiTemplate.declareImage("delta_irradiance_texture");
+            gpiTemplate.declareImage("irradiance_texture");
+
+            pass.indirect_irradiance.interface.reset(new GpuProgramInterface(context.device, gpiTemplate));
             pass.indirect_irradiance.program.reset();
 
             GraphicShaderPtr indirectIrradianceShader;
             if (!generateShader(indirectIrradianceShader, ShaderType::Compute, "IndirectIrradiance"+suffix, {header + kComputeIndirectIrradianceShader}, {}))
                 return false;
-            if (!generateComputeProgram(pass.indirect_irradiance.program, "IndirectIrradiance"+suffix, {indirectIrradianceShader}))
+            if (!generateComputeProgram(gpuDevice, gpiTemplate, pass.indirect_irradiance.program, "IndirectIrradiance"+suffix, {indirectIrradianceShader}))
                 return false;
         }
 
         {
-            pass.multiple_scattering.interface.reset(new GpuProgramInterface());
-            pass.multiple_scattering.interface->declareConstant({.name = "MultipleScatteringParams"});
-            pass.multiple_scattering.interface->declareTexture({.name = "transmittance_texture"});
-            pass.multiple_scattering.interface->declareTexture({.name = "scattering_density_texture"});
-            pass.multiple_scattering.interface->declareImage({.name = "delta_multiple_scattering_texture"});
-            pass.multiple_scattering.interface->declareImage({.name = "scattering_texture"});
+            GpuProgramInterfaceTemplate gpiTemplate(ProgramType::Compute);
+            gpiTemplate.declareConstant("MultipleScatteringParams");
+            gpiTemplate.declareTexture("transmittance_texture");
+            gpiTemplate.declareTexture("scattering_density_texture");
+            gpiTemplate.declareImage("delta_multiple_scattering_texture");
+            gpiTemplate.declareImage("scattering_texture");
+
+            pass.multiple_scattering.interface.reset(new GpuProgramInterface(context.device, gpiTemplate));
             pass.multiple_scattering.program.reset();
 
             GraphicShaderPtr multipleScatteringShader;
             if (!generateShader(multipleScatteringShader, ShaderType::Compute, "MultipleScattering"+suffix, {header + kComputeMultipleScatteringShader}, {}))
                 return false;
-            if (!generateComputeProgram(pass.multiple_scattering.program, "MultipleScattering"+suffix, {multipleScatteringShader}))
+            if (!generateComputeProgram(gpuDevice, gpiTemplate, pass.multiple_scattering.program, "MultipleScattering"+suffix, {multipleScatteringShader}))
                 return false;
         }
     }
 
     if (final_compute_transmittance_)
     {
-        std::string header = glsl_header_factory_({kLambdaR, kLambdaG, kLambdaB}, false);
+        GpuProgramInterfaceTemplate gpiTemplate(ProgramType::Compute);
+        gpiTemplate.declareImage("transmittance_image");
 
-        final_compute_transmittance_->interface.reset(new GpuProgramInterface());
-        final_compute_transmittance_->interface->declareImage({.name = "transmittance_image"});
+        final_compute_transmittance_->interface.reset(new GpuProgramInterface(context.device, gpiTemplate));
         final_compute_transmittance_->program.reset();
 
         GraphicShaderPtr transmittanceShader;
+        std::string header = glsl_header_factory_({kLambdaR, kLambdaG, kLambdaB}, false);
         if (!generateShader(transmittanceShader, ShaderType::Compute, "Transmittance_final", {header + kComputeTransmittanceShader}, {}))
             return false;
-        if (!generateComputeProgram(final_compute_transmittance_->program, "Transmittance_final", {transmittanceShader}))
+        if (!generateComputeProgram(gpuDevice, gpiTemplate, final_compute_transmittance_->program, "Transmittance_final", {transmittanceShader}))
             return false;
     }
 
@@ -726,40 +740,27 @@ bool Model::definePathTracerModules(
 
 bool Model::definePathTracerInterface(
     GraphicContext& context,
-    PathTracerInterface& interface)
+    GpuProgramInterfaceTemplate& gpiTemplate)
 {
     bool ok = true;
 
-    // Bruneton
-    ok = ok && interface.declareTexture({"transmittance_texture"});
-    ok = ok && interface.declareTexture({"scattering_texture"});
-    //ok = ok && interface.declareTexture({"irradiance_texture"});
-    ok = ok && interface.declareTexture({"single_mie_scattering_texture"});
+    gpiTemplate.declareTexture({"transmittance_texture"});
+    gpiTemplate.declareTexture({"scattering_texture"});
+    //gpiTemplate.declareTexture({"irradiance_texture"});
+    gpiTemplate.declareTexture({"single_mie_scattering_texture"});
 
     return ok;
 }
 
 void Model::bindPathTracerResources(
     GraphicContext& context,
-    CompiledGpuProgramInterface& compiledGpi) const
+    GpuProgramInterface& gpi) const
 {
     GpuResourceManager& resources = context.resources;
-
-    context.device.bindTexture(
-        resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)),
-        compiledGpi.getTextureBindPoint("transmittance_texture"));
-
-    context.device.bindTexture(
-        resources.get<GpuImageResource>(ResourceName(BrunetonScattering)),
-        compiledGpi.getTextureBindPoint("scattering_texture"));
-
-    //context.device.bindTexture(
-    //    resources.get<GpuImageResource>(ResourceName(BrunetonIrradiance)),
-    //    compiledGpi.getTextureBindPoint("irradiance_texture"));
-
-    context.device.bindTexture(
-        resources.get<GpuImageResource>(ResourceName(BrunetonSingleMieScattering)),
-        compiledGpi.getTextureBindPoint("single_mie_scattering_texture"));
+    gpi.setTexture("transmittance_texture", resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)));
+    gpi.setTexture("scattering_texture", resources.get<GpuImageResource>(ResourceName(BrunetonScattering)));
+    //gpi.setTexture("irradiance_texture", resources.get<GpuImageResource>(ResourceName(BrunetonIrradiance)));
+    gpi.setTexture("single_mie_scattering_texture", resources.get<GpuImageResource>(ResourceName(BrunetonSingleMieScattering)));
 }
 
 void Model::update(GraphicContext& context)
@@ -1053,15 +1054,14 @@ void Model::Recompute(
         // transmittance for the 3 wavelengths used at the last iteration. But we
         // want the transmittance at kLambdaR, kLambdaG, kLambdaB instead, so we
         // must recompute it here for these 3 wavelengths:
-        CompiledGpuProgramInterface compiledGpi;
-        if (!final_compute_transmittance_->interface->compile(compiledGpi, *final_compute_transmittance_->program))
+
+        GpuProgramInterface& gpi = *final_compute_transmittance_->interface;
+        gpi.setImage("transmittance_image", resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)));
+
+        if (!gpi.compileAndSet(context.device, *final_compute_transmittance_->program))
             return;
 
         GraphicProgramScope programScope(*final_compute_transmittance_->program);
-
-        context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)),
-                                 compiledGpi.getImageBindPoint("transmittance_image"));
-
         context.device.dispatch(TRANSMITTANCE_TEXTURE_WIDTH, TRANSMITTANCE_TEXTURE_HEIGHT);
     }
 
@@ -1085,19 +1085,18 @@ void Model::Precompute(
         pass.luminance_from_radiance[2], pass.luminance_from_radiance[5], pass.luminance_from_radiance[8], 0,
         0, 0, 0, 0);
 
+    const GpuDevice& device = context.device;
     GpuResourceManager& resources = context.resources;
 
     {
         // Compute the transmittance, and store it in transmittance_texture_.
-        CompiledGpuProgramInterface compiledGpi;
-        if (!pass.transmittance.interface->compile(compiledGpi, *pass.transmittance.program))
+        GpuProgramInterface& gpi = *pass.transmittance.interface;
+        gpi.setImage("transmittance_image", resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)));
+
+        if (!gpi.compileAndSet(device, *pass.transmittance.program))
             return;
 
         GraphicProgramScope programScope(*pass.transmittance.program);
-
-        context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)),
-                                 compiledGpi.getImageBindPoint("transmittance_image"));
-
         context.device.dispatch(TRANSMITTANCE_TEXTURE_WIDTH, TRANSMITTANCE_TEXTURE_HEIGHT);
     }
 
@@ -1107,30 +1106,25 @@ void Model::Precompute(
         // leave it unchanged (we don't want the direct irradiance in
         // irradiance_texture_, but only the irradiance from the sky).
         GpuDirectIrradianceParams directIrradianceParams =
-            {
-                .blend = pass.blend ? 1 : 0
-            };
+        {
+            .blend = pass.blend ? 1 : 0
+        };
         resources.update<GpuConstantResource>(ResourceName(BrunetonDirectIrradianceParams),
                                               {
                                                   .size = sizeof(directIrradianceParams),
                                                   .data = &directIrradianceParams
                                               });
 
-        CompiledGpuProgramInterface compiledGpi;
-        if (!pass.direct_irradiance.interface->compile(compiledGpi, *pass.direct_irradiance.program))
+        GpuProgramInterface& gpi = *pass.direct_irradiance.interface;
+        gpi.setConstant("DirectIrradianceParams",   resources.get<GpuConstantResource>(ResourceName(BrunetonDirectIrradianceParams)));
+        gpi.setTexture("transmittance_texture",     resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)));
+        gpi.setImage("delta_irradiance_texture",    resources.get<GpuImageResource>(ResourceName(BrunetonDeltaIrradiance)));
+        gpi.setImage("irradiance_texture",          resources.get<GpuImageResource>(ResourceName(BrunetonIrradiance)));
+
+        if (!gpi.compileAndSet(device, *pass.direct_irradiance.program))
             return;
 
         GraphicProgramScope programScope(*pass.direct_irradiance.program);
-
-        context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(BrunetonDirectIrradianceParams)),
-                                  compiledGpi.getConstantBindPoint("DirectIrradianceParams"));
-        context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)),
-                                   compiledGpi.getTextureBindPoint("transmittance_texture"));
-        context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaIrradiance)),
-                                 compiledGpi.getImageBindPoint("delta_irradiance_texture"));
-        context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonIrradiance)),
-                                 compiledGpi.getImageBindPoint("irradiance_texture"));
-
         context.device.dispatch(IRRADIANCE_TEXTURE_WIDTH, IRRADIANCE_TEXTURE_WIDTH);
     }
 
@@ -1150,25 +1144,18 @@ void Model::Precompute(
                                                   .data = &singleScatteringParams
                                               });
 
-        CompiledGpuProgramInterface compiledGpi;
-        if (!pass.single_scattering.interface->compile(compiledGpi, *pass.single_scattering.program))
+        GpuProgramInterface& gpi = *pass.single_scattering.interface;
+        gpi.setConstant("SingleScatteringParams",           resources.get<GpuConstantResource>(ResourceName(BrunetonSingleScatteringParams)));
+        gpi.setTexture("transmittance_texture",             resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)));
+        gpi.setImage("delta_rayleigh_scattering_texture",   resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)));
+        gpi.setImage("delta_mie_scattering_texture",        resources.get<GpuImageResource>(ResourceName(BrunetonDeltaMieScattering)));
+        gpi.setImage("scattering_texture",                  resources.get<GpuImageResource>(ResourceName(BrunetonScattering)));
+        gpi.setImage("single_mie_scattering_texture",       resources.get<GpuImageResource>(ResourceName(BrunetonSingleMieScattering)));
+
+        if (!gpi.compileAndSet(device, *pass.single_scattering.program))
             return;
 
         GraphicProgramScope programScope(*pass.single_scattering.program);
-
-        context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(BrunetonSingleScatteringParams)),
-                                  compiledGpi.getConstantBindPoint("SingleScatteringParams"));
-        context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)),
-                                   compiledGpi.getTextureBindPoint("transmittance_texture"));
-        context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)),
-                                 compiledGpi.getImageBindPoint("delta_rayleigh_scattering_texture"));
-        context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaMieScattering)),
-                                 compiledGpi.getImageBindPoint("delta_mie_scattering_texture"));
-        context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonScattering)),
-                                 compiledGpi.getImageBindPoint("scattering_texture"));
-        context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonSingleMieScattering)),
-                                 compiledGpi.getImageBindPoint("single_mie_scattering_texture"));
-
         context.device.dispatch(SCATTERING_TEXTURE_WIDTH, SCATTERING_TEXTURE_HEIGHT, SCATTERING_TEXTURE_DEPTH);
     }
 
@@ -1185,27 +1172,19 @@ void Model::Precompute(
                                                       .data = &scatteringDensityParams
                                                   });
 
-            CompiledGpuProgramInterface compiledGpi;
-            if (!pass.scattering_density.interface->compile(compiledGpi, *pass.scattering_density.program))
+            GpuProgramInterface& gpi = *pass.scattering_density.interface;
+            gpi.setConstant("ScatteringDensityParams",              resources.get<GpuConstantResource>(ResourceName(BrunetonScatteringDensityParams)));
+            gpi.setTexture("transmittance_texture",                 resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)));
+            gpi.setTexture("single_rayleigh_scattering_texture",    resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)));
+            gpi.setTexture("single_mie_scattering_texture",         resources.get<GpuImageResource>(ResourceName(BrunetonDeltaMieScattering)));
+            gpi.setTexture("multiple_scattering_texture",           resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)));
+            gpi.setTexture("delta_irradiance_texture",              resources.get<GpuImageResource>(ResourceName(BrunetonDeltaIrradiance)));
+            gpi.setImage("delta_scattering_density_texture",        resources.get<GpuImageResource>(ResourceName(BrunetonDeltaScatteringDensity)));
+
+            if (!gpi.compileAndSet(device, *pass.scattering_density.program))
                 return;
 
             GraphicProgramScope programScope(*pass.scattering_density.program);
-
-            context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(BrunetonScatteringDensityParams)),
-                                      compiledGpi.getConstantBindPoint("ScatteringDensityParams"));
-            context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)),
-                                       compiledGpi.getTextureBindPoint("transmittance_texture"));
-            context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)),
-                                       compiledGpi.getTextureBindPoint("single_rayleigh_scattering_texture"));
-            context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaMieScattering)),
-                                       compiledGpi.getTextureBindPoint("single_mie_scattering_texture"));
-            context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)),
-                                       compiledGpi.getTextureBindPoint("multiple_scattering_texture"));
-            context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaIrradiance)),
-                                       compiledGpi.getTextureBindPoint("delta_irradiance_texture"));
-            context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaScatteringDensity)),
-                                     compiledGpi.getImageBindPoint("delta_scattering_density_texture"));
-
             context.device.dispatch(SCATTERING_TEXTURE_WIDTH, SCATTERING_TEXTURE_HEIGHT, SCATTERING_TEXTURE_DEPTH);
         }
 
@@ -1219,25 +1198,18 @@ void Model::Precompute(
                                                       .data = &indirectIrradianceParams
                                                   });
 
-            CompiledGpuProgramInterface compiledGpi;
-            if (!pass.indirect_irradiance.interface->compile(compiledGpi, *pass.indirect_irradiance.program))
+            GpuProgramInterface& gpi = *pass.indirect_irradiance.interface;
+            gpi.setConstant("IndirectIrradianceParams",             resources.get<GpuConstantResource>(ResourceName(BrunetonIndirectIrradianceParams)));
+            gpi.setTexture("single_rayleigh_scattering_texture",    resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)));
+            gpi.setTexture("single_mie_scattering_texture",         resources.get<GpuImageResource>(ResourceName(BrunetonDeltaMieScattering)));
+            gpi.setTexture("multiple_scattering_texture",           resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)));
+            gpi.setImage("delta_irradiance_texture",                resources.get<GpuImageResource>(ResourceName(BrunetonDeltaIrradiance)));
+            gpi.setImage("irradiance_texture",                      resources.get<GpuImageResource>(ResourceName(BrunetonIrradiance)));
+
+            if (!gpi.compileAndSet(device, *pass.indirect_irradiance.program))
                 return;
 
             GraphicProgramScope programScope(*pass.indirect_irradiance.program);
-
-            context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(BrunetonIndirectIrradianceParams)),
-                                      compiledGpi.getConstantBindPoint("IndirectIrradianceParams"));
-            context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)),
-                                       compiledGpi.getTextureBindPoint("single_rayleigh_scattering_texture"));
-            context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaMieScattering)),
-                                       compiledGpi.getTextureBindPoint("single_mie_scattering_texture"));
-            context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)),
-                                       compiledGpi.getTextureBindPoint("multiple_scattering_texture"));
-            context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaIrradiance)),
-                                     compiledGpi.getImageBindPoint("delta_irradiance_texture"));
-            context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonIrradiance)),
-                                     compiledGpi.getImageBindPoint("irradiance_texture"));
-
             context.device.dispatch(IRRADIANCE_TEXTURE_WIDTH, IRRADIANCE_TEXTURE_HEIGHT);
         }
 
@@ -1252,23 +1224,17 @@ void Model::Precompute(
                                                       .data = &multipleScatteringParams
                                                   });
 
-            CompiledGpuProgramInterface compiledGpi;
-            if (!pass.multiple_scattering.interface->compile(compiledGpi, *pass.multiple_scattering.program))
+            GpuProgramInterface& gpi = *pass.multiple_scattering.interface;
+            gpi.setConstant("MultipleScatteringParams",         resources.get<GpuConstantResource>(ResourceName(BrunetonMultipleScatteringParams)));
+            gpi.setTexture("transmittance_texture",             resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)));
+            gpi.setTexture("scattering_density_texture",        resources.get<GpuImageResource>(ResourceName(BrunetonDeltaScatteringDensity)));
+            gpi.setImage("delta_multiple_scattering_texture",   resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)));
+            gpi.setImage("scattering_texture",                  resources.get<GpuImageResource>(ResourceName(BrunetonScattering)));
+
+            if (!gpi.compileAndSet(device, *pass.multiple_scattering.program))
                 return;
 
             GraphicProgramScope programScope(*pass.multiple_scattering.program);
-
-            context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(BrunetonMultipleScatteringParams)),
-                                      compiledGpi.getConstantBindPoint("MultipleScatteringParams"));
-            context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonTransmittance)),
-                                       compiledGpi.getTextureBindPoint("transmittance_texture"));
-            context.device.bindTexture(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaScatteringDensity)),
-                                       compiledGpi.getTextureBindPoint("scattering_density_texture"));
-            context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonDeltaRayleighScattering)),
-                                     compiledGpi.getImageBindPoint("delta_multiple_scattering_texture"));
-            context.device.bindImage(resources.get<GpuImageResource>(ResourceName(BrunetonScattering)),
-                                     compiledGpi.getImageBindPoint("scattering_texture"));
-
             context.device.dispatch(SCATTERING_TEXTURE_WIDTH, SCATTERING_TEXTURE_HEIGHT, SCATTERING_TEXTURE_DEPTH);
         }
     }

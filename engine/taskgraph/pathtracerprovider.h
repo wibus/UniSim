@@ -21,15 +21,6 @@ class GraphicSettings;
 extern std::vector<std::string> g_PathTracerCommonSrcs;
 
 
-class PathTracerInterface : public GpuProgramInterface
-{
-public:
-    PathTracerInterface();
-
-private:
-};
-
-
 class PathTracerModule
 {
     PathTracerModule(const PathTracerModule&) = delete;
@@ -62,11 +53,11 @@ public:
 
     virtual bool definePathTracerInterface(
         GraphicContext& context,
-        PathTracerInterface& interface);
+        GpuProgramInterfaceTemplate& gpiTemplate);
 
     virtual void bindPathTracerResources(
         GraphicContext& context,
-        CompiledGpuProgramInterface& compiledGpi) const;
+        GpuProgramInterface& gpi) const;
 
     uint64_t hash() const { return _hash; }
 

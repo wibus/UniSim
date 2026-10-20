@@ -17,6 +17,15 @@ namespace unisim
 GpuDevice::GpuDevice()
 {
     _deviceContext.reset(new pils::gpu::Context());
+
+    pils::gpu::DescriptorPoolSettings poolSettings;
+    poolSettings.enableBindless = false;
+    poolSettings.maxSetCount = 5;
+    poolSettings.typeToCount[vk::DescriptorType::eUniformBuffer] = 100;
+    poolSettings.typeToCount[vk::DescriptorType::eStorageBuffer] = 100;
+    poolSettings.typeToCount[vk::DescriptorType::eStorageImage] = 100;
+    poolSettings.typeToCount[vk::DescriptorType::eCombinedImageSampler] = 1000;
+    _descriptorPool.reset(new pils::gpu::DescriptorPool(_deviceContext->device(), poolSettings));
 }
 
 GpuDevice::~GpuDevice()
@@ -79,36 +88,6 @@ void GpuDevice::begin()
 void GpuDevice::end()
 {
     _commandList->end();
-}
-
-void GpuDevice::bindBuffer(const GpuConstantResource& resource, const GpuProgramConstantBindPoint& bindPoint)
-{
-    PILS_ASSERT(false, "Not implemented!");
-}
-
-void GpuDevice::bindBuffer(const GpuStorageResource& resource, const GpuProgramBindlessBindPoint& bindPoint)
-{
-    // Do nothing
-}
-
-void GpuDevice::bindBuffer(const GpuStorageResource& resource, const GpuProgramStorageBindPoint& bindPoint)
-{
-    PILS_ASSERT(false, "Not implemented!");
-}
-
-void GpuDevice::bindTexture(const GpuTextureResource& resource, const GpuProgramTextureBindPoint& bindPoint)
-{
-    PILS_ASSERT(false, "Not implemented!");
-}
-
-void GpuDevice::bindTexture(const GpuImageResource& resource, const GpuProgramTextureBindPoint& unit)
-{
-    PILS_ASSERT(false, "Not implemented!");
-}
-
-void GpuDevice::bindImage(const GpuImageResource& resource, const GpuProgramImageBindPoint& unit)
-{
-    PILS_ASSERT(false, "Not implemented!");
 }
 
 void GpuDevice::dispatch(unsigned int workGroupCountX, unsigned int workGroupCountY, unsigned int workGroupCountZ)

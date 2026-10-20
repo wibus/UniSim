@@ -13,14 +13,6 @@ namespace unisim
 std::vector<std::string> g_PathTracerCommonSrcs;
 
 
-// PATH TRACER INTERFACE //
-
-PathTracerInterface::PathTracerInterface() :
-    GpuProgramInterface()
-{
-}
-
-
 // PATH TRACER MODULE //
 PathTracerModule::PathTracerModule(const std::string& name, const std::shared_ptr<GraphicShader>& shader) :
     _name(name),
@@ -56,14 +48,14 @@ bool PathTracerProviderTask::definePathTracerModules(
 
 bool PathTracerProviderTask::definePathTracerInterface(
     GraphicContext& context,
-    PathTracerInterface& interface)
+    GpuProgramInterfaceTemplate& gpiTemplate)
 {
     return true;
 }
 
 void PathTracerProviderTask::bindPathTracerResources(
     GraphicContext& context,
-    CompiledGpuProgramInterface& compiledGpi) const
+    GpuProgramInterface& gpi) const
 {
 }
 

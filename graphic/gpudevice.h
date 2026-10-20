@@ -14,6 +14,7 @@ namespace gpu
 class Context;
 class CommandList;
 class Fence;
+class DescriptorPool;
 }
 }
 #endif // UNISIM_GRAPHIC_BACKEND_VK
@@ -21,17 +22,7 @@ class Fence;
 namespace unisim
 {
 
-class GpuConstantResource;
-class GpuStorageResource;
-class GpuTextureResource;
-class GpuImageResource;
 class GpuGeometryResource;
-
-struct GpuProgramBindlessBindPoint;
-struct GpuProgramConstantBindPoint;
-struct GpuProgramStorageBindPoint;
-struct GpuProgramTextureBindPoint;
-struct GpuProgramImageBindPoint;
 
 
 class GpuDevice
@@ -48,13 +39,6 @@ public:
     void begin();
     void end();
 
-    void bindBuffer(const GpuConstantResource& resource, const GpuProgramConstantBindPoint& bindPoint);
-    void bindBuffer(const GpuStorageResource& resource, const GpuProgramBindlessBindPoint& bindPoint);
-    void bindBuffer(const GpuStorageResource& resource, const GpuProgramStorageBindPoint& bindPoint);
-    void bindTexture(const GpuTextureResource& resource, const GpuProgramTextureBindPoint& unit);
-    void bindTexture(const GpuImageResource& resource, const GpuProgramTextureBindPoint& unit);
-    void bindImage(const GpuImageResource& resource, const GpuProgramImageBindPoint& unit);
-
     void dispatch(unsigned int workGroupCountX, unsigned int workGroupCountY = 1, unsigned int workGroupCountZ = 1);
     void draw(const GpuGeometryResource& resource);
 
@@ -63,6 +47,8 @@ public:
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
     pils::gpu::Context& context() { return *_deviceContext; }
     const pils::gpu::Context& context() const { return *_deviceContext; }
+
+    const pils::gpu::DescriptorPool& descriptorPool() const { return *_descriptorPool; }
 
     pils::gpu::CommandList& commandList() const;
     void setCommandList(const std::shared_ptr<pils::gpu::CommandList>& commandList);
@@ -74,6 +60,7 @@ public:
 private:
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
     std::unique_ptr<pils::gpu::Context> _deviceContext;
+    std::unique_ptr<pils::gpu::DescriptorPool> _descriptorPool;
     std::shared_ptr<pils::gpu::CommandList> _commandList;
     std::shared_ptr<pils::gpu::Fence> _frameFence;
 #endif // UNISIM_GRAPHIC_BACKEND_VK

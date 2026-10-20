@@ -111,12 +111,10 @@ bool PathTracerTask::defineResources(GraphicContext& context)
     }
 
     GpuPathTracerCommonParams gpuCommonParams;
-    std::vector<GpuBindlessTextureDescriptor> gpuTextures;
 
     _hash = toGpu(
         context,
-        gpuCommonParams,
-        gpuTextures);
+        gpuCommonParams);
 
     _viewport.reset(new Viewport(context.camera.viewport()));
 
@@ -124,12 +122,6 @@ bool PathTracerTask::defineResources(GraphicContext& context)
             ResourceName(PathTracerCommonParams), {
                 sizeof(GpuPathTracerCommonParams),
                 &gpuCommonParams});
-
-    ok = ok && resources.define<GpuStorageResource>(
-            ResourceName(BindlessTextures), {
-                sizeof (GpuBindlessTextureDescriptor),
-                gpuTextures.size(),
-                gpuTextures.data()});
 
     ok = ok && resources.define<GpuImageResource>(
             ResourceName(PathTracerResult), {
@@ -144,7 +136,7 @@ bool PathTracerTask::defineResources(GraphicContext& context)
 bool PathTracerTask::defineShaders(GraphicContext& context)
 {
     _pathTracerModules.clear();
-    _pathTracerInterface.reset(new PathTracerInterface());
+    GpuProgramInterfaceTemplate pathTraceGpiTemplate(context.resources.frameGpiTemplate());
 
     for (auto& task : _pathTracerProviders)
     {
@@ -154,12 +146,14 @@ bool PathTracerTask::defineShaders(GraphicContext& context)
             return false;
         }
 
-        if (!task->definePathTracerInterface(context, *_pathTracerInterface))
+        if (!task->definePathTracerInterface(context, pathTraceGpiTemplate))
         {
             PILS_ERROR("Could not define path tracer interface for: ", task->name());
             return false;
         }
     }
+
+    _pathTracerInterface.reset(new GpuProgramInterface(context.device, pathTraceGpiTemplate));
 
     // Remove duplicated modules
     std::sort( _pathTracerModules.begin(), _pathTracerModules.end() );
@@ -173,7 +167,7 @@ bool PathTracerTask::defineShaders(GraphicContext& context)
 
     // Generate program
     _pathTracerProgram.reset();
-    if(!generateComputeProgram(_pathTracerProgram, "Path Tracer", {shaders}))
+    if(!generateComputeProgram(context.device, pathTraceGpiTemplate, _pathTracerProgram, "Path Tracer", {shaders}))
         return false;
 
     return true;
@@ -190,31 +184,23 @@ bool PathTracerTask::definePathTracerModules(GraphicContext& context, std::vecto
     return true;
 }
 
-bool PathTracerTask::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+bool PathTracerTask::definePathTracerInterface(GraphicContext& context, GpuProgramInterfaceTemplate& gpiTemplate)
 {
     bool ok = true;
 
-    ok = ok && interface.declareConstant({"PathTracerCommonParams"});
-    ok = ok && interface.declareImage({"result"});
-    ok = ok && interface.declareBindless({"BindlessTextures"});
+    gpiTemplate.declareConstant({"PathTracerCommonParams"});
+    gpiTemplate.declareImage({"result"});
 
     return ok;
 }
 
 void PathTracerTask::bindPathTracerResources(
     GraphicContext &context,
-    CompiledGpuProgramInterface& compiledGpi) const
+    GpuProgramInterface& gpi) const
 {
     GpuResourceManager& resources = context.resources;
-
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BindlessTextures)),
-                              compiledGpi.getBindlessBindPoint("BindlessTextures"));
-
-    context.device.bindBuffer(resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)),
-                              compiledGpi.getConstantBindPoint("PathTracerCommonParams"));
-
-    context.device.bindImage(resources.get<GpuImageResource>(ResourceName(PathTracerResult)),
-                             compiledGpi.getImageBindPoint("result"));
+    gpi.setConstant("PathTracerCommonParams", resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)));
+    gpi.setImage("result", resources.get<GpuImageResource>(ResourceName(PathTracerResult)));
 }
 
 void PathTracerTask::update(GraphicContext& context)
@@ -237,13 +223,11 @@ void PathTracerTask::update(GraphicContext& context)
     }
 
     GpuPathTracerCommonParams gpuCommonParams;
-    std::vector<GpuBindlessTextureDescriptor> gpuTextures;
 
     // Provier hash
     uint64_t hash = toGpu(
         context,
-        gpuCommonParams,
-        gpuTextures);
+        gpuCommonParams);
 
     if(_hash != hash)
     {
@@ -271,36 +255,27 @@ void PathTracerTask::update(GraphicContext& context)
         ResourceName(PathTracerCommonParams), {
             sizeof(GpuPathTracerCommonParams),
             &gpuCommonParams});
-
-    resources.update<GpuStorageResource>(
-        ResourceName(BindlessTextures), {
-            sizeof(GpuBindlessTextureDescriptor),
-            gpuTextures.size(),
-            gpuTextures.data()});
 }
 
 void PathTracerTask::render(GraphicContext& context)
 {
     ProfileGpu(PathTracer);
 
-    if(!_pathTracerProgram->isValid())
-        return;
-
-    CompiledGpuProgramInterface compiledGpi;
-    if(!_pathTracerInterface->compile(compiledGpi, *_pathTracerProgram))
-        return;
-    
-    GpuResourceManager& resources = context.resources;
-
-    const auto& pathTracerResult = resources.get<GpuImageResource>(ResourceName(PathTracerResult));
-
     if(_frameIndex < MAX_FRAME_COUNT)
     {
-        GraphicProgramScope programScope(*_pathTracerProgram);
+        if(!_pathTracerProgram->isValid())
+            return;
+
+        if(!context.resources.compileAndSetPassGpi(*_pathTracerProgram))
+            return;
 
         for(const auto& provider : _pathTracerProviders)
-            provider->bindPathTracerResources(context, compiledGpi);
+            provider->bindPathTracerResources(context, *_pathTracerInterface);
 
+        if(!_pathTracerInterface->compileAndSet(context.device, *_pathTracerProgram))
+            return;
+
+        GraphicProgramScope programScope(*_pathTracerProgram);
         context.device.dispatch((_viewport->width + 7) / 8, (_viewport->height + 3) / 4);
     }
 }
@@ -312,8 +287,7 @@ void PathTracerTask::setPathTracerProviders(const std::vector<PathTracerProvider
 
 uint64_t PathTracerTask::toGpu(
     GraphicContext& context,
-    GpuPathTracerCommonParams& gpuParams,
-    std::vector<GpuBindlessTextureDescriptor>& gpuTextures)
+    GpuPathTracerCommonParams& gpuParams)
 {
     GpuResourceManager& resources = context.resources;
 
@@ -337,16 +311,8 @@ uint64_t PathTracerTask::toGpu(
     for(unsigned int i = 0; i < HALTON_SAMPLE_COUNT; ++i)
         gpuParams.halton[i] = _halton[i];
 
-    std::size_t bindlessTextureCount = context.resources.bindlessTextures().size();
-    gpuTextures.clear();
-    gpuTextures.resize(bindlessTextureCount);
-    for(std::size_t i = 0; i < bindlessTextureCount; ++i)
-        if (GpuBindlessTexture* texture = context.resources.bindlessTextures()[i].get())
-            gpuTextures[i] = GpuBindlessTextureDescriptor(*texture);
-
     uint64_t hash = 0;
     hash = hashVal(gpuParams, hash);
-    hash = hashVec(gpuTextures, hash);
 
     return hash;
 }

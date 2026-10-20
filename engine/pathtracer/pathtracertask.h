@@ -28,10 +28,10 @@ public:
         std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
     bool definePathTracerInterface(
         GraphicContext& context,
-        PathTracerInterface& interface) override;
+        GpuProgramInterfaceTemplate& gpiTemplate) override;
     void bindPathTracerResources(
         GraphicContext& context,
-        CompiledGpuProgramInterface& compiledGpi) const override;
+        GpuProgramInterface& gpi) const override;
     
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
@@ -44,8 +44,7 @@ public:
 
 private:
     uint64_t toGpu(GraphicContext& context,
-                   struct GpuPathTracerCommonParams& gpuParams,
-                   std::vector<GpuBindlessTextureDescriptor>& gpuTextures);
+                   struct GpuPathTracerCommonParams& gpuParams);
 
     ResourceId _blueNoiseTextureResourceIds[BLUE_NOISE_TEX_COUNT];
     BindlessTextureIndex _blueNoiseBindlessResourceIds[BLUE_NOISE_TEX_COUNT];
@@ -59,7 +58,7 @@ private:
 
     std::unique_ptr<Viewport> _viewport;
 
-    std::shared_ptr<PathTracerInterface> _pathTracerInterface;
+    std::shared_ptr<GpuProgramInterface> _pathTracerInterface;
     std::vector<std::shared_ptr<PathTracerProviderTask>> _pathTracerProviders;
     std::vector<std::shared_ptr<PathTracerModule>> _pathTracerModules;
 };

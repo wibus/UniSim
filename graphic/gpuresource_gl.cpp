@@ -2,6 +2,8 @@
 
 #include "gpuresource.h"
 
+#include "gpuprograminterface.h"
+
 #include "../resource/texture.h"
 
 
@@ -9,6 +11,12 @@ namespace unisim
 {
 
 // HANDLES //
+
+GpuBindlessTextureResourceHandle::GpuBindlessTextureResourceHandle() :
+    handle(0)
+{
+
+}
 
 GpuTextureResourceHandle::GpuTextureResourceHandle() :
     texId(0),
@@ -254,6 +262,11 @@ GpuGeometryResource::~GpuGeometryResource()
 
 
 // BINDLESS //
+GpuBindlessTexture::GpuBindlessTexture()
+{
+    _handle.reset(new GpuBindlessTextureResourceHandle());
+}
+
 GpuBindlessTexture::GpuBindlessTexture(
         const GpuTextureResource& textureResource,
         const Texture& texture)
@@ -271,28 +284,14 @@ GpuBindlessTexture::GpuBindlessTexture(
         PILS_FATAL("Texture format not supported");
     }
 
-    handle = glGetImageHandleARB(textureResource.handle().texId, 0, GL_FALSE, 0, format);
-    glMakeImageHandleResidentARB(handle, GL_READ_ONLY);
+    _handle.reset(new GpuBindlessTextureResourceHandle());
+    _handle->handle = glGetImageHandleARB(textureResource.handle().texId, 0, GL_FALSE, 0, format);
+    glMakeImageHandleResidentARB(_handle->handle, GL_READ_ONLY);
 }
 
 GpuBindlessTexture::~GpuBindlessTexture()
 {
-    glMakeImageHandleNonResidentARB(handle);
-}
-
-
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor() :
-    texture(0),
-    padding(0)
-{
-
-}
-
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const GpuBindlessTexture& bindlessTexture) :
-    texture(bindlessTexture.handle),
-    padding(0)
-{
-
+    glMakeImageHandleNonResidentARB(_handle->handle);
 }
 
 
@@ -308,6 +307,14 @@ void GpuResourceManager::garbageCollect()
 
 void GpuResourceManager::commitAllocations()
 {
+}
+
+bool GpuResourceManager::compileAndSetPassGpi(const GraphicProgram& program)
+{
+    bool ok = true;
+    ok = ok && _persistentGpi->compileAndSet(_gpuDevice, program);
+    ok = ok && _frameGpi->compileAndSet(_gpuDevice, program);
+    return ok;
 }
 
 }

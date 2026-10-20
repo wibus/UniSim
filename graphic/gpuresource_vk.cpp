@@ -51,18 +51,45 @@ pils::pilsU64 toTexelSize(const TextureFormat format)
 
 
 // HANDLES //
+
+// HANDLES //
+
+GpuBindlessTextureResourceHandle::GpuBindlessTextureResourceHandle()
+{
+}
+
+GpuTextureResourceHandle::GpuTextureResourceHandle()
+{
+}
+
+GpuImageResourceHandle::GpuImageResourceHandle()
+{
+}
+
+GpuStorageResourceHandle::GpuStorageResourceHandle()
+{
+}
+
+GpuConstantResourceHandle::GpuConstantResourceHandle()
+{
+}
+
+GpuGeometryResourceHandle::GpuGeometryResourceHandle()
+{
+}
+
 GpuTextureResourceHandle::GpuTextureResourceHandle(
         const pils::gpu::ImageView& textureView,
         const pils::gpu::Sampler& sampler) :
-    textureView(textureView),
-    sampler(sampler)
+    descriptor(new pils::gpu::Descriptor(textureView, sampler))
 {
 
 }
 
 GpuImageResourceHandle::GpuImageResourceHandle(
-        const pils::gpu::ImageView& imageView) :
-    imageView(imageView)
+        const pils::gpu::ImageView& imageView,
+        const pils::gpu::Sampler& sampler) :
+    descriptor(new pils::gpu::Descriptor(imageView, sampler))
 {
 }
 
@@ -70,9 +97,7 @@ GpuStorageResourceHandle::GpuStorageResourceHandle(
         const pils::gpu::StorageBuffer& buffer,
         uint64_t offset,
         uint64_t size) :
-    buffer(buffer),
-    offset(offset),
-    size(size)
+    descriptor(new pils::gpu::Descriptor(buffer, offset, size))
 {
 }
 
@@ -80,9 +105,7 @@ GpuConstantResourceHandle::GpuConstantResourceHandle(
         const pils::gpu::ConstantBuffer& buffer,
         uint64_t offset,
         uint64_t size) :
-    buffer(buffer),
-    offset(offset),
-    size(size)
+    descriptor(new pils::gpu::Descriptor(buffer, offset, size))
 {
 }
 
@@ -90,9 +113,7 @@ GpuGeometryResourceHandle::GpuGeometryResourceHandle(
         const pils::gpu::VertexBuffer& buffer,
         uint64_t offset,
         uint64_t size) :
-    buffer(buffer),
-    offset(offset),
-    size(size)
+    descriptor(new pils::gpu::Descriptor(buffer, offset, size))
 {
 }
 
@@ -150,13 +171,14 @@ GpuTextureResource::~GpuTextureResource()
 
 // IMAGE //
 GpuImageResource::GpuImageResource(GpuResourceManager& manager, ResourceId id, Definition def) :
-    GpuResource(manager, id)
+    GpuResource(manager, id),
+    _device(_manager.gpuDevice().context().device())
 {
-    const pils::gpu::Device& device = _manager.gpuDevice().context().device();
+    _sampler.reset(new pils::gpu::Sampler(_device));
 
     _image.reset(
         new pils::gpu::Texture(
-            device,
+            _device,
             def.width,
             def.height,
             def.depth,
@@ -165,8 +187,8 @@ GpuImageResource::GpuImageResource(GpuResourceManager& manager, ResourceId id, D
             1)
         );
 
-    _imageView.reset(new pils::gpu::ImageView(device, *_image));
-    _handle.reset(new GpuImageResourceHandle(*_imageView));
+    _imageView.reset(new pils::gpu::ImageView(_device, *_image));
+    _handle.reset(new GpuImageResourceHandle(*_imageView, *_sampler));
 
     _manager.gpuDevice().commandList().imageBarrier(*_image, vk::ImageLayout::eGeneral);
 }
@@ -187,6 +209,11 @@ void GpuImageResource::update(const Definition& def)
             toPils(def.format),
             1)
         );
+
+    _imageView.reset(new pils::gpu::ImageView(_device, *_image));
+    _handle.reset(new GpuImageResourceHandle(*_imageView, *_sampler));
+
+    _manager.gpuDevice().commandList().imageBarrier(*_image, vk::ImageLayout::eGeneral);
 }
 
 
@@ -223,7 +250,7 @@ GpuStorageResource::~GpuStorageResource()
 void GpuStorageResource::update(const Definition& def)
 {
     pils::pilsU64 dataSize = def.elemSize * def.elemCount;
-    PILS_ASSERT(dataSize == _handle->size, "Storage resource resize not implemented");
+    PILS_ASSERT(dataSize == _handle->descriptor->vkBufferInfo().range, "Storage resource resize not implemented");
 
     pils::gpu::BufferSet& bufferSet = _manager.bufferSet();
 
@@ -235,7 +262,7 @@ void GpuStorageResource::update(const Definition& def)
         memcpy(dst, def.data, dataSize);
         bufferSet.transferBuffer().unmap(transferMapping);
 
-        pils::gpu::Memory::Mapping mapping = {_handle->offset, _handle->size};
+        pils::gpu::Memory::Mapping mapping = {_handle->descriptor->vkBufferInfo().offset,_handle->descriptor->vkBufferInfo().range};
         PILS_ASSERT(mapping.size == transferMapping.size, "Constant and Transfert buffer mapping sizes do not match");
         _manager.gpuDevice().commandList().copyBuffer(bufferSet.constantBuffer(), mapping.offset, bufferSet.transferBuffer(), transferMapping.offset, transferMapping.size);
     }
@@ -314,31 +341,31 @@ GpuGeometryResource::~GpuGeometryResource()
 
 // BINDLESS //
 
+GpuBindlessTexture::GpuBindlessTexture()
+{
+    _handle.reset(new GpuBindlessTextureResourceHandle());
+}
+
 GpuBindlessTexture::GpuBindlessTexture(
         const GpuTextureResource& textureResource,
         const Texture& texture)
 {
-    PILS_ASSERT(false, "Not implemented!");
+    _handle.reset(new GpuBindlessTextureResourceHandle());
+    _handle->descriptor = textureResource.handle().descriptor;
 }
 
 GpuBindlessTexture::~GpuBindlessTexture()
 {
-    PILS_ASSERT(false, "Not implemented!");
-}
-
-
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor()
-{
-    PILS_ASSERT(false, "Not implemented!");
-}
-
-GpuBindlessTextureDescriptor::GpuBindlessTextureDescriptor(const GpuBindlessTexture& bindlessTexture)
-{
-    PILS_ASSERT(false, "Not implemented!");
 }
 
 
 // MANAGER //
+
+bool GpuResourceManager::compileAndSetPassGpi(const GraphicProgram& program)
+{
+    bool ok = true;
+    return ok;
+}
 
 void GpuResourceManager::initializeNative()
 {

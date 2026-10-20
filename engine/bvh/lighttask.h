@@ -27,10 +27,10 @@ public:
 
     bool definePathTracerInterface(
         GraphicContext& context,
-        PathTracerInterface& interface) override;
+        GpuProgramInterfaceTemplate& gpiTemplate) override;
     void bindPathTracerResources(
         GraphicContext& context,
-        CompiledGpuProgramInterface& compiledGpi) const override;
+        GpuProgramInterface& gpi) const override;
 
     void update(GraphicContext& context) override;
 

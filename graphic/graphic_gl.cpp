@@ -31,8 +31,9 @@ GraphicShaderHandle::~GraphicShaderHandle()
     }
 }
 
-GraphicShader::GraphicShader(const std::string& name, GraphicShaderHandle&& handle) :
+GraphicShader::GraphicShader(const std::string& name, ShaderType shaderType, GraphicShaderHandle&& handle) :
     _name(name),
+    _shaderType(shaderType),
     _handle(new GraphicShaderHandle(std::move(handle)))
 {
 
@@ -66,9 +67,12 @@ GraphicProgramHandle::~GraphicProgramHandle()
 }
 
 GraphicProgram::GraphicProgram(
-    const std::string& name,
-    GraphicProgramHandle&& programHandle,
-    const std::vector<std::shared_ptr<GraphicShader>>& shaders) :
+        const GpuDevice& gpuDevice,
+        const GpuProgramInterfaceTemplate& gpiTemplate,
+        ProgramType type,
+        const std::string& name,
+        GraphicProgramHandle&& programHandle,
+        const std::vector<std::shared_ptr<GraphicShader>>& shaders) :
     _name(name),
     _handle(new GraphicProgramHandle(std::move(programHandle))),
     _shaders(shaders)
@@ -224,12 +228,14 @@ bool generateShader(
     }
     else
     {
-        shader.reset(new GraphicShader(shaderName, GraphicShaderHandle(shaderId)));
+        shader.reset(new GraphicShader(shaderName, shaderType, GraphicShaderHandle(shaderId)));
         return true;
     }
 }
 
 bool generateGraphicProgram(
+    const GpuDevice& gpuDevice,
+    const GpuProgramInterfaceTemplate& gpiTemplate,
     GraphicProgramPtr& program,
     const std::string& name,
     const std::string& vertexFileName,
@@ -260,6 +266,9 @@ bool generateGraphicProgram(
 
     program.reset(
         new GraphicProgram(
+            gpuDevice,
+            gpiTemplate,
+            ProgramType::Graphics,
             name,
             std::move(GraphicProgramHandle(programId)),
             {vertex, fragment}
@@ -270,6 +279,8 @@ bool generateGraphicProgram(
 }
 
 bool generateComputeProgram(
+    const GpuDevice& gpuDevice,
+    const GpuProgramInterfaceTemplate& gpiTemplate,
     GraphicProgramPtr& program,
     const std::string& name,
     const std::string& computeFileName,
@@ -294,6 +305,9 @@ bool generateComputeProgram(
 
     program.reset(
         new GraphicProgram(
+            gpuDevice,
+            gpiTemplate,
+            ProgramType::Compute,
             name,
             std::move(GraphicProgramHandle(programId)),
             {compute}
@@ -304,6 +318,8 @@ bool generateComputeProgram(
 }
 
 bool generateComputeProgram(
+    const GpuDevice& gpuDevice,
+    const GpuProgramInterfaceTemplate& gpiTemplate,
     GraphicProgramPtr& program,
     const std::string& name,
     const std::vector<std::shared_ptr<GraphicShader>>& shaders)
@@ -323,6 +339,9 @@ bool generateComputeProgram(
 
     program.reset(
         new GraphicProgram(
+            gpuDevice,
+            gpiTemplate,
+            ProgramType::Compute,
             name,
             std::move(GraphicProgramHandle(programId)),
             shaders

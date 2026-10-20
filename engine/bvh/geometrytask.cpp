@@ -192,38 +192,37 @@ bool GeometryTask::definePathTracerModules(GraphicContext& context, std::vector<
     return true;
 }
 
-bool GeometryTask::definePathTracerInterface(GraphicContext& context, PathTracerInterface& interface)
+bool GeometryTask::definePathTracerInterface(GraphicContext& context, GpuProgramInterfaceTemplate& gpiTemplate)
 {
     bool ok = true;
 
-    ok = ok && interface.declareStorage({"Primitives"});
-    ok = ok && interface.declareStorage({"Meshes"});
-    ok = ok && interface.declareStorage({"Spheres"});
-    ok = ok && interface.declareStorage({"Planes"});
-    ok = ok && interface.declareStorage({"Instances"});
-    ok = ok && interface.declareStorage({"BvhNodes"});
-    ok = ok && interface.declareStorage({"Triangles"});
-    ok = ok && interface.declareStorage({"VerticesPos"});
-    ok = ok && interface.declareStorage({"VerticesData"});
+    gpiTemplate.declareStorage({"Primitives"});
+    gpiTemplate.declareStorage({"Meshes"});
+    gpiTemplate.declareStorage({"Spheres"});
+    gpiTemplate.declareStorage({"Planes"});
+    gpiTemplate.declareStorage({"Instances"});
+    gpiTemplate.declareStorage({"BvhNodes"});
+    gpiTemplate.declareStorage({"Triangles"});
+    gpiTemplate.declareStorage({"VerticesPos"});
+    gpiTemplate.declareStorage({"VerticesData"});
 
     return ok;
 }
 
 void GeometryTask::bindPathTracerResources(
     GraphicContext& context,
-    CompiledGpuProgramInterface& compiledGpi) const
+    GpuProgramInterface& gpi) const
 {
     GpuResourceManager& resources = context.resources;
-
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Primitives)),      compiledGpi.getStorageBindPoint("Primitives"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Meshes)),          compiledGpi.getStorageBindPoint("Meshes"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Spheres)),         compiledGpi.getStorageBindPoint("Spheres"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Planes)),          compiledGpi.getStorageBindPoint("Planes"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Instances)),       compiledGpi.getStorageBindPoint("Instances"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(BvhNodes)),        compiledGpi.getStorageBindPoint("BvhNodes"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(Triangles)),       compiledGpi.getStorageBindPoint("Triangles"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesPos)),     compiledGpi.getStorageBindPoint("VerticesPos"));
-    context.device.bindBuffer(resources.get<GpuStorageResource>(ResourceName(VerticesData)),    compiledGpi.getStorageBindPoint("VerticesData"));
+    gpi.setStorage("Primitives",    resources.get<GpuStorageResource>(ResourceName(Primitives)));
+    gpi.setStorage("Meshes",        resources.get<GpuStorageResource>(ResourceName(Meshes)));
+    gpi.setStorage("Spheres",       resources.get<GpuStorageResource>(ResourceName(Spheres)));
+    gpi.setStorage("Planes",        resources.get<GpuStorageResource>(ResourceName(Planes)));
+    gpi.setStorage("Instances",     resources.get<GpuStorageResource>(ResourceName(Instances)));
+    gpi.setStorage("BvhNodes",      resources.get<GpuStorageResource>(ResourceName(BvhNodes)));
+    gpi.setStorage("Triangles",     resources.get<GpuStorageResource>(ResourceName(Triangles)));
+    gpi.setStorage("VerticesPos",   resources.get<GpuStorageResource>(ResourceName(VerticesPos)));
+    gpi.setStorage("VerticesData",  resources.get<GpuStorageResource>(ResourceName(VerticesData)));
 }
 
 void GeometryTask::update(GraphicContext& context)

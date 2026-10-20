@@ -2,6 +2,8 @@
 
 #include <PilsCore/Gpu/Memory.h>
 
+#include "gpuprograminterface.h"
+
 
 namespace unisim
 {
@@ -58,6 +60,13 @@ void GpuResourceManager::initialize()
     for (uint32_t i = 0; i < MAX_BINDLESS_TEXTURES; ++i)
         _bindlessTextureFreeList[i] = BindlessTextureIndex(MAX_BINDLESS_TEXTURES - i - 1);
 
+    _persistentGpiTemplate.reset(new GpuProgramInterfaceTemplate(ProgramType::All));
+    _persistentGpiTemplate->declareBindless({"BindlessTextures"}, MAX_BINDLESS_TEXTURES);
+    _persistentGpi.reset(new GpuProgramInterface(_gpuDevice, *_persistentGpiTemplate));
+
+    _frameGpiTemplate.reset(new GpuProgramInterfaceTemplate(ProgramType::All, *_persistentGpiTemplate));
+    _frameGpi.reset(new GpuProgramInterface(_gpuDevice, *_frameGpiTemplate));
+
     initializeNative();
 
     std::vector<glm::vec3> fullScreenTriangleVerts;
@@ -74,6 +83,7 @@ BindlessTextureIndex GpuResourceManager::registerBindlessTexture(const GpuTextur
     _bindlessTextureFreeList.pop_back();
 
     _bindlessTextures[int32_t(index)].reset(new GpuBindlessTexture(textureResource, texture));
+    _persistentGpi->setBindless("BindlessTextures", *_bindlessTextures[int32_t(index)], int32_t(index));
 
     _isBindlessTextureDirty = true;
 
@@ -83,6 +93,7 @@ BindlessTextureIndex GpuResourceManager::registerBindlessTexture(const GpuTextur
 void GpuResourceManager::unregisterBindlessTexture(BindlessTextureIndex index)
 {
     PILS_ASSERT(_bindlessTextures[int32_t(index)].get() != nullptr, "Trying to unregister bindless texture that was never registered at index ", int(index));
+    _persistentGpi->setBindless("BindlessTextures", GpuBindlessTexture(), int32_t(index));
     _bindlessTextures[int32_t(index)].reset();
     _bindlessTextureFreeList.push_back(index);
     _isBindlessTextureDirty = true;
