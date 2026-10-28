@@ -273,7 +273,9 @@ void GpuStorageResource::update(const Definition& def)
 GpuConstantResource::GpuConstantResource(GpuResourceManager& manager, ResourceId id, Definition def) :
     GpuResource(manager, id)
 {
-
+    // Nothing to do, only transfer during updates
+    if (def.data != nullptr)
+        PILS_ERROR("Providing data when declaring constant buffer is not supported. Data needs to be provided each frame.");
 }
 
 GpuConstantResource::~GpuConstantResource()
@@ -288,16 +290,12 @@ void GpuConstantResource::update(const Definition& def)
 
     pils::gpu::BufferSet& bufferSet = _manager.bufferSet();
 
-    pils::gpu::Memory::Mapping mapping = bufferSet.registerConstant(def.size, 1);
+    pils::gpu::Memory::Mapping mapping = bufferSet.registerConstant(def.size);
 
     _handle.reset(new GpuConstantResourceHandle(bufferSet.constantBuffer(), mapping.offset, mapping.size));
 
-    if (def.data != nullptr && def.size > 0)
-    {
-        void* dst = bufferSet.constantBuffer().map(mapping);
-        memcpy(dst, def.data, def.size);
-        bufferSet.transferBuffer().unmap(mapping);
-    }
+    void* dst = ((char*)bufferSet.constantBufferCpuAddress()) + mapping.offset;
+    memcpy(dst, def.data, def.size);
 }
 
 void GpuConstantResource::invalidate()

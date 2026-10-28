@@ -126,7 +126,7 @@ std::shared_ptr<pils::gpu::PipelineLayout> GpuProgramInterfaceTemplate::computeP
 
 GpuProgramInterface::GpuProgramInterface(const GpuDevice& gpuDevice, const GpuProgramInterfaceTemplate& gpiTemplate) :
     _programType(gpiTemplate.programType()),
-    _isDirty(true)
+    _isDescriptorSetDirty(true)
 {
     _setIndex = gpiTemplate.setIndex();
     _layout = gpiTemplate.computeSetLayout(gpuDevice);
@@ -190,7 +190,7 @@ void GpuProgramInterface::setBindless(const std::string& name, const GpuBindless
 
     if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
     {
-        _isDirty = true;
+        _dirtyBindlessDescriptors[name].insert(arrayIndex);
         descriptors[arrayIndex] = resource.handle();
     }
 }
@@ -213,7 +213,7 @@ void GpuProgramInterface::setConstant(const std::string& name, const GpuConstant
 
     if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
     {
-        _isDirty = true;
+        _isDescriptorSetDirty = true;
         descriptors[arrayIndex] = resource.handle();
     }
 }
@@ -236,7 +236,7 @@ void GpuProgramInterface::setStorage(const std::string& name, const GpuStorageRe
 
     if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
     {
-        _isDirty = true;
+        _isDescriptorSetDirty = true;
         descriptors[arrayIndex] = resource.handle();
     }
 }
@@ -259,7 +259,7 @@ void GpuProgramInterface::setTexture(const std::string& name, const GpuTextureRe
 
     if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
     {
-        _isDirty = true;
+        _isDescriptorSetDirty = true;
         descriptors[arrayIndex] = resource.handle();
     }
 }
@@ -282,7 +282,7 @@ void GpuProgramInterface::setTexture(const std::string& name, const GpuImageReso
 
     if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
     {
-        _isDirty = true;
+        _isDescriptorSetDirty = true;
 
         GpuTextureResourceHandle handle;
         handle.descriptor = resource.handle().descriptor;
@@ -308,7 +308,7 @@ void GpuProgramInterface::setImage(const std::string& name, const GpuImageResour
 
     if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
     {
-        _isDirty = true;
+        _isDescriptorSetDirty = true;
         descriptors[arrayIndex] = resource.handle();
     }
 }
@@ -320,7 +320,7 @@ bool GpuProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const Graphi
 
     bool ok = isCompatible;
 
-    if (_isDirty)
+    if (ok && (_isDescriptorSetDirty || !_cachedDescriptorSet))
     {
         recycleDescriptorSet(gpuDevice);
 
@@ -350,7 +350,27 @@ bool GpuProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const Graphi
         write(_imageData);
 
         _cachedDescriptorSet->flushWrites();
-        _isDirty = false;
+
+        _isDescriptorSetDirty = false;
+        _dirtyBindlessDescriptors.clear();
+    }
+    else if (ok && !_dirtyBindlessDescriptors.empty())
+    {
+        for (const auto& [name, indices] : _dirtyBindlessDescriptors)
+        {
+            auto dataIt = _bindlessData.find(name);
+            PILS_ASSERT(dataIt != _bindlessData.end(), "Unkown dirty bindless binding: ", name);
+
+            const auto& descriptors = dataIt->second.descriptors;
+            for (uint32_t index : indices)
+            {
+                _cachedDescriptorSet->write(*dataIt->second.binding.binding, *descriptors[index].descriptor, index);
+            }
+        }
+
+        _cachedDescriptorSet->flushWrites();
+
+        _dirtyBindlessDescriptors.clear();
     }
 
     gpuDevice.commandList().bindDescriptorSet(

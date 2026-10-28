@@ -110,18 +110,12 @@ bool PathTracerTask::defineResources(GraphicContext& context)
         delete texture;
     }
 
-    GpuPathTracerCommonParams gpuCommonParams;
-
-    _hash = toGpu(
-        context,
-        gpuCommonParams);
-
     _viewport.reset(new Viewport(context.camera.viewport()));
 
     ok = ok && resources.define<GpuConstantResource>(
             ResourceName(PathTracerCommonParams), {
                 sizeof(GpuPathTracerCommonParams),
-                &gpuCommonParams});
+                nullptr});
 
     ok = ok && resources.define<GpuImageResource>(
             ResourceName(PathTracerResult), {

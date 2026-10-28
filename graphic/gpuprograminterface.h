@@ -2,6 +2,7 @@
 #define GPUPROGRAMINTERFACE_H
 
 #include <map>
+#include <set>
 #include <memory>
 #include <vector>
 #include <string>
@@ -163,7 +164,9 @@ private:
 
     void recycleDescriptorSet(const GpuDevice& gpuDevice);
 
-    bool _isDirty;
+    std::map<std::string, std::set<uint32_t>> _dirtyBindlessDescriptors;
+
+    bool _isDescriptorSetDirty;
     std::shared_ptr<pils::gpu::DescriptorSet> _cachedDescriptorSet;
     std::vector<std::pair<
         std::shared_ptr<pils::gpu::DescriptorSet>,

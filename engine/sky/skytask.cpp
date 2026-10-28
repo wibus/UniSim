@@ -102,9 +102,7 @@ bool SkyTask::defineResources(GraphicContext& context)
 
     GpuResourceManager& resources = context.resources;
 
-    GpuStarsParams starsParams;
-    _hash = toGpu(context, starsParams);
-    ok = ok && resources.define<GpuConstantResource>(ResourceName(StarsParams), {sizeof(starsParams), &starsParams});
+    ok = ok && resources.define<GpuConstantResource>(ResourceName(StarsParams), {sizeof(GpuStarsParams), nullptr});
     ok = ok && resources.define<GpuTextureResource>(ResourceName(Stars), {*context.scene.sky()->stars()->starsTexture()});
 
     if (_atmosphereRenderState)
@@ -114,13 +112,8 @@ bool SkyTask::defineResources(GraphicContext& context)
             _atmosphereRenderState->_moonAlbedo.reset(new Texture(Texture::BLACK_UNORM8));
         _atmosphereRenderState->_moonIsDirty = true;
 
-        GpuMoonLightParams moonLightParams;
-        GpuAtmosphereParams atmosphereParams;
-        _atmosphereRenderState->_atmosphereHash = toGpu(context, moonLightParams, atmosphereParams);
-        _hash = combineHashes(_atmosphereRenderState->_atmosphereHash, _hash);
-
-        ok = ok && resources.define<GpuConstantResource>(ResourceName(AtmosphereParams), {sizeof(atmosphereParams), &atmosphereParams});
-        ok = ok && resources.define<GpuConstantResource>(ResourceName(MoonLightParams), {sizeof(moonLightParams), &moonLightParams});
+        ok = ok && resources.define<GpuConstantResource>(ResourceName(AtmosphereParams), {sizeof(GpuAtmosphereParams), nullptr});
+        ok = ok && resources.define<GpuConstantResource>(ResourceName(MoonLightParams), {sizeof(GpuMoonLightParams), nullptr});
         ok = ok && resources.define<GpuTextureResource>(ResourceName(MoonAlbedo), {*_atmosphereRenderState->_moonAlbedo});
         ok = ok && resources.define<GpuImageResource>(ResourceName(MoonLighting), {
             .width  = _atmosphereRenderState->_moonTexSize,
