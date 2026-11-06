@@ -14,7 +14,7 @@ std::vector<std::string> g_PathTracerCommonSrcs;
 
 
 // PATH TRACER MODULE //
-PathTracerModule::PathTracerModule(const std::string& name, const std::shared_ptr<GraphicShader>& shader) :
+PathTracerModule::PathTracerModule(const std::string& name, const std::shared_ptr<Shader>& shader) :
     _name(name),
     _shader(shader)
 {
@@ -48,27 +48,27 @@ bool PathTracerProviderTask::definePathTracerModules(
 
 bool PathTracerProviderTask::definePathTracerInterface(
     GraphicContext& context,
-    GpuProgramInterfaceTemplate& gpiTemplate)
+    ProgramInterfaceTemplate& piTemplate)
 {
     return true;
 }
 
 void PathTracerProviderTask::bindPathTracerResources(
     GraphicContext& context,
-    GpuProgramInterface& gpi) const
+    ProgramInterface& pi) const
 {
 }
 
 bool PathTracerProviderTask::addPathTracerModule(
     std::vector<std::shared_ptr<PathTracerModule>>& modules,
+    const GraphicContext& context,
     const std::string& name,
-    const GraphicSettings& settings,
     const std::string& computeFileName,
     const std::vector<std::string>& defines)
 {
     std::vector<std::string> allDefines = defines;
 
-    if(settings.unbiased)
+    if(context.settings.unbiased)
         allDefines.push_back("IS_UNBIASED");
 
     for(int t = 0; t < Primitive::Type_Count; ++t)
@@ -79,10 +79,10 @@ bool PathTracerProviderTask::addPathTracerModule(
     }
 
     std::vector<std::string> allSrcs = g_PathTracerCommonSrcs;
-    allSrcs.push_back(loadSource(computeFileName));
+    allSrcs.push_back(context.shaders.loadSource(computeFileName));
 
-    std::shared_ptr<GraphicShader> shader = 0;
-    if(!generateShader(shader, ShaderType::Compute, computeFileName, allSrcs, allDefines))
+    std::shared_ptr<Shader> shader = 0;
+    if(!context.shaders.generateShader(shader, ShaderType::Compute, computeFileName, allSrcs, allDefines))
         return false;
 
     modules.push_back(std::make_shared<PathTracerModule>(name, shader));

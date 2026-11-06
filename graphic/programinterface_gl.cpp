@@ -1,10 +1,9 @@
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
 
-#include "gpuprograminterface.h"
+#include "programinterface.h"
 
 #include <PilsCore/Utils/Assert.h>
 
-#include "graphic.h"
 #include "gpudevice.h"
 #include "gpuresource.h"
 
@@ -13,7 +12,7 @@ namespace unisim
 {
 
 // Template //
-GpuProgramInterfaceTemplate::GpuProgramInterfaceTemplate(ProgramType programType) :
+ProgramInterfaceTemplate::ProgramInterfaceTemplate(ProgramType programType) :
     _programType(programType),
     _nextBindlessStorageBinding(0),
     _nextConstantBinding(0),
@@ -22,7 +21,7 @@ GpuProgramInterfaceTemplate::GpuProgramInterfaceTemplate(ProgramType programType
 {
 }
 
-GpuProgramInterfaceTemplate::GpuProgramInterfaceTemplate(ProgramType programType, const GpuProgramInterfaceTemplate& parent) :
+ProgramInterfaceTemplate::ProgramInterfaceTemplate(ProgramType programType, const ProgramInterfaceTemplate& parent) :
     _programType(programType),
     _nextBindlessStorageBinding(parent._nextBindlessStorageBinding),
     _nextConstantBinding(parent._nextConstantBinding),
@@ -31,30 +30,30 @@ GpuProgramInterfaceTemplate::GpuProgramInterfaceTemplate(ProgramType programType
 {
 }
 
-void GpuProgramInterfaceTemplate::declareBindless(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareBindless(const std::string& name, uint32_t descriptorCount)
 {
     _bindless.push_back({name, _nextBindlessStorageBinding++, descriptorCount});
 }
 
-void GpuProgramInterfaceTemplate::declareConstant(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareConstant(const std::string& name, uint32_t descriptorCount)
 {
     PILS_ASSERT(descriptorCount == 1, "OpenGL backend does not support constance buffer arrays");
     _constants.push_back({name, _nextConstantBinding++, descriptorCount});
 }
 
-void GpuProgramInterfaceTemplate::declareStorage(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareStorage(const std::string& name, uint32_t descriptorCount)
 {
     PILS_ASSERT(descriptorCount == 1, "OpenGL backend does not support storage buffer arrays");
     _storages.push_back({name, _nextBindlessStorageBinding++, descriptorCount});
 }
 
-void GpuProgramInterfaceTemplate::declareTexture(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareTexture(const std::string& name, uint32_t descriptorCount)
 {
     PILS_ASSERT(descriptorCount == 1, "OpenGL backend does not support texture arrays");
     _textures.push_back({name, _nextTextureBinding++, descriptorCount});
 }
 
-void GpuProgramInterfaceTemplate::declareImage(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareImage(const std::string& name, uint32_t descriptorCount)
 {
     PILS_ASSERT(descriptorCount == 1, "OpenGL backend does not support image arrays");
     _images.push_back({name, _nextImageBinding++, descriptorCount});
@@ -63,7 +62,7 @@ void GpuProgramInterfaceTemplate::declareImage(const std::string& name, uint32_t
 
 // Interface //
 
-bool GpuProgramInterface::setBindlessBindPoint(const GraphicProgram& program, const GpuProgramBinding& binding)
+bool ProgramInterface::setBindlessBindPoint(const Program& program, const ProgramBinding& binding)
 {
     PILS_ASSERT(binding.bindPoint != -1, binding.name, " has an innvalid bind point index ", binding.bindPoint);
     PILS_ASSERT(_bindlessData.find(binding.name) != _bindlessData.end(), "Unknown bindless buffer: ", binding.name);
@@ -87,7 +86,7 @@ bool GpuProgramInterface::setBindlessBindPoint(const GraphicProgram& program, co
     return true;
 }
 
-bool GpuProgramInterface::setConstantBindPoint(const GraphicProgram& program, const GpuProgramBinding& binding)
+bool ProgramInterface::setConstantBindPoint(const Program& program, const ProgramBinding& binding)
 {
     PILS_ASSERT(binding.bindPoint != -1, binding.name, " has an innvalid bind point index ", binding.bindPoint);
     PILS_ASSERT(_constantData.find(binding.name) != _constantData.end(), "Unkown constant buffer : ", binding.name);
@@ -111,7 +110,7 @@ bool GpuProgramInterface::setConstantBindPoint(const GraphicProgram& program, co
     return true;
 }
 
-bool GpuProgramInterface::setStorageBindPoint(const GraphicProgram& program, const GpuProgramBinding& binding)
+bool ProgramInterface::setStorageBindPoint(const Program& program, const ProgramBinding& binding)
 {
     PILS_ASSERT(binding.bindPoint != -1, binding.name, " has an innvalid bind point index ", binding.bindPoint);
     PILS_ASSERT(_storageData.find(binding.name) != _storageData.end(), "Unkown storage buffer: ", binding.name);
@@ -135,7 +134,7 @@ bool GpuProgramInterface::setStorageBindPoint(const GraphicProgram& program, con
     return true;
 }
 
-bool GpuProgramInterface::setTextureBindPoint(const GraphicProgram& program, const GpuProgramBinding& binding)
+bool ProgramInterface::setTextureBindPoint(const Program& program, const ProgramBinding& binding)
 {
     PILS_ASSERT(binding.bindPoint != -1, binding.name, " has an innvalid bind point index ", binding.bindPoint);
     PILS_ASSERT(_textureData.find(binding.name) != _textureData.end(), "Unkown texture: ", binding.name);
@@ -159,7 +158,7 @@ bool GpuProgramInterface::setTextureBindPoint(const GraphicProgram& program, con
     return true;
 }
 
-bool GpuProgramInterface::setImageBindPoint(const GraphicProgram& program,  const GpuProgramBinding& binding)
+bool ProgramInterface::setImageBindPoint(const Program& program,  const ProgramBinding& binding)
 {
     PILS_ASSERT(binding.bindPoint != -1, binding.name, " has an innvalid bind point index ", binding.bindPoint);
     PILS_ASSERT(_imageData.find(binding.name) != _imageData.end(), "Unkown image: ", binding.name);
@@ -189,10 +188,10 @@ struct GpuBindlessSlot
     GLuint64 padding{0};
 };
 
-GpuProgramInterface::GpuProgramInterface(const GpuDevice& gpuDevice, const GpuProgramInterfaceTemplate& gpiTemplate) :
-    _programType(gpiTemplate.programType())
+ProgramInterface::ProgramInterface(const GpuDevice& gpuDevice, const ProgramInterfaceTemplate& piTemplate) :
+    _programType(piTemplate.programType())
 {
-    for(const auto& binding : gpiTemplate.bindless())
+    for(const auto& binding : piTemplate.bindless())
     {
         auto& data = _bindlessData[binding.name];
         data.binding = binding;
@@ -208,28 +207,28 @@ GpuProgramInterface::GpuProgramInterface(const GpuDevice& gpuDevice, const GpuPr
         _bindlessBacking[binding.name] = {true, storageBufferId};
     }
 
-    for(const auto& binding : gpiTemplate.constants())
+    for(const auto& binding : piTemplate.constants())
     {
         auto& data = _constantData[binding.name];
         data.binding = binding;
         data.descriptors.resize(1);
     }
 
-    for(const auto& binding : gpiTemplate.storages())
+    for(const auto& binding : piTemplate.storages())
     {
         auto& data = _storageData[binding.name];
         data.binding = binding;
         data.descriptors.resize(1);
     }
 
-    for(const auto& binding : gpiTemplate.textures())
+    for(const auto& binding : piTemplate.textures())
     {
         auto& data = _textureData[binding.name];
         data.binding = binding;
         data.descriptors.resize(1);
     }
 
-    for(const auto& binding : gpiTemplate.images())
+    for(const auto& binding : piTemplate.images())
     {
         auto& data = _imageData[binding.name];
         data.binding = binding;
@@ -237,7 +236,7 @@ GpuProgramInterface::GpuProgramInterface(const GpuDevice& gpuDevice, const GpuPr
     }
 }
 
-GpuProgramInterface::~GpuProgramInterface()
+ProgramInterface::~ProgramInterface()
 {
     for (const auto& [name, backing] : _bindlessBacking)
     {
@@ -245,7 +244,7 @@ GpuProgramInterface::~GpuProgramInterface()
     }
 }
 
-void GpuProgramInterface::setBindless(const std::string& name, const GpuBindlessTexture& resource, uint32_t arrayIndex)
+void ProgramInterface::setBindless(const std::string& name, const GpuBindlessTexture& resource, uint32_t arrayIndex)
 {
     auto dataIt = _bindlessData.find(name);
     if (dataIt == _bindlessData.end())
@@ -265,7 +264,7 @@ void GpuProgramInterface::setBindless(const std::string& name, const GpuBindless
     descriptors[arrayIndex] = resource.handle();
 }
 
-void GpuProgramInterface::setConstant(const std::string& name, const GpuConstantResource& resource, uint32_t arrayIndex)
+void ProgramInterface::setConstant(const std::string& name, const GpuConstantResource& resource, uint32_t arrayIndex)
 {
     auto dataIt = _constantData.find(name);
     if (dataIt == _constantData.end())
@@ -285,7 +284,7 @@ void GpuProgramInterface::setConstant(const std::string& name, const GpuConstant
     descriptors[arrayIndex] = resource.handle();
 }
 
-void GpuProgramInterface::setStorage(const std::string& name, const GpuStorageResource& resource, uint32_t arrayIndex)
+void ProgramInterface::setStorage(const std::string& name, const GpuStorageResource& resource, uint32_t arrayIndex)
 {
     auto dataIt = _storageData.find(name);
     if (dataIt == _storageData.end())
@@ -305,7 +304,7 @@ void GpuProgramInterface::setStorage(const std::string& name, const GpuStorageRe
     descriptors[arrayIndex] = resource.handle();
 }
 
-void GpuProgramInterface::setTexture(const std::string& name, const GpuTextureResource& resource, uint32_t arrayIndex)
+void ProgramInterface::setTexture(const std::string& name, const GpuTextureResource& resource, uint32_t arrayIndex)
 {
     auto dataIt = _textureData.find(name);
     if (dataIt == _textureData.end())
@@ -325,7 +324,7 @@ void GpuProgramInterface::setTexture(const std::string& name, const GpuTextureRe
     descriptors[arrayIndex] = resource.handle();
 }
 
-void GpuProgramInterface::setTexture(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex)
+void ProgramInterface::setTexture(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex)
 {
     auto dataIt = _textureData.find(name);
     if (dataIt == _textureData.end())
@@ -348,7 +347,7 @@ void GpuProgramInterface::setTexture(const std::string& name, const GpuImageReso
     descriptors[arrayIndex] = handle;
 }
 
-void GpuProgramInterface::setImage(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex)
+void ProgramInterface::setImage(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex)
 {
     auto dataIt = _imageData.find(name);
     if (dataIt == _imageData.end())
@@ -368,7 +367,7 @@ void GpuProgramInterface::setImage(const std::string& name, const GpuImageResour
     descriptors[arrayIndex] = resource.handle();
 }
 
-bool GpuProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const GraphicProgram& program)
+bool ProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const Program& program)
 {
     bool ok = true;
 

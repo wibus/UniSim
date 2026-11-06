@@ -28,10 +28,10 @@ public:
         std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
     bool definePathTracerInterface(
         GraphicContext& context,
-        GpuProgramInterfaceTemplate& gpiTemplate) override;
+        ProgramInterfaceTemplate& piTemplate) override;
     void bindPathTracerResources(
         GraphicContext& context,
-        GpuProgramInterface& gpi) const override;
+        ProgramInterface& pi) const override;
     
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
@@ -51,14 +51,14 @@ private:
 
     glm::vec4 _halton[HALTON_SAMPLE_COUNT];
 
-    GraphicProgramPtr _pathTracerProgram;
+    ProgramPtr _pathTracerProgram;
 
     unsigned int _frameIndex;
     uint64_t _pathTracerHash;
 
     std::unique_ptr<Viewport> _viewport;
 
-    std::shared_ptr<GpuProgramInterface> _pathTracerInterface;
+    std::shared_ptr<ProgramInterface> _pathTracerPi;
     std::vector<std::shared_ptr<PathTracerProviderTask>> _pathTracerProviders;
     std::vector<std::shared_ptr<PathTracerModule>> _pathTracerModules;
 };

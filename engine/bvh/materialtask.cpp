@@ -121,21 +121,21 @@ bool MaterialTask::definePathTracerModules(GraphicContext& context, std::vector<
     return true;
 }
 
-bool MaterialTask::definePathTracerInterface(GraphicContext& context, GpuProgramInterfaceTemplate& gpiTemplate)
+bool MaterialTask::definePathTracerInterface(GraphicContext& context, ProgramInterfaceTemplate& piTemplate)
 {
     bool ok = true;
 
-    gpiTemplate.declareStorage({"Materials"});
+    piTemplate.declareStorage({"Materials"});
 
     return ok;
 }
 
 void MaterialTask::bindPathTracerResources(
     GraphicContext& context,
-    GpuProgramInterface& gpi) const
+    ProgramInterface& pi) const
 {
     GpuResourceManager& resources = context.resources;
-    gpi.setStorage("Materials", resources.get<GpuStorageResource>(ResourceName(MaterialDatabase)));
+    pi.setStorage("Materials", resources.get<GpuStorageResource>(ResourceName(MaterialDatabase)));
 }
 
 void MaterialTask::update(GraphicContext& context)

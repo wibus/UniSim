@@ -1,11 +1,8 @@
 #include "graphictaskgraph.h"
 
 #include <iostream>
-#include <algorithm>
 
 #include "../system/profiler.h"
-
-#include "../resource/primitive.h"
 
 #include "../graphic/view.h"
 #include "../graphic/imguirenderer.h"
@@ -35,11 +32,12 @@ bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Ca
     _device->setupInitialization();
 
     _resources.reset(new GpuResourceManager(*_device));
+    _shaders.reset(new ShaderBuilder());
     _imGuiRenderer.reset(new ImGuiRenderer(view));
 
     createTaskGraph(scene);
 
-    GraphicContext context = {*_device, view, scene, camera, *_resources, _settings};
+    GraphicContext context = {*_device, view, scene, camera, *_shaders, *_resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -62,10 +60,10 @@ bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Ca
     g_GlslExtensions += "#extension GL_ARB_bindless_texture : require\n";
 
     g_PathTracerCommonSrcs.clear();
-    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/constants.glsl"));
-    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/data.glsl"));
-    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
-    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
+    g_PathTracerCommonSrcs.push_back(_shaders->loadSource("shaders/common/constants.glsl"));
+    g_PathTracerCommonSrcs.push_back(_shaders->loadSource("shaders/common/data.glsl"));
+    g_PathTracerCommonSrcs.push_back(_shaders->loadSource("shaders/common/inputs.glsl"));
+    g_PathTracerCommonSrcs.push_back(_shaders->loadSource("shaders/common/signatures.glsl"));
 
     for(const auto& task : _tasks)
     {
@@ -86,12 +84,12 @@ bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Ca
 bool GraphicTaskGraph::reloadShaders(const View& view, const Scene& scene, const Camera& camera)
 {
     g_PathTracerCommonSrcs.clear();
-    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/constants.glsl"));
-    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/data.glsl"));
-    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/inputs.glsl"));
-    g_PathTracerCommonSrcs.push_back(loadSource("shaders/common/signatures.glsl"));
+    g_PathTracerCommonSrcs.push_back(_shaders->loadSource("shaders/common/constants.glsl"));
+    g_PathTracerCommonSrcs.push_back(_shaders->loadSource("shaders/common/data.glsl"));
+    g_PathTracerCommonSrcs.push_back(_shaders->loadSource("shaders/common/inputs.glsl"));
+    g_PathTracerCommonSrcs.push_back(_shaders->loadSource("shaders/common/signatures.glsl"));
 
-    GraphicContext context = {*_device, view, scene, camera, *_resources, _settings};
+    GraphicContext context = {*_device, view, scene, camera, *_shaders, *_resources, _settings};
 
     for(const auto& task : _tasks)
     {
@@ -109,7 +107,7 @@ bool GraphicTaskGraph::reloadShaders(const View& view, const Scene& scene, const
 
 void GraphicTaskGraph::execute(const View& view, const Scene& scene, const Camera& camera)
 {
-    GraphicContext context = {*_device, view, scene, camera, *_resources, _settings};
+    GraphicContext context = {*_device, view, scene, camera, *_shaders, *_resources, _settings};
 
     _device->begin();
 

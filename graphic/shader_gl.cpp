@@ -1,28 +1,26 @@
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
 
-#include <iostream>
-
 #include <PilsCore/Utils/Logger.h>
 
-#include "graphic.h"
+#include "shader.h"
 
 
 namespace unisim
 {
 
-GraphicShaderHandle::GraphicShaderHandle(GraphicShaderHandle&& other) :
+ShaderHandle::ShaderHandle(ShaderHandle&& other) :
     _shaderId(other._shaderId)
 {
     other._shaderId = 0;
 }
 
-GraphicShaderHandle::GraphicShaderHandle(GLuint shaderId) :
+ShaderHandle::ShaderHandle(GLuint shaderId) :
     _shaderId(shaderId)
 {
     PILS_DEBUG("Creating shader handle '", _shaderId, "'");
 }
 
-GraphicShaderHandle::~GraphicShaderHandle()
+ShaderHandle::~ShaderHandle()
 {
     if (_shaderId != 0)
     {
@@ -31,33 +29,33 @@ GraphicShaderHandle::~GraphicShaderHandle()
     }
 }
 
-GraphicShader::GraphicShader(const std::string& name, ShaderType shaderType, GraphicShaderHandle&& handle) :
+Shader::Shader(const std::string& name, ShaderType shaderType, ShaderHandle&& handle) :
     _name(name),
     _shaderType(shaderType),
-    _handle(new GraphicShaderHandle(std::move(handle)))
+    _handle(new ShaderHandle(std::move(handle)))
 {
 
 }
 
-GraphicShader::~GraphicShader()
+Shader::~Shader()
 {
 
 }
 
 
-GraphicProgramHandle::GraphicProgramHandle(GraphicProgramHandle&& other) :
+ProgramHandle::ProgramHandle(ProgramHandle&& other) :
     _programId(other._programId)
 {
     other._programId = 0;
 }
 
-GraphicProgramHandle::GraphicProgramHandle(GLuint programId) :
+ProgramHandle::ProgramHandle(GLuint programId) :
     _programId(programId)
 {
     PILS_DEBUG("Creating program handle '", _programId, "'");
 }
 
-GraphicProgramHandle::~GraphicProgramHandle()
+ProgramHandle::~ProgramHandle()
 {
     if (_programId != 0)
     {
@@ -66,33 +64,33 @@ GraphicProgramHandle::~GraphicProgramHandle()
     }
 }
 
-GraphicProgram::GraphicProgram(
+Program::Program(
         const GpuDevice& gpuDevice,
-        const GpuProgramInterfaceTemplate& gpiTemplate,
+        const ProgramInterfaceTemplate& piTemplate,
         ProgramType type,
         const std::string& name,
-        GraphicProgramHandle&& programHandle,
-        const std::vector<std::shared_ptr<GraphicShader>>& shaders) :
+        ProgramHandle&& programHandle,
+        const std::vector<std::shared_ptr<Shader>>& shaders) :
     _name(name),
-    _handle(new GraphicProgramHandle(std::move(programHandle))),
+    _handle(new ProgramHandle(std::move(programHandle))),
     _shaders(shaders)
 {
     PILS_DEBUG("Creating program '", _name, "'");
 }
 
-GraphicProgram::~GraphicProgram()
+Program::~Program()
 {
     PILS_DEBUG("Destroying program '", _name, "'");
 
 }
 
-GraphicProgramScope::GraphicProgramScope(const GraphicProgram& program)
+ProgramScope::ProgramScope(const Program& program)
 {
     if(program.isValid())
         glUseProgram(program.handle());
 }
 
-GraphicProgramScope::~GraphicProgramScope()
+ProgramScope::~ProgramScope()
 {
     glUseProgram(0);
 }
@@ -175,8 +173,17 @@ const char* defineLine(std::vector<std::string>& directives, int lineId)
     return directives.back().c_str();
 }
 
-bool generateShader(
-    std::shared_ptr<GraphicShader>& shader,
+
+ShaderBuilder::ShaderBuilder()
+{
+}
+
+ShaderBuilder::~ShaderBuilder()
+{
+}
+
+bool ShaderBuilder::generateShader(
+    std::shared_ptr<Shader>& shader,
     ShaderType shaderType,
     const std::string& shaderName,
     const std::vector<std::string>& srcs,
@@ -228,25 +235,25 @@ bool generateShader(
     }
     else
     {
-        shader.reset(new GraphicShader(shaderName, shaderType, GraphicShaderHandle(shaderId)));
+        shader.reset(new Shader(shaderName, shaderType, ShaderHandle(shaderId)));
         return true;
     }
 }
 
-bool generateGraphicProgram(
+bool ShaderBuilder::generateGraphicProgram(
     const GpuDevice& gpuDevice,
-    const GpuProgramInterfaceTemplate& gpiTemplate,
-    GraphicProgramPtr& program,
+    const ProgramInterfaceTemplate& piTemplate,
+    ProgramPtr& program,
     const std::string& name,
     const std::string& vertexFileName,
     const std::string& fragmentFileName,
     const std::vector<std::string>& defines)
 {
-    std::shared_ptr<GraphicShader> vertex;
+    std::shared_ptr<Shader> vertex;
     if(!generateVertexShader(vertex, vertexFileName, defines))
         return false;
 
-    std::shared_ptr<GraphicShader> fragment;
+    std::shared_ptr<Shader> fragment;
     if(!generateFragmentShader(fragment, fragmentFileName, defines))
         return false;
 
@@ -265,12 +272,12 @@ bool generateGraphicProgram(
     }
 
     program.reset(
-        new GraphicProgram(
+        new Program(
             gpuDevice,
-            gpiTemplate,
+            piTemplate,
             ProgramType::Graphics,
             name,
-            std::move(GraphicProgramHandle(programId)),
+            std::move(ProgramHandle(programId)),
             {vertex, fragment}
         )
     );
@@ -278,15 +285,15 @@ bool generateGraphicProgram(
     return true;
 }
 
-bool generateComputeProgram(
+bool ShaderBuilder::generateComputeProgram(
     const GpuDevice& gpuDevice,
-    const GpuProgramInterfaceTemplate& gpiTemplate,
-    GraphicProgramPtr& program,
+    const ProgramInterfaceTemplate& piTemplate,
+    ProgramPtr& program,
     const std::string& name,
     const std::string& computeFileName,
     const std::vector<std::string>& defines)
 {
-    std::shared_ptr<GraphicShader> compute;
+    std::shared_ptr<Shader> compute;
     if(!generateComputerShader(compute, computeFileName, defines))
         return false;
 
@@ -304,12 +311,12 @@ bool generateComputeProgram(
     }
 
     program.reset(
-        new GraphicProgram(
+        new Program(
             gpuDevice,
-            gpiTemplate,
+            piTemplate,
             ProgramType::Compute,
             name,
-            std::move(GraphicProgramHandle(programId)),
+            std::move(ProgramHandle(programId)),
             {compute}
         )
     );
@@ -317,12 +324,12 @@ bool generateComputeProgram(
     return true;
 }
 
-bool generateComputeProgram(
+bool ShaderBuilder::generateComputeProgram(
     const GpuDevice& gpuDevice,
-    const GpuProgramInterfaceTemplate& gpiTemplate,
-    GraphicProgramPtr& program,
+    const ProgramInterfaceTemplate& piTemplate,
+    ProgramPtr& program,
     const std::string& name,
-    const std::vector<std::shared_ptr<GraphicShader>>& shaders)
+    const std::vector<std::shared_ptr<Shader>>& shaders)
 {
     GLuint programId = glCreateProgram();
 
@@ -338,12 +345,12 @@ bool generateComputeProgram(
     }
 
     program.reset(
-        new GraphicProgram(
+        new Program(
             gpuDevice,
-            gpiTemplate,
+            piTemplate,
             ProgramType::Compute,
             name,
-            std::move(GraphicProgramHandle(programId)),
+            std::move(ProgramHandle(programId)),
             shaders
         )
     );

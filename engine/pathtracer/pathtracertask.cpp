@@ -9,7 +9,6 @@
 
 #include "../resource/texture.h"
 
-#include "../graphic/graphic.h"
 #include "../graphic/gpudevice.h"
 
 #include "../camera.h"
@@ -130,7 +129,7 @@ bool PathTracerTask::defineResources(GraphicContext& context)
 bool PathTracerTask::defineShaders(GraphicContext& context)
 {
     _pathTracerModules.clear();
-    GpuProgramInterfaceTemplate pathTraceGpiTemplate(context.resources.frameGpiTemplate());
+    ProgramInterfaceTemplate pathTracePiTemplate(context.resources.framePiTemplate());
 
     for (auto& task : _pathTracerProviders)
     {
@@ -140,28 +139,33 @@ bool PathTracerTask::defineShaders(GraphicContext& context)
             return false;
         }
 
-        if (!task->definePathTracerInterface(context, pathTraceGpiTemplate))
+        if (!task->definePathTracerInterface(context, pathTracePiTemplate))
         {
             PILS_ERROR("Could not define path tracer interface for: ", task->name());
             return false;
         }
     }
 
-    _pathTracerInterface.reset(new GpuProgramInterface(context.device, pathTraceGpiTemplate));
+    _pathTracerPi.reset(new ProgramInterface(context.device, pathTracePiTemplate));
 
     // Remove duplicated modules
     std::sort( _pathTracerModules.begin(), _pathTracerModules.end() );
     _pathTracerModules.erase( std::unique( _pathTracerModules.begin(), _pathTracerModules.end() ), _pathTracerModules.end());
 
     // Gather shaders
-    std::vector<std::shared_ptr<GraphicShader>> shaders;
+    std::vector<std::shared_ptr<Shader>> shaders;
     for (const auto& module : _pathTracerModules)
         if (module)
             shaders.push_back(module->shader());
 
     // Generate program
     _pathTracerProgram.reset();
-    if(!generateComputeProgram(context.device, pathTraceGpiTemplate, _pathTracerProgram, "Path Tracer", {shaders}))
+    if(!context.shaders.generateComputeProgram(
+            context.device,
+            pathTracePiTemplate,
+            _pathTracerProgram,
+            "Path Tracer",
+            {shaders}))
         return false;
 
     return true;
@@ -169,32 +173,40 @@ bool PathTracerTask::defineShaders(GraphicContext& context)
 
 bool PathTracerTask::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
 {
-    if(!addPathTracerModule(modules, "Path Trace", context.settings, "shaders/pathtrace.glsl"))
+    if(!addPathTracerModule(
+            modules,
+            context,
+            "Path Trace",
+            "shaders/pathtrace.glsl"))
         return false;
 
-    if(!addPathTracerModule(modules, "Utils", context.settings, "shaders/common/utils.glsl"))
+    if(!addPathTracerModule(
+            modules,
+            context,
+            "Utils",
+            "shaders/common/utils.glsl"))
         return false;
 
     return true;
 }
 
-bool PathTracerTask::definePathTracerInterface(GraphicContext& context, GpuProgramInterfaceTemplate& gpiTemplate)
+bool PathTracerTask::definePathTracerInterface(GraphicContext& context, ProgramInterfaceTemplate& piTemplate)
 {
     bool ok = true;
 
-    gpiTemplate.declareConstant({"PathTracerCommonParams"});
-    gpiTemplate.declareImage({"result"});
+    piTemplate.declareConstant({"PathTracerCommonParams"});
+    piTemplate.declareImage({"result"});
 
     return ok;
 }
 
 void PathTracerTask::bindPathTracerResources(
     GraphicContext &context,
-    GpuProgramInterface& gpi) const
+    ProgramInterface& pi) const
 {
     GpuResourceManager& resources = context.resources;
-    gpi.setConstant("PathTracerCommonParams", resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)));
-    gpi.setImage("result", resources.get<GpuImageResource>(ResourceName(PathTracerResult)));
+    pi.setConstant("PathTracerCommonParams", resources.get<GpuConstantResource>(ResourceName(PathTracerCommonParams)));
+    pi.setImage("result", resources.get<GpuImageResource>(ResourceName(PathTracerResult)));
 }
 
 void PathTracerTask::update(GraphicContext& context)
@@ -260,16 +272,16 @@ void PathTracerTask::render(GraphicContext& context)
         if(!_pathTracerProgram->isValid())
             return;
 
-        if(!context.resources.compileAndSetPassGpi(*_pathTracerProgram))
+        if(!context.resources.compileAndSetPassPi(*_pathTracerProgram))
             return;
 
         for(const auto& provider : _pathTracerProviders)
-            provider->bindPathTracerResources(context, *_pathTracerInterface);
+            provider->bindPathTracerResources(context, *_pathTracerPi);
 
-        if(!_pathTracerInterface->compileAndSet(context.device, *_pathTracerProgram))
+        if(!_pathTracerPi->compileAndSet(context.device, *_pathTracerProgram))
             return;
 
-        GraphicProgramScope programScope(*_pathTracerProgram);
+        ProgramScope programScope(*_pathTracerProgram);
         context.device.dispatch((_viewport->width + 7) / 8, (_viewport->height + 3) / 4);
     }
 }

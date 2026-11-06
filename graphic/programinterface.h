@@ -1,5 +1,5 @@
-#ifndef GPUPROGRAMINTERFACE_H
-#define GPUPROGRAMINTERFACE_H
+#ifndef PROGRAMINTERFACE_H
+#define PROGRAMINTERFACE_H
 
 #include <map>
 #include <set>
@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 
-#include "graphic.h"
+#include "shader.h"
 
 
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
@@ -42,7 +42,7 @@ class GpuTextureResourceHandle;
 class GpuImageResourceHandle;
 class GpuBindlessTexture;
 
-struct GpuProgramBinding
+struct ProgramBinding
 {
     std::string name;
 
@@ -56,11 +56,11 @@ struct GpuProgramBinding
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
-class GpuProgramInterfaceTemplate
+class ProgramInterfaceTemplate
 {
 public:
-    GpuProgramInterfaceTemplate(ProgramType programType);
-    GpuProgramInterfaceTemplate(ProgramType programType, const GpuProgramInterfaceTemplate& parent);
+    ProgramInterfaceTemplate(ProgramType programType);
+    ProgramInterfaceTemplate(ProgramType programType, const ProgramInterfaceTemplate& parent);
 
     ProgramType programType() const { return _programType; }
 
@@ -70,11 +70,11 @@ public:
     void declareTexture(const std::string& name, uint32_t descriptorCount = 1);
     void declareImage(const std::string& name, uint32_t descriptorCount = 1);
 
-    const std::vector<GpuProgramBinding>& bindless() const { return  _bindless;}
-    const std::vector<GpuProgramBinding>& constants() const { return  _constants;}
-    const std::vector<GpuProgramBinding>& storages() const { return  _storages;}
-    const std::vector<GpuProgramBinding>& textures() const { return  _textures;}
-    const std::vector<GpuProgramBinding>& images() const { return  _images;}
+    const std::vector<ProgramBinding>& bindless() const { return  _bindless;}
+    const std::vector<ProgramBinding>& constants() const { return  _constants;}
+    const std::vector<ProgramBinding>& storages() const { return  _storages;}
+    const std::vector<ProgramBinding>& textures() const { return  _textures;}
+    const std::vector<ProgramBinding>& images() const { return  _images;}
 
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
     uint32_t setIndex() const { return _setIndex; }
@@ -84,11 +84,11 @@ public:
 
 private:
     ProgramType _programType;
-    std::vector<GpuProgramBinding> _bindless;
-    std::vector<GpuProgramBinding> _constants;
-    std::vector<GpuProgramBinding> _storages;
-    std::vector<GpuProgramBinding> _textures;
-    std::vector<GpuProgramBinding> _images;
+    std::vector<ProgramBinding> _bindless;
+    std::vector<ProgramBinding> _constants;
+    std::vector<ProgramBinding> _storages;
+    std::vector<ProgramBinding> _textures;
+    std::vector<ProgramBinding> _images;
 
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
     uint32_t _nextBindlessStorageBinding;
@@ -102,7 +102,7 @@ private:
     uint32_t _nextBinding;
     pils::gpu::ShaderStage _shaderStages;
 
-    const GpuProgramInterfaceTemplate* _parent;
+    const ProgramInterfaceTemplate* _parent;
 
     mutable bool _isSetLayoutDirty;
     mutable std::shared_ptr<pils::gpu::DescriptorSetLayout> _cachedSetLayout;
@@ -110,11 +110,11 @@ private:
 };
 
 
-class GpuProgramInterface
+class ProgramInterface
 {
 public:
-    GpuProgramInterface(const GpuDevice& gpuDevice, const GpuProgramInterfaceTemplate& gpiTemplate);
-    ~GpuProgramInterface();
+    ProgramInterface(const GpuDevice& gpuDevice, const ProgramInterfaceTemplate& piTemplate);
+    ~ProgramInterface();
 
     void setBindless(const std::string& name, const GpuBindlessTexture& resource, uint32_t arrayIndex = 0);
     void setConstant(const std::string& name, const GpuConstantResource& resource, uint32_t arrayIndex = 0);
@@ -122,7 +122,7 @@ public:
     void setTexture(const std::string& name, const GpuTextureResource& resource, uint32_t arrayIndex = 0);
     void setTexture(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex = 0);
     void setImage(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex = 0);
-    bool compileAndSet(const GpuDevice& gpuDevice, const GraphicProgram& program);
+    bool compileAndSet(const GpuDevice& gpuDevice, const Program& program);
 
 private:
     ProgramType _programType;
@@ -130,7 +130,7 @@ private:
     template<typename T>
     struct BindingData
     {
-        GpuProgramBinding binding;
+        ProgramBinding binding;
         std::vector<T> descriptors;
     };
 
@@ -141,11 +141,11 @@ private:
     std::map<std::string, BindingData<GpuImageResourceHandle>> _imageData;
 
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
-    bool setBindlessBindPoint(const GraphicProgram& program, const GpuProgramBinding& binding);
-    bool setConstantBindPoint(const GraphicProgram& program, const GpuProgramBinding& binding);
-    bool setStorageBindPoint(const GraphicProgram& program, const GpuProgramBinding& binding);
-    bool setTextureBindPoint(const GraphicProgram& program, const GpuProgramBinding& binding);
-    bool setImageBindPoint(const GraphicProgram& program,  const GpuProgramBinding& binding);
+    bool setBindlessBindPoint(const Program& program, const ProgramBinding& binding);
+    bool setConstantBindPoint(const Program& program, const ProgramBinding& binding);
+    bool setStorageBindPoint(const Program& program, const ProgramBinding& binding);
+    bool setTextureBindPoint(const Program& program, const ProgramBinding& binding);
+    bool setImageBindPoint(const Program& program,  const ProgramBinding& binding);
 
     struct BindlessBacking
     {
@@ -174,8 +174,8 @@ private:
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
-typedef std::shared_ptr<GpuProgramInterface> GpuProgramInterfacePtr;
+typedef std::shared_ptr<ProgramInterface> GpuProgramInterfacePtr;
 
 }
 
-#endif // GPUPROGRAMINTERFACE_H
+#endif // PROGRAMINTERFACE_H

@@ -5,8 +5,8 @@
 #include <memory>
 #include <string>
 
-#include "../graphic/graphic.h"
-#include "../graphic/gpuprograminterface.h"
+#include "../graphic/shader.h"
+#include "../graphic/programinterface.h"
 
 #include "../taskgraph/graphictask.h"
 
@@ -14,7 +14,7 @@
 namespace unisim
 {
 
-class GraphicProgram;
+class Program;
 class GraphicContext;
 class GraphicSettings;
 
@@ -26,16 +26,16 @@ class PathTracerModule
     PathTracerModule(const PathTracerModule&) = delete;
 
 public:
-    PathTracerModule(const std::string& name, const std::shared_ptr<GraphicShader>& shader);
+    PathTracerModule(const std::string& name, const std::shared_ptr<Shader>& shader);
     ~PathTracerModule();
 
-    std::shared_ptr<GraphicShader> shader() const { return _shader; }
+    std::shared_ptr<Shader> shader() const { return _shader; }
 
     std::string name() const { return _name; }
 
 private:
     std::string _name;
-    std::shared_ptr<GraphicShader> _shader;
+    ShaderPtr _shader;
 };
 
 using PathTracerModulePtr = std::shared_ptr<PathTracerModule>;
@@ -53,11 +53,11 @@ public:
 
     virtual bool definePathTracerInterface(
         GraphicContext& context,
-        GpuProgramInterfaceTemplate& gpiTemplate);
+        ProgramInterfaceTemplate& piTemplate);
 
     virtual void bindPathTracerResources(
         GraphicContext& context,
-        GpuProgramInterface& gpi) const;
+        ProgramInterface& pi) const;
 
     uint64_t hash() const { return _hash; }
 
@@ -83,8 +83,8 @@ public:
 protected:
     bool addPathTracerModule(
         std::vector<std::shared_ptr<PathTracerModule>>& modules,
+        const GraphicContext& context,
         const std::string& name,
-        const GraphicSettings& settings,
         const std::string& computeFileName,
         const std::vector<std::string>& defines = {});
 

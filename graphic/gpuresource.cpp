@@ -2,7 +2,7 @@
 
 #include <PilsCore/Gpu/Memory.h>
 
-#include "gpuprograminterface.h"
+#include "programinterface.h"
 
 
 namespace unisim
@@ -60,12 +60,12 @@ void GpuResourceManager::initialize()
     for (uint32_t i = 0; i < MAX_BINDLESS_TEXTURES; ++i)
         _bindlessTextureFreeList[i] = BindlessTextureIndex(MAX_BINDLESS_TEXTURES - i - 1);
 
-    _persistentGpiTemplate.reset(new GpuProgramInterfaceTemplate(ProgramType::All));
-    _persistentGpiTemplate->declareBindless({"BindlessTextures"}, MAX_BINDLESS_TEXTURES);
-    _persistentGpi.reset(new GpuProgramInterface(_gpuDevice, *_persistentGpiTemplate));
+    _persistentPiTemplate.reset(new ProgramInterfaceTemplate(ProgramType::All));
+    _persistentPiTemplate->declareBindless({"BindlessTextures"}, MAX_BINDLESS_TEXTURES);
+    _persistentPi.reset(new ProgramInterface(_gpuDevice, *_persistentPiTemplate));
 
-    _frameGpiTemplate.reset(new GpuProgramInterfaceTemplate(ProgramType::All, *_persistentGpiTemplate));
-    _frameGpi.reset(new GpuProgramInterface(_gpuDevice, *_frameGpiTemplate));
+    _framePiTemplate.reset(new ProgramInterfaceTemplate(ProgramType::All, *_persistentPiTemplate));
+    _framePi.reset(new ProgramInterface(_gpuDevice, *_framePiTemplate));
 
     initializeNative();
 
@@ -83,7 +83,7 @@ BindlessTextureIndex GpuResourceManager::registerBindlessTexture(const GpuTextur
     _bindlessTextureFreeList.pop_back();
 
     _bindlessTextures[int32_t(index)].reset(new GpuBindlessTexture(textureResource, texture));
-    _persistentGpi->setBindless("BindlessTextures", *_bindlessTextures[int32_t(index)], int32_t(index));
+    _persistentPi->setBindless("BindlessTextures", *_bindlessTextures[int32_t(index)], int32_t(index));
 
     _isBindlessTextureDirty = true;
 
@@ -93,7 +93,7 @@ BindlessTextureIndex GpuResourceManager::registerBindlessTexture(const GpuTextur
 void GpuResourceManager::unregisterBindlessTexture(BindlessTextureIndex index)
 {
     PILS_ASSERT(_bindlessTextures[int32_t(index)].get() != nullptr, "Trying to unregister bindless texture that was never registered at index ", int(index));
-    _persistentGpi->setBindless("BindlessTextures", GpuBindlessTexture(), int32_t(index));
+    _persistentPi->setBindless("BindlessTextures", GpuBindlessTexture(), int32_t(index));
     _bindlessTextures[int32_t(index)].reset();
     _bindlessTextureFreeList.push_back(index);
     _isBindlessTextureDirty = true;

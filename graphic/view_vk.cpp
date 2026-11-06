@@ -8,8 +8,6 @@
 #include <PilsCore/Gpu/Pass.h>
 #include <PilsCore/Gpu/Surface.h>
 
-#include "graphic.h"
-
 
 namespace unisim
 {

@@ -13,7 +13,6 @@
 
 #include "window.h"
 #include "view.h"
-#include "graphic.h"
 
 
 namespace unisim

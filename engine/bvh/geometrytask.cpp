@@ -186,43 +186,47 @@ bool GeometryTask::defineResources(GraphicContext& context)
 
 bool GeometryTask::definePathTracerModules(GraphicContext& context, std::vector<std::shared_ptr<PathTracerModule>>& modules)
 {
-    if(!addPathTracerModule(modules, "Instersection", context.settings, "shaders/common/intersection.glsl"))
+    if(!addPathTracerModule(
+            modules,
+            context,
+            "Instersection",
+            "shaders/common/intersection.glsl"))
         return false;
 
     return true;
 }
 
-bool GeometryTask::definePathTracerInterface(GraphicContext& context, GpuProgramInterfaceTemplate& gpiTemplate)
+bool GeometryTask::definePathTracerInterface(GraphicContext& context, ProgramInterfaceTemplate& piTemplate)
 {
     bool ok = true;
 
-    gpiTemplate.declareStorage({"Primitives"});
-    gpiTemplate.declareStorage({"Meshes"});
-    gpiTemplate.declareStorage({"Spheres"});
-    gpiTemplate.declareStorage({"Planes"});
-    gpiTemplate.declareStorage({"Instances"});
-    gpiTemplate.declareStorage({"BvhNodes"});
-    gpiTemplate.declareStorage({"Triangles"});
-    gpiTemplate.declareStorage({"VerticesPos"});
-    gpiTemplate.declareStorage({"VerticesData"});
+    piTemplate.declareStorage({"Primitives"});
+    piTemplate.declareStorage({"Meshes"});
+    piTemplate.declareStorage({"Spheres"});
+    piTemplate.declareStorage({"Planes"});
+    piTemplate.declareStorage({"Instances"});
+    piTemplate.declareStorage({"BvhNodes"});
+    piTemplate.declareStorage({"Triangles"});
+    piTemplate.declareStorage({"VerticesPos"});
+    piTemplate.declareStorage({"VerticesData"});
 
     return ok;
 }
 
 void GeometryTask::bindPathTracerResources(
     GraphicContext& context,
-    GpuProgramInterface& gpi) const
+    ProgramInterface& pi) const
 {
     GpuResourceManager& resources = context.resources;
-    gpi.setStorage("Primitives",    resources.get<GpuStorageResource>(ResourceName(Primitives)));
-    gpi.setStorage("Meshes",        resources.get<GpuStorageResource>(ResourceName(Meshes)));
-    gpi.setStorage("Spheres",       resources.get<GpuStorageResource>(ResourceName(Spheres)));
-    gpi.setStorage("Planes",        resources.get<GpuStorageResource>(ResourceName(Planes)));
-    gpi.setStorage("Instances",     resources.get<GpuStorageResource>(ResourceName(Instances)));
-    gpi.setStorage("BvhNodes",      resources.get<GpuStorageResource>(ResourceName(BvhNodes)));
-    gpi.setStorage("Triangles",     resources.get<GpuStorageResource>(ResourceName(Triangles)));
-    gpi.setStorage("VerticesPos",   resources.get<GpuStorageResource>(ResourceName(VerticesPos)));
-    gpi.setStorage("VerticesData",  resources.get<GpuStorageResource>(ResourceName(VerticesData)));
+    pi.setStorage("Primitives",    resources.get<GpuStorageResource>(ResourceName(Primitives)));
+    pi.setStorage("Meshes",        resources.get<GpuStorageResource>(ResourceName(Meshes)));
+    pi.setStorage("Spheres",       resources.get<GpuStorageResource>(ResourceName(Spheres)));
+    pi.setStorage("Planes",        resources.get<GpuStorageResource>(ResourceName(Planes)));
+    pi.setStorage("Instances",     resources.get<GpuStorageResource>(ResourceName(Instances)));
+    pi.setStorage("BvhNodes",      resources.get<GpuStorageResource>(ResourceName(BvhNodes)));
+    pi.setStorage("Triangles",     resources.get<GpuStorageResource>(ResourceName(Triangles)));
+    pi.setStorage("VerticesPos",   resources.get<GpuStorageResource>(ResourceName(VerticesPos)));
+    pi.setStorage("VerticesData",  resources.get<GpuStorageResource>(ResourceName(VerticesData)));
 }
 
 void GeometryTask::update(GraphicContext& context)

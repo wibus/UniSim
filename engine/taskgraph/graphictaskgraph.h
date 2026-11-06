@@ -37,6 +37,7 @@ private:
 
     GraphicSettings _settings;
     std::unique_ptr<GpuDevice> _device;
+    std::unique_ptr<ShaderBuilder> _shaders;
     std::unique_ptr<GpuResourceManager> _resources;
     std::vector<GraphicTaskPtr> _tasks;
     std::unique_ptr<ImGuiRenderer> _imGuiRenderer;

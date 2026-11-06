@@ -1,9 +1,9 @@
 #ifndef GRAPHICTASK_H
 #define GRAPHICTASK_H
 
-#include "../graphic/graphic.h"
+#include "../graphic/shader.h"
 #include "../graphic/gpuresource.h"
-#include "../graphic/gpuprograminterface.h"
+#include "../graphic/programinterface.h"
 
 
 namespace unisim
@@ -30,6 +30,7 @@ struct GraphicContext
     const Scene& scene;
     const Camera& camera;
 
+    ShaderBuilder& shaders;
     GpuResourceManager& resources;
     const GraphicSettings& settings;
 };

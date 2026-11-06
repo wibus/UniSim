@@ -200,10 +200,10 @@ public:
         std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
     bool definePathTracerInterface(
         GraphicContext& context,
-        GpuProgramInterfaceTemplate& gpiTemplate) override;
+        ProgramInterfaceTemplate& piTemplate) override;
     void bindPathTracerResources(
         GraphicContext& context,
-        GpuProgramInterface& gpi) const override;
+        ProgramInterface& pi) const override;
 
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
@@ -216,7 +216,7 @@ private:
 
     struct PrecomputeSubPass
     {
-        GraphicProgramPtr program;
+        ProgramPtr program;
         GpuProgramInterfacePtr interface;
     };
 

@@ -37,9 +37,9 @@ class Descriptor;
 namespace unisim
 {
 
-class GpuProgramInterfaceTemplate;
-class GpuProgramInterface;
-class GraphicProgram;
+class ProgramInterfaceTemplate;
+class ProgramInterface;
+class Program;
 class GpuDevice;
 class View;
 class GpuResourceManager;
@@ -338,10 +338,10 @@ public:
     template<typename Resource>
     const Resource& get(ResourceId id) const;
 
-    const GpuProgramInterfaceTemplate& persistentGpiTemplate() const { return *_persistentGpiTemplate; }
-    const GpuProgramInterfaceTemplate& frameGpiTemplate() const { return *_frameGpiTemplate; }
+    const ProgramInterfaceTemplate& persistentPiTemplate() const { return *_persistentPiTemplate; }
+    const ProgramInterfaceTemplate& framePiTemplate() const { return *_framePiTemplate; }
 
-    bool compileAndSetPassGpi(const GraphicProgram& program);
+    bool compileAndSetPassPi(const Program& program);
 
     const std::vector<std::shared_ptr<GpuBindlessTexture>>& bindlessTextures() { return _bindlessTextures; }
     BindlessTextureIndex registerBindlessTexture(const GpuTextureResource& textureResource, const Texture& texture);
@@ -360,11 +360,11 @@ private:
 
     std::vector<std::shared_ptr<GpuResource>> _resources;
 
-    std::shared_ptr<GpuProgramInterfaceTemplate> _persistentGpiTemplate;
-    std::shared_ptr<GpuProgramInterface> _persistentGpi;
+    std::shared_ptr<ProgramInterfaceTemplate> _persistentPiTemplate;
+    std::shared_ptr<ProgramInterface> _persistentPi;
 
-    std::shared_ptr<GpuProgramInterfaceTemplate> _frameGpiTemplate;
-    std::shared_ptr<GpuProgramInterface> _frameGpi;
+    std::shared_ptr<ProgramInterfaceTemplate> _framePiTemplate;
+    std::shared_ptr<ProgramInterface> _framePi;
 
     bool _isBindlessTextureDirty;
     std::vector<BindlessTextureIndex> _bindlessTextureFreeList;

@@ -1,6 +1,6 @@
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
 
-#include "gpuprograminterface.h"
+#include "programinterface.h"
 
 #include <PilsCore/Utils/Assert.h>
 
@@ -9,7 +9,6 @@
 #include <PilsCore/Gpu/Layout.h>
 #include <PilsCore/Gpu/Synchronization.h>
 
-#include "graphic.h"
 #include "gpuresource.h"
 #include "gpudevice.h"
 
@@ -18,7 +17,7 @@ namespace unisim
 {
 
 // Template //
-GpuProgramInterfaceTemplate::GpuProgramInterfaceTemplate(ProgramType programType) :
+ProgramInterfaceTemplate::ProgramInterfaceTemplate(ProgramType programType) :
     _programType(programType),
     _setIndex(0),
     _nextBinding(0),
@@ -28,7 +27,7 @@ GpuProgramInterfaceTemplate::GpuProgramInterfaceTemplate(ProgramType programType
 {
 }
 
-GpuProgramInterfaceTemplate::GpuProgramInterfaceTemplate(ProgramType programType, const GpuProgramInterfaceTemplate& parent) :
+ProgramInterfaceTemplate::ProgramInterfaceTemplate(ProgramType programType, const ProgramInterfaceTemplate& parent) :
     _programType(programType),
     _setIndex(parent._setIndex+1),
     _nextBinding(0),
@@ -38,42 +37,42 @@ GpuProgramInterfaceTemplate::GpuProgramInterfaceTemplate(ProgramType programType
 {
 }
 
-void GpuProgramInterfaceTemplate::declareBindless(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareBindless(const std::string& name, uint32_t descriptorCount)
 {
     _isSetLayoutDirty = true;
     _bindless.push_back({name, std::make_unique<pils::gpu::DescriptorBinding>(
         _nextBinding++, descriptorCount, pils::gpu::DescriptorType::ImageSampler, _shaderStages, true)});
 }
 
-void GpuProgramInterfaceTemplate::declareConstant(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareConstant(const std::string& name, uint32_t descriptorCount)
 {
     _isSetLayoutDirty = true;
     _constants.push_back({name, std::make_unique<pils::gpu::DescriptorBinding>(
         _nextBinding++, descriptorCount, pils::gpu::DescriptorType::Constant, _shaderStages)});
 }
 
-void GpuProgramInterfaceTemplate::declareStorage(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareStorage(const std::string& name, uint32_t descriptorCount)
 {
     _isSetLayoutDirty = true;
     _storages.push_back({name, std::make_unique<pils::gpu::DescriptorBinding>(
         _nextBinding++, descriptorCount, pils::gpu::DescriptorType::Storage, _shaderStages)});
 }
 
-void GpuProgramInterfaceTemplate::declareTexture(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareTexture(const std::string& name, uint32_t descriptorCount)
 {
     _isSetLayoutDirty = true;
     _textures.push_back({name, std::make_unique<pils::gpu::DescriptorBinding>(
         _nextBinding++, descriptorCount, pils::gpu::DescriptorType::ImageSampler, _shaderStages)});
 }
 
-void GpuProgramInterfaceTemplate::declareImage(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareImage(const std::string& name, uint32_t descriptorCount)
 {
     _isSetLayoutDirty = true;
     _images.push_back({name, std::make_unique<pils::gpu::DescriptorBinding>(
         _nextBinding++, descriptorCount, pils::gpu::DescriptorType::Image, _shaderStages)});
 }
 
-std::shared_ptr<pils::gpu::DescriptorSetLayout> GpuProgramInterfaceTemplate::computeSetLayout(const GpuDevice& gpuDevice) const
+std::shared_ptr<pils::gpu::DescriptorSetLayout> ProgramInterfaceTemplate::computeSetLayout(const GpuDevice& gpuDevice) const
 {
     if (_cachedSetLayout && !_isSetLayoutDirty)
         return _cachedSetLayout;
@@ -104,15 +103,15 @@ std::shared_ptr<pils::gpu::DescriptorSetLayout> GpuProgramInterfaceTemplate::com
     return _cachedSetLayout;
 }
 
-std::shared_ptr<pils::gpu::PipelineLayout> GpuProgramInterfaceTemplate::computePipelineLayout(const GpuDevice& gpuDevice) const
+std::shared_ptr<pils::gpu::PipelineLayout> ProgramInterfaceTemplate::computePipelineLayout(const GpuDevice& gpuDevice) const
 {
     std::vector<std::shared_ptr<pils::gpu::DescriptorSetLayout>> descriptorLayouts(_setIndex + 1);
 
-    const GpuProgramInterfaceTemplate* gpiTemplate = this;
-    while(gpiTemplate != nullptr)
+    const ProgramInterfaceTemplate* piTemplate = this;
+    while(piTemplate != nullptr)
     {
-        descriptorLayouts[gpiTemplate->setIndex()] = gpiTemplate->computeSetLayout(gpuDevice);
-        gpiTemplate = gpiTemplate->_parent;
+        descriptorLayouts[piTemplate->setIndex()] = piTemplate->computeSetLayout(gpuDevice);
+        piTemplate = piTemplate->_parent;
     }
 
     const pils::gpu::Device& device = gpuDevice.context().device();
@@ -124,42 +123,42 @@ std::shared_ptr<pils::gpu::PipelineLayout> GpuProgramInterfaceTemplate::computeP
 
 // Interface //
 
-GpuProgramInterface::GpuProgramInterface(const GpuDevice& gpuDevice, const GpuProgramInterfaceTemplate& gpiTemplate) :
-    _programType(gpiTemplate.programType()),
+ProgramInterface::ProgramInterface(const GpuDevice& gpuDevice, const ProgramInterfaceTemplate& piTemplate) :
+    _programType(piTemplate.programType()),
     _isDescriptorSetDirty(true)
 {
-    _setIndex = gpiTemplate.setIndex();
-    _layout = gpiTemplate.computeSetLayout(gpuDevice);
+    _setIndex = piTemplate.setIndex();
+    _layout = piTemplate.computeSetLayout(gpuDevice);
 
-    for(const auto& binding : gpiTemplate.bindless())
+    for(const auto& binding : piTemplate.bindless())
     {
         auto& data = _bindlessData[binding.name];
         data.binding = binding;
         data.descriptors.resize(binding.binding->vkBinding().descriptorCount);
     }
 
-    for(const auto& binding : gpiTemplate.constants())
+    for(const auto& binding : piTemplate.constants())
     {
         auto& data = _constantData[binding.name];
         data.binding = binding;
         data.descriptors.resize(binding.binding->vkBinding().descriptorCount);
     }
 
-    for(const auto& binding : gpiTemplate.storages())
+    for(const auto& binding : piTemplate.storages())
     {
         auto& data = _storageData[binding.name];
         data.binding = binding;
         data.descriptors.resize(binding.binding->vkBinding().descriptorCount);
     }
 
-    for(const auto& binding : gpiTemplate.textures())
+    for(const auto& binding : piTemplate.textures())
     {
         auto& data = _textureData[binding.name];
         data.binding = binding;
         data.descriptors.resize(binding.binding->vkBinding().descriptorCount);
     }
 
-    for(const auto& binding : gpiTemplate.images())
+    for(const auto& binding : piTemplate.images())
     {
         auto& data = _imageData[binding.name];
         data.binding = binding;
@@ -167,12 +166,12 @@ GpuProgramInterface::GpuProgramInterface(const GpuDevice& gpuDevice, const GpuPr
     }
 }
 
-GpuProgramInterface::~GpuProgramInterface()
+ProgramInterface::~ProgramInterface()
 {
     PILS_ASSERT(false, "Not implemented!");
 }
 
-void GpuProgramInterface::setBindless(const std::string& name, const GpuBindlessTexture& resource, uint32_t arrayIndex)
+void ProgramInterface::setBindless(const std::string& name, const GpuBindlessTexture& resource, uint32_t arrayIndex)
 {
     auto dataIt = _bindlessData.find(name);
     if (dataIt == _bindlessData.end())
@@ -195,7 +194,7 @@ void GpuProgramInterface::setBindless(const std::string& name, const GpuBindless
     }
 }
 
-void GpuProgramInterface::setConstant(const std::string& name, const GpuConstantResource& resource, uint32_t arrayIndex)
+void ProgramInterface::setConstant(const std::string& name, const GpuConstantResource& resource, uint32_t arrayIndex)
 {
     auto dataIt = _constantData.find(name);
     if (dataIt == _constantData.end())
@@ -218,7 +217,7 @@ void GpuProgramInterface::setConstant(const std::string& name, const GpuConstant
     }
 }
 
-void GpuProgramInterface::setStorage(const std::string& name, const GpuStorageResource& resource, uint32_t arrayIndex)
+void ProgramInterface::setStorage(const std::string& name, const GpuStorageResource& resource, uint32_t arrayIndex)
 {
     auto dataIt = _storageData.find(name);
     if (dataIt == _storageData.end())
@@ -241,7 +240,7 @@ void GpuProgramInterface::setStorage(const std::string& name, const GpuStorageRe
     }
 }
 
-void GpuProgramInterface::setTexture(const std::string& name, const GpuTextureResource& resource, uint32_t arrayIndex)
+void ProgramInterface::setTexture(const std::string& name, const GpuTextureResource& resource, uint32_t arrayIndex)
 {
     auto dataIt = _textureData.find(name);
     if (dataIt == _textureData.end())
@@ -264,7 +263,7 @@ void GpuProgramInterface::setTexture(const std::string& name, const GpuTextureRe
     }
 }
 
-void GpuProgramInterface::setTexture(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex)
+void ProgramInterface::setTexture(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex)
 {
     auto dataIt = _textureData.find(name);
     if (dataIt == _textureData.end())
@@ -290,7 +289,7 @@ void GpuProgramInterface::setTexture(const std::string& name, const GpuImageReso
     }
 }
 
-void GpuProgramInterface::setImage(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex)
+void ProgramInterface::setImage(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex)
 {
     auto dataIt = _imageData.find(name);
     if (dataIt == _imageData.end())
@@ -313,7 +312,7 @@ void GpuProgramInterface::setImage(const std::string& name, const GpuImageResour
     }
 }
 
-bool GpuProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const GraphicProgram& program)
+bool ProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const Program& program)
 {
     bool isCompatible = (uint32_t(program.type()) & uint32_t(_programType)) == uint32_t(program.type());
     PILS_ASSERT(isCompatible, "This program interface cannot be used with program ", program.name());
@@ -381,7 +380,7 @@ bool GpuProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const Graphi
     return ok;
 }
 
-void GpuProgramInterface::recycleDescriptorSet(const GpuDevice& gpuDevice)
+void ProgramInterface::recycleDescriptorSet(const GpuDevice& gpuDevice)
 {
     const pils::gpu::Device& device = gpuDevice.context().device();
 

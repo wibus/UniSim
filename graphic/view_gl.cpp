@@ -2,7 +2,7 @@
 
 #include "view.h"
 
-#include "graphic.h"
+#include <GL/glew.h>
 
 
 namespace unisim

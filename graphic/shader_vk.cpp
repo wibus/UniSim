@@ -1,44 +1,44 @@
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
 
-#include <iostream>
+#include <shaderc/shaderc.hpp>
 
 #include <PilsCore/Utils/Assert.h>
 
 #include <PilsCore/Gpu/Enums.h>
 
-#include "graphic.h"
+#include "shader.h"
 
 
 namespace unisim
 {
 
-GraphicShaderHandle::GraphicShaderHandle(GraphicShaderHandle&& other)
+ShaderHandle::ShaderHandle(ShaderHandle&& other)
 {
     PILS_ASSERT(false, "Not implemented!");
 }
 
-GraphicShaderHandle::~GraphicShaderHandle()
+ShaderHandle::~ShaderHandle()
 {
     PILS_ASSERT(false, "Not implemented!");
 }
 
-GraphicShader::GraphicShader(const std::string& name, ShaderType shaderType, GraphicShaderHandle&& handle)
+Shader::Shader(const std::string& name, ShaderType shaderType, ShaderHandle&& handle)
 {
     PILS_ASSERT(false, "Not implemented!");
 }
 
-GraphicShader::~GraphicShader()
+Shader::~Shader()
 {
     PILS_ASSERT(false, "Not implemented!");
 }
 
 
-GraphicProgramHandle::GraphicProgramHandle(GraphicProgramHandle&& other)
+ProgramHandle::ProgramHandle(ProgramHandle&& other)
 {
     PILS_ASSERT(false, "Not implemented!");
 }
 
-GraphicProgramHandle::~GraphicProgramHandle()
+ProgramHandle::~ProgramHandle()
 {
     PILS_ASSERT(false, "Not implemented!");
 }
@@ -71,37 +71,48 @@ pils::gpu::ShaderStage toShaderStage(ProgramType programType)
     return pils::gpu::ShaderStage(stageBits);
 }
 
-GraphicProgram::GraphicProgram(
+
+Program::Program(
         const GpuDevice& gpuDevice,
-        const GpuProgramInterfaceTemplate& gpiTemplate,
+        const ProgramInterfaceTemplate& piTemplate,
         ProgramType type,
         const std::string& name,
-        GraphicProgramHandle&& programHandle,
-        const std::vector<std::shared_ptr<GraphicShader>>& shaders) :
+        ProgramHandle&& programHandle,
+        const std::vector<std::shared_ptr<Shader>>& shaders) :
         _type(type),
         _name(name)
 {
     PILS_ASSERT(false, "Not implemented!");
 }
 
-GraphicProgram::~GraphicProgram()
+Program::~Program()
 {
     PILS_ASSERT(false, "Not implemented!");
 
 }
 
-GraphicProgramScope::GraphicProgramScope(const GraphicProgram& program)
+
+ProgramScope::ProgramScope(const Program& program)
 {
     PILS_ASSERT(false, "Not implemented!");
 }
 
-GraphicProgramScope::~GraphicProgramScope()
+ProgramScope::~ProgramScope()
 {
     PILS_ASSERT(false, "Not implemented!");
 }
 
-bool generateShader(
-    std::shared_ptr<GraphicShader>& shader,
+
+ShaderBuilder::ShaderBuilder()
+{
+}
+
+ShaderBuilder::~ShaderBuilder()
+{
+}
+
+bool ShaderBuilder::generateShader(
+    std::shared_ptr<Shader>& shader,
     ShaderType shaderType,
     const std::string& shaderName,
     const std::vector<std::string>& srcs,
@@ -111,10 +122,10 @@ bool generateShader(
     return true;
 }
 
-bool generateGraphicProgram(
+bool ShaderBuilder::generateGraphicProgram(
     const GpuDevice& gpuDevice,
-    const GpuProgramInterfaceTemplate& gpiTemplate,
-    GraphicProgramPtr& program,
+    const ProgramInterfaceTemplate& piTemplate,
+    ProgramPtr& program,
     const std::string& name,
     const std::string& vertexFileName,
     const std::string& fragmentFileName,
@@ -124,10 +135,10 @@ bool generateGraphicProgram(
     return true;
 }
 
-bool generateComputeProgram(
+bool ShaderBuilder::generateComputeProgram(
     const GpuDevice& gpuDevice,
-    const GpuProgramInterfaceTemplate& gpiTemplate,
-    GraphicProgramPtr& program,
+    const ProgramInterfaceTemplate& piTemplate,
+    ProgramPtr& program,
     const std::string& name,
     const std::string& computeFileName,
     const std::vector<std::string>& defines)
@@ -136,12 +147,12 @@ bool generateComputeProgram(
     return true;
 }
 
-bool generateComputeProgram(
+bool ShaderBuilder::generateComputeProgram(
     const GpuDevice& gpuDevice,
-    const GpuProgramInterfaceTemplate& gpiTemplate,
-    GraphicProgramPtr& program,
+    const ProgramInterfaceTemplate& piTemplate,
+    ProgramPtr& program,
     const std::string& name,
-    const std::vector<std::shared_ptr<GraphicShader>>& shaders)
+    const std::vector<std::shared_ptr<Shader>>& shaders)
 {
     PILS_ASSERT(false, "Not implemented!");
     return true;

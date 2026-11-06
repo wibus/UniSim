@@ -359,7 +359,7 @@ GpuBindlessTexture::~GpuBindlessTexture()
 
 // MANAGER //
 
-bool GpuResourceManager::compileAndSetPassGpi(const GraphicProgram& program)
+bool GpuResourceManager::compileAndSetPassPi(const Program& program)
 {
     bool ok = true;
     return ok;

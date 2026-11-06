@@ -1,4 +1,4 @@
-#include "graphic.h"
+#include "shader.h"
 
 #include <fstream>
 #include <iostream>
@@ -11,7 +11,7 @@ const std::string GLSL_VERSION__HEADER = "#version 440\n";
 std::string g_GlslExtensions;
 
 
-std::string loadSource(const std::string& fileName)
+std::string ShaderBuilder::loadSource(const std::string& fileName)
 {
     std::ifstream t(fileName);
 
@@ -26,8 +26,8 @@ std::string loadSource(const std::string& fileName)
     return str;
 }
 
-bool generateVertexShader(
-    std::shared_ptr<GraphicShader>& shader,
+bool ShaderBuilder::generateVertexShader(
+    std::shared_ptr<Shader>& shader,
     const std::string& fileName,
     const std::vector<std::string>& defines)
 {
@@ -35,8 +35,8 @@ bool generateVertexShader(
     return generateShader(shader, ShaderType::Vertex, fileName, {src}, defines);
 }
 
-bool generateFragmentShader(
-    std::shared_ptr<GraphicShader>& shader,
+bool ShaderBuilder::generateFragmentShader(
+    std::shared_ptr<Shader>& shader,
     const std::string& fileName,
     const std::vector<std::string>& defines)
 {
@@ -44,8 +44,8 @@ bool generateFragmentShader(
     return generateShader(shader, ShaderType::Fragment, fileName, {src}, defines);
 }
 
-bool generateComputerShader(
-    std::shared_ptr<GraphicShader>& shader,
+bool ShaderBuilder::generateComputerShader(
+    std::shared_ptr<Shader>& shader,
     const std::string& fileName,
     const std::vector<std::string>& defines)
 {

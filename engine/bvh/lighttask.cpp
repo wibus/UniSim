@@ -83,23 +83,23 @@ bool LightTask::defineResources(GraphicContext& context)
 
 bool LightTask::definePathTracerInterface(
     GraphicContext& context,
-    GpuProgramInterfaceTemplate& gpiTemplate)
+    ProgramInterfaceTemplate& piTemplate)
 {
     bool ok = true;
 
-    gpiTemplate.declareStorage({"Emitters"});
-    gpiTemplate.declareStorage({"DirectionalLights"});
+    piTemplate.declareStorage({"Emitters"});
+    piTemplate.declareStorage({"DirectionalLights"});
 
     return ok;
 }
 
 void LightTask::bindPathTracerResources(
     GraphicContext &context,
-    GpuProgramInterface& gpi) const
+    ProgramInterface& pi) const
 {
     GpuResourceManager& resources = context.resources;
-    gpi.setStorage("Emitters", resources.get<GpuStorageResource>(ResourceName(Emitters)));
-    gpi.setStorage("DirectionalLights", resources.get<GpuStorageResource>(ResourceName(DirectionalLights)));
+    pi.setStorage("Emitters", resources.get<GpuStorageResource>(ResourceName(Emitters)));
+    pi.setStorage("DirectionalLights", resources.get<GpuStorageResource>(ResourceName(DirectionalLights)));
 }
 
 void LightTask::update(GraphicContext& context)

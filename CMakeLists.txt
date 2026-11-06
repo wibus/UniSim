@@ -85,18 +85,18 @@ set(GraphicFiles
     graphic/gpudevice.cpp
     graphic/gpudevice_gl.cpp
     graphic/gpudevice_vk.cpp
-    graphic/gpuprograminterface.h
-    graphic/gpuprograminterface.cpp
-    graphic/gpuprograminterface_gl.cpp
-    graphic/gpuprograminterface_vk.cpp
+    graphic/programinterface.h
+    graphic/programinterface.cpp
+    graphic/programinterface_gl.cpp
+    graphic/programinterface_vk.cpp
     graphic/gpuresource.h
     graphic/gpuresource.cpp
     graphic/gpuresource_gl.cpp
     graphic/gpuresource_vk.cpp
-    graphic/graphic.h
-    graphic/graphic.cpp
-    graphic/graphic_gl.cpp
-    graphic/graphic_vk.cpp
+    graphic/shader.h
+    graphic/shader.cpp
+    graphic/shader_gl.cpp
+    graphic/shader_vk.cpp
     graphic/imguirenderer.h
     graphic/imguirenderer.cpp
     graphic/imguirenderer_gl.cpp

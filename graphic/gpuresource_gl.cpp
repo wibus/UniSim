@@ -2,7 +2,7 @@
 
 #include "gpuresource.h"
 
-#include "gpuprograminterface.h"
+#include "programinterface.h"
 
 #include "../resource/texture.h"
 
@@ -309,11 +309,11 @@ void GpuResourceManager::commitAllocations()
 {
 }
 
-bool GpuResourceManager::compileAndSetPassGpi(const GraphicProgram& program)
+bool GpuResourceManager::compileAndSetPassPi(const Program& program)
 {
     bool ok = true;
-    ok = ok && _persistentGpi->compileAndSet(_gpuDevice, program);
-    ok = ok && _frameGpi->compileAndSet(_gpuDevice, program);
+    ok = ok && _persistentPi->compileAndSet(_gpuDevice, program);
+    ok = ok && _framePi->compileAndSet(_gpuDevice, program);
     return ok;
 }
 

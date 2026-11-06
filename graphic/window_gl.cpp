@@ -6,8 +6,6 @@
 
 #include <PilsCore/Utils/Assert.h>
 
-#include "graphic.h"
-
 
 namespace unisim
 {

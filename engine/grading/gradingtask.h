@@ -17,8 +17,8 @@ public:
     void render(GraphicContext& context) override;
 
 private:
-    GraphicProgramPtr _colorGradingProgram;
-    GpuProgramInterfacePtr _colorGradingGpi;
+    ProgramPtr _colorGradingProgram;
+    GpuProgramInterfacePtr _colorGradingPi;
 };
 
 }

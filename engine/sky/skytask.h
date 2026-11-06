@@ -23,10 +23,10 @@ public:
         std::vector<std::shared_ptr<PathTracerModule>>& modules) override;
     bool definePathTracerInterface(
         GraphicContext& context,
-        GpuProgramInterfaceTemplate& gpiTemplate) override;
+        ProgramInterfaceTemplate& piTemplate) override;
     void bindPathTracerResources(
         GraphicContext& context,
-        GpuProgramInterface& gpi) const override;
+        ProgramInterface& pi) const override;
 
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
@@ -49,8 +49,8 @@ private:
         glm::mat4 _moonTransform;
         glm::vec4 _moonQuaternion;
 
-        GraphicProgramPtr _moonLightProgram;
-        GpuProgramInterfacePtr _moonLightGpi;
+        ProgramPtr _moonLightProgram;
+        GpuProgramInterfacePtr _moonLightPi;
 
         int _moonTexSize;
         std::unique_ptr<Texture> _moonAlbedo;

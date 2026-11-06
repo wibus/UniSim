@@ -12,7 +12,6 @@
 #include "../system/profiler.h"
 #include "../system/units.h"
 
-#include "../graphic/graphic.h"
 #include "../graphic/gpudevice.h"
 
 #include "../resource/body.h"
@@ -130,15 +129,20 @@ bool SkyTask::defineShaders(GraphicContext& context)
 {
     if (_atmosphereRenderState)
     {
-        GpuProgramInterfaceTemplate gpiTemplate(ProgramType::Compute);
-        gpiTemplate.declareConstant({"MoonLightParams"});
-        gpiTemplate.declareTexture({"MoonAlbedo"});
-        gpiTemplate.declareImage({"MoonLighting"});
+        ProgramInterfaceTemplate piTemplate(ProgramType::Compute);
+        piTemplate.declareConstant({"MoonLightParams"});
+        piTemplate.declareTexture({"MoonAlbedo"});
+        piTemplate.declareImage({"MoonLighting"});
 
-        _atmosphereRenderState->_moonLightGpi.reset(new GpuProgramInterface(context.device, gpiTemplate));
+        _atmosphereRenderState->_moonLightPi.reset(new ProgramInterface(context.device, piTemplate));
 
         _atmosphereRenderState->_moonLightProgram.reset();
-        if(!generateComputeProgram(context.device, gpiTemplate, _atmosphereRenderState->_moonLightProgram, "Moon Light", "shaders/moonlight.glsl"))
+        if(!context.shaders.generateComputeProgram(
+                context.device,
+                piTemplate,
+                _atmosphereRenderState->_moonLightProgram,
+                "Moon Light",
+                "shaders/moonlight.glsl"))
             return false;
 
         if(!_atmosphereRenderState->_model->defineShaders(context))
@@ -154,7 +158,11 @@ bool SkyTask::definePathTracerModules(
 {
     if (_atmosphereRenderState)
     {
-        if(!addPathTracerModule(modules, "Atmospheric Sky", context.settings, "shaders/atmosphericsky.glsl"))
+        if(!addPathTracerModule(
+                modules,
+                context,
+                "Atmospheric Sky",
+                "shaders/atmosphericsky.glsl"))
             return false;
 
         if(!_atmosphereRenderState->_model->definePathTracerModules(context, modules))
@@ -162,7 +170,11 @@ bool SkyTask::definePathTracerModules(
     }
     else
     {
-        if(!addPathTracerModule(modules, "Outerspace Sky", context.settings, "shaders/outerspacesky.glsl"))
+        if(!addPathTracerModule(
+                modules,
+                context,
+                "Outerspace Sky",
+                "shaders/outerspacesky.glsl"))
             return false;
     }
 
@@ -171,19 +183,19 @@ bool SkyTask::definePathTracerModules(
 
 bool SkyTask::definePathTracerInterface(
     GraphicContext& context,
-    GpuProgramInterfaceTemplate& gpiTemplate)
+    ProgramInterfaceTemplate& piTemplate)
 {
     bool ok = true;
 
-    gpiTemplate.declareConstant({"StarsParams"});
-    gpiTemplate.declareTexture({"Stars"});
+    piTemplate.declareConstant({"StarsParams"});
+    piTemplate.declareTexture({"Stars"});
 
     if (_atmosphereRenderState)
     {
-        gpiTemplate.declareConstant({"AtmosphereParams"});
-        gpiTemplate.declareTexture({"Moon"});
+        piTemplate.declareConstant({"AtmosphereParams"});
+        piTemplate.declareTexture({"Moon"});
 
-        ok = ok && _atmosphereRenderState->_model->definePathTracerInterface(context, gpiTemplate);
+        ok = ok && _atmosphereRenderState->_model->definePathTracerInterface(context, piTemplate);
     }
 
     return ok;
@@ -191,18 +203,18 @@ bool SkyTask::definePathTracerInterface(
 
 void SkyTask::bindPathTracerResources(
     GraphicContext& context,
-    GpuProgramInterface& gpi) const
+    ProgramInterface& pi) const
 {
     GpuResourceManager& resources = context.resources;
-    gpi.setConstant("StarsParams", resources.get<GpuConstantResource>(ResourceName(StarsParams)));
-    gpi.setTexture("Stars", resources.get<GpuTextureResource>(ResourceName(Stars)));
+    pi.setConstant("StarsParams", resources.get<GpuConstantResource>(ResourceName(StarsParams)));
+    pi.setTexture("Stars", resources.get<GpuTextureResource>(ResourceName(Stars)));
 
     if (_atmosphereRenderState)
     {
-        gpi.setConstant("AtmosphereParams", resources.get<GpuConstantResource>(ResourceName(AtmosphereParams)));
-        gpi.setTexture("Moon", resources.get<GpuImageResource>(ResourceName(MoonLighting)));
+        pi.setConstant("AtmosphereParams", resources.get<GpuConstantResource>(ResourceName(AtmosphereParams)));
+        pi.setTexture("Moon", resources.get<GpuImageResource>(ResourceName(MoonLighting)));
 
-        _atmosphereRenderState->_model->bindPathTracerResources(context, gpi);
+        _atmosphereRenderState->_model->bindPathTracerResources(context, pi);
     }
 }
 
@@ -298,15 +310,15 @@ void SkyTask::render(GraphicContext& context)
 
         GpuResourceManager& resources = context.resources;
 
-        GpuProgramInterface& gpi = *_atmosphereRenderState->_moonLightGpi;
-        gpi.setConstant("MoonLightParams", resources.get<GpuConstantResource>(ResourceName(MoonLightParams)));
-        gpi.setTexture("MoonAlbedo", resources.get<GpuTextureResource>(ResourceName(MoonAlbedo)));
-        gpi.setImage("MoonLighting", resources.get<GpuImageResource>(ResourceName(MoonLighting)));
+        ProgramInterface& pi = *_atmosphereRenderState->_moonLightPi;
+        pi.setConstant("MoonLightParams", resources.get<GpuConstantResource>(ResourceName(MoonLightParams)));
+        pi.setTexture("MoonAlbedo", resources.get<GpuTextureResource>(ResourceName(MoonAlbedo)));
+        pi.setImage("MoonLighting", resources.get<GpuImageResource>(ResourceName(MoonLighting)));
 
-        if (!gpi.compileAndSet(context.device, *_atmosphereRenderState->_moonLightProgram))
+        if (!pi.compileAndSet(context.device, *_atmosphereRenderState->_moonLightProgram))
             return;
 
-        GraphicProgramScope programScope(*_atmosphereRenderState->_moonLightProgram);
+        ProgramScope programScope(*_atmosphereRenderState->_moonLightProgram);
         context.device.dispatch(_atmosphereRenderState->_moonTexSize / 8,
                                 _atmosphereRenderState->_moonTexSize / 8);
 

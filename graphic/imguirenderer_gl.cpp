@@ -4,7 +4,7 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 
-#include "graphic.h"
+#include "shader.h"
 #include "window.h"
 #include "view.h"
 

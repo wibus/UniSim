@@ -3,7 +3,7 @@
 #include "gpudevice.h"
 
 #include "gpuresource.h"
-#include "gpuprograminterface.h"
+#include "programinterface.h"
 
 
 namespace unisim
