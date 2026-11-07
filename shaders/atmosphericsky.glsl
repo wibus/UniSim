@@ -111,7 +111,7 @@ vec3 SampleDirectionalLightLuminance(vec3 viewDir, uint lightId)
     else if(lightId == 1)
     {
         vec3 offset = rotate(moonQuaternion, viewDir);
-        double maxCos = 1 - directionalLights[lightId].emissionSolidAngle.a / (2 * PI);
+        double maxCos = 1 - directionalLights[lightId].emissionSolidAngle.a / (2 * C_PI);
         double maxSin = sqrt(1 - maxCos * maxCos);
         vec2 uv = (offset.xy / float(maxSin)) * 0.5 + 0.5;
         return texture(Moon, uv).rgb;

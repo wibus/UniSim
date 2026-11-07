@@ -103,7 +103,7 @@ vec2 findUV(vec3 N)
 {
     float theta = atan(N.y, N.x);
     float phi = asin(N.z);
-    return vec2(fract(theta / (2 * PI) + 0.5), phi / PI + 0.5);
+    return vec2(fract(theta / (2 * C_PI) + 0.5), phi / C_PI + 0.5);
 }
 
 vec2 findUV(vec4 quat, vec3 N)
@@ -164,7 +164,7 @@ float misHeuristic(int nf, float fPdf, int ng, float gPdf)
 // Also used for Lambert BRDF
 float cosineHemispherePdf(float cosTheta)
 {
-    return cosTheta / PI;
+    return cosTheta / C_PI;
 }
 
 // Specular BSDF
@@ -178,7 +178,7 @@ vec3 fresnel(float HdotV, vec3 F0)
 
 float ggxNDF(float a2, float NdotH)
 {
-    return a2 / (PI * sqr(NdotH*NdotH * (a2-1) + 1));
+    return a2 / (C_PI * sqr(NdotH*NdotH * (a2-1) + 1));
 }
 
 float ggxSmithG1(float a2, float NoV)
@@ -214,7 +214,7 @@ vec3 sampleGGXVNDF(vec3 V_, float alpha_x, float alpha_y, float U1, float U2)
     // sample point with polar coordinates (r, phi)
     float a = 1.0 / (1.0 + V.z);
     float r = sqrt(U1);
-    float phi = (U2<a) ? U2/a * PI : PI + (U2-a)/(1.0-a) * PI;
+    float phi = (U2<a) ? U2/a * C_PI : C_PI + (U2-a)/(1.0-a) * C_PI;
     float P1 = r*cos(phi);
     float P2 = r*sin(phi)*((U2<a) ? 1.0 : V.z);
 
@@ -229,7 +229,7 @@ vec3 sampleGGXVNDF(vec3 V_, float alpha_x, float alpha_y, float U1, float U2)
 
 vec3 sampleCosineHemisphere(float U1, float U2)
 {
-    float angle = U1 * 2 * PI;
+    float angle = U1 * 2 * C_PI;
     float radius = sqrt(U2);
     vec2 xy = vec2(cos(angle), sin(angle)) * radius;
     float z = sqrt(max(0, 1 - radius * radius));
@@ -238,7 +238,7 @@ vec3 sampleCosineHemisphere(float U1, float U2)
 
 vec3 sampleUniformCone(float U1, float U2, float cosThetaMax)
 {
-    float phi = U2 * 2 * PI;
+    float phi = U2 * 2 * C_PI;
     float cosTheta = (1 - U1) + U1 * cosThetaMax;
     float sinTheta = sqrt(1 - cosTheta * cosTheta);
     return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
@@ -247,6 +247,6 @@ vec3 sampleUniformCone(float U1, float U2, float cosThetaMax)
 vec2 sampleUniformDisk(float U1, float U2)
 {
     float r = sqrt(U1);
-    float a = U2 * 2 * PI;
+    float a = U2 * 2 * C_PI;
     return vec2(cos(a), sin(a)) * r;
 }

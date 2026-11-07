@@ -7,6 +7,7 @@
 #include "../system/profiler.h"
 #include "../system/random.h"
 
+#include "../resource/primitive.h"
 #include "../resource/texture.h"
 
 #include "../graphic/gpudevice.h"
@@ -129,6 +130,39 @@ bool PathTracerTask::defineResources(GraphicContext& context)
 bool PathTracerTask::defineShaders(GraphicContext& context)
 {
     _pathTracerModules.clear();
+
+    // Define common files
+    if(!addPathTracerModule(
+            _pathTracerModules,
+            "Constants",
+            "shaders/common/constants.glsl"))
+        return false;
+
+    if(!addPathTracerModule(
+            _pathTracerModules,
+            "Data",
+            "shaders/common/data.glsl"))
+        return false;
+
+    if(!addPathTracerModule(
+            _pathTracerModules,
+            "Inputs",
+            "shaders/common/inputs.glsl"))
+        return false;
+
+    if(!addPathTracerModule(
+            _pathTracerModules,
+            "Signatures",
+            "shaders/common/signatures.glsl"))
+        return false;
+
+    if(!addPathTracerModule(
+            _pathTracerModules,
+            "Utils",
+            "shaders/common/utils.glsl"))
+        return false;
+
+    // Gather modules
     ProgramInterfaceTemplate pathTracePiTemplate(context.resources.framePiTemplate());
 
     for (auto& task : _pathTracerProviders)
@@ -148,15 +182,25 @@ bool PathTracerTask::defineShaders(GraphicContext& context)
 
     _pathTracerPi.reset(new ProgramInterface(context.device, pathTracePiTemplate));
 
-    // Remove duplicated modules
-    std::sort( _pathTracerModules.begin(), _pathTracerModules.end() );
-    _pathTracerModules.erase( std::unique( _pathTracerModules.begin(), _pathTracerModules.end() ), _pathTracerModules.end());
 
-    // Gather shaders
-    std::vector<std::shared_ptr<Shader>> shaders;
+    // Defines and Sources
+    std::vector<std::string> allDefines;
+    std::vector<ShaderSourcePtr> allSrcs;
     for (const auto& module : _pathTracerModules)
-        if (module)
-            shaders.push_back(module->shader());
+    {
+        allDefines.insert(allDefines.end(), module->defines().begin(), module->defines().end());
+        allSrcs.push_back(module->source());
+    }
+
+    if(context.settings.unbiased)
+        allDefines.push_back("IS_UNBIASED");
+
+    for(int t = 0; t < Primitive::Type_Count; ++t)
+    {
+        std::string upperName = Primitive::Type_Names[t];
+        std::transform(upperName.begin(), upperName.end(), upperName.begin(), ::toupper);
+        allDefines.push_back("PRIMITIVE_TYPE_" + upperName + " " + std::to_string(t));
+    }
 
     // Generate program
     _pathTracerProgram.reset();
@@ -165,7 +209,8 @@ bool PathTracerTask::defineShaders(GraphicContext& context)
             pathTracePiTemplate,
             _pathTracerProgram,
             "Path Tracer",
-            {shaders}))
+            {allSrcs},
+            allDefines))
         return false;
 
     return true;
@@ -175,16 +220,8 @@ bool PathTracerTask::definePathTracerModules(GraphicContext& context, std::vecto
 {
     if(!addPathTracerModule(
             modules,
-            context,
             "Path Trace",
             "shaders/pathtrace.glsl"))
-        return false;
-
-    if(!addPathTracerModule(
-            modules,
-            context,
-            "Utils",
-            "shaders/common/utils.glsl"))
         return false;
 
     return true;

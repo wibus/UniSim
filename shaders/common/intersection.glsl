@@ -119,13 +119,13 @@ bool intersectSphere(inout Intersection intersection, Probe probe, uint sphereId
             float distanceSqr = dot(originToHit, originToHit);
             float sinThetaMaxSqr = iRSqr / distanceSqr;
             float cosThetaMax = sqrt(max(0, 1 - sinThetaMaxSqr));
-            float solidAngle = 2 * PI * (1 - cosThetaMax);
+            float solidAngle = 2 * C_PI * (1 - cosThetaMax);
             intersection.primitiveAreaPdf = 1 / solidAngle;
         }
         else
         {
             intersection.normal = -intersection.normal;
-            intersection.primitiveAreaPdf = 1 / (4 * PI);
+            intersection.primitiveAreaPdf = 1 / (4 * C_PI);
         }
 
         intersection.uv = findUV(intersection.normal);
@@ -149,7 +149,7 @@ bool intersectPlane(inout Intersection intersection, Probe probe, uint planeId, 
         intersection.materialId = materialId;
         intersection.normal = vec3(0, 0, -sign(probe.direction.z));
         intersection.uv = plane.invScale * (probe.origin + probe.direction * t).xy;
-        intersection.primitiveAreaPdf = 1 / (2 * PI);
+        intersection.primitiveAreaPdf = 1 / (2 * C_PI);
 
         return true;
     }

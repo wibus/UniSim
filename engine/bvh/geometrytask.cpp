@@ -188,7 +188,6 @@ bool GeometryTask::definePathTracerModules(GraphicContext& context, std::vector<
 {
     if(!addPathTracerModule(
             modules,
-            context,
             "Instersection",
             "shaders/common/intersection.glsl"))
         return false;

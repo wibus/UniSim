@@ -584,6 +584,13 @@ bool Model::defineShaders(GraphicContext& context)
     GpuDevice& gpuDevice = context.device;
     GpuResourceManager& resources = context.resources;
 
+    auto makeSource = [](const std::string& uri, const std::string& source)
+    {
+        ShaderSourcePtr ptr(new ShaderSource(uri));
+        ptr->set(source);
+        return ptr;
+    };
+
     for(std::size_t i = 0; i < precompute_passes_.size(); ++i)
     {
         auto& pass = precompute_passes_[i];
@@ -597,9 +604,7 @@ bool Model::defineShaders(GraphicContext& context)
             pass.transmittance.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.transmittance.program.reset();
 
-            ShaderPtr transmittanceShader;
-            if (!context.shaders.generateShader(transmittanceShader, ShaderType::Compute, "Transmittance"+suffix, {header + kComputeTransmittanceShader}, {}))
-                return false;
+            ShaderSourcePtr transmittanceShader = makeSource("Transmittance"+suffix, {header + kComputeTransmittanceShader});
             if (!context.shaders.generateComputeProgram(gpuDevice, piTemplate, pass.transmittance.program, "Transmittance"+suffix, {transmittanceShader}))
                 return false;
         }
@@ -614,9 +619,7 @@ bool Model::defineShaders(GraphicContext& context)
             pass.direct_irradiance.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.direct_irradiance.program.reset();
 
-            ShaderPtr directIrradianceShader;
-            if (!context.shaders.generateShader(directIrradianceShader, ShaderType::Compute, "DirectIrradiance"+suffix, {header + kComputeDirectIrradianceShader}, {}))
-                return false;
+            ShaderSourcePtr directIrradianceShader = makeSource("DirectIrradiance"+suffix, {header + kComputeDirectIrradianceShader});
             if (!context.shaders.generateComputeProgram(gpuDevice, piTemplate, pass.direct_irradiance.program, "DirectIrradiance"+suffix, {directIrradianceShader}))
                 return false;
         }
@@ -633,9 +636,7 @@ bool Model::defineShaders(GraphicContext& context)
             pass.single_scattering.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.single_scattering.program.reset();
 
-            ShaderPtr singleScatteringShader;
-            if (!context.shaders.generateShader(singleScatteringShader, ShaderType::Compute, "SingleScattering"+suffix, {header + kComputeSingleScatteringShader}, {}))
-                return false;
+            ShaderSourcePtr singleScatteringShader = makeSource("SingleScattering"+suffix, {header + kComputeSingleScatteringShader});
             if (!context.shaders.generateComputeProgram(gpuDevice, piTemplate, pass.single_scattering.program, "SingleScattering"+suffix, {singleScatteringShader}))
                 return false;
         }
@@ -653,9 +654,7 @@ bool Model::defineShaders(GraphicContext& context)
             pass.scattering_density.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.scattering_density.program.reset();
 
-            ShaderPtr scatteringDensityShader;
-            if (!context.shaders.generateShader(scatteringDensityShader, ShaderType::Compute, "ScatteringDensity"+suffix, {header + kComputeScatteringDensityShader}, {}))
-                return false;
+            ShaderSourcePtr scatteringDensityShader = makeSource("ScatteringDensity"+suffix, {header + kComputeScatteringDensityShader});
             if (!context.shaders.generateComputeProgram(gpuDevice, piTemplate, pass.scattering_density.program, "ScatteringDensity"+suffix, {scatteringDensityShader}))
                 return false;
         }
@@ -672,9 +671,7 @@ bool Model::defineShaders(GraphicContext& context)
             pass.indirect_irradiance.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.indirect_irradiance.program.reset();
 
-            ShaderPtr indirectIrradianceShader;
-            if (!context.shaders.generateShader(indirectIrradianceShader, ShaderType::Compute, "IndirectIrradiance"+suffix, {header + kComputeIndirectIrradianceShader}, {}))
-                return false;
+            ShaderSourcePtr indirectIrradianceShader = makeSource("IndirectIrradiance"+suffix, {header + kComputeIndirectIrradianceShader});
             if (!context.shaders.generateComputeProgram(gpuDevice, piTemplate, pass.indirect_irradiance.program, "IndirectIrradiance"+suffix, {indirectIrradianceShader}))
                 return false;
         }
@@ -690,9 +687,7 @@ bool Model::defineShaders(GraphicContext& context)
             pass.multiple_scattering.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.multiple_scattering.program.reset();
 
-            ShaderPtr multipleScatteringShader;
-            if (!context.shaders.generateShader(multipleScatteringShader, ShaderType::Compute, "MultipleScattering"+suffix, {header + kComputeMultipleScatteringShader}, {}))
-                return false;
+            ShaderSourcePtr multipleScatteringShader = makeSource("MultipleScattering"+suffix, {header + kComputeMultipleScatteringShader});
             if (!context.shaders.generateComputeProgram(gpuDevice, piTemplate, pass.multiple_scattering.program, "MultipleScattering"+suffix, {multipleScatteringShader}))
                 return false;
         }
@@ -706,10 +701,8 @@ bool Model::defineShaders(GraphicContext& context)
         final_compute_transmittance_->interface.reset(new ProgramInterface(context.device, piTemplate));
         final_compute_transmittance_->program.reset();
 
-        ShaderPtr transmittanceShader;
         std::string header = glsl_header_factory_({kLambdaR, kLambdaG, kLambdaB}, false);
-        if (!context.shaders.generateShader(transmittanceShader, ShaderType::Compute, "Transmittance_final", {header + kComputeTransmittanceShader}, {}))
-            return false;
+        ShaderSourcePtr transmittanceShader = makeSource("Transmittance_final", {header + kComputeTransmittanceShader});
         if (!context.shaders.generateComputeProgram(gpuDevice, piTemplate, final_compute_transmittance_->program, "Transmittance_final", {transmittanceShader}))
             return false;
     }
@@ -722,17 +715,12 @@ bool Model::definePathTracerModules(
     std::vector<std::shared_ptr<PathTracerModule>>& modules)
 {
     // Create and compile the shader providing our API.
-    std::string shaderSrc = glsl_header_factory_({kLambdaR, kLambdaG, kLambdaB}, false)
-                            + (precomputeIlluminance() ? "" : "#define RADIANCE_API_ENABLED\n")
-                            + kAtmosphereShader;
+    ShaderSourcePtr shaderSrc(new ShaderSource("Sky Model[generated]"));
+    shaderSrc->set(glsl_header_factory_({kLambdaR, kLambdaG, kLambdaB}, false)
+                        + (precomputeIlluminance() ? "" : "#define RADIANCE_API_ENABLED\n")
+                        + kAtmosphereShader);
 
-    ShaderPtr skyModelShader;
-    context.shaders.generateShader(skyModelShader, ShaderType::Compute, "Sky Model", {shaderSrc}, {});
-
-    if (!skyModelShader)
-        return false;
-
-    std::shared_ptr<PathTracerModule> modelModule(new PathTracerModule("Sky Model", skyModelShader));
+    std::shared_ptr<PathTracerModule> modelModule(new PathTracerModule("Sky Model", shaderSrc));
     modules.push_back(modelModule);
 
     return true;

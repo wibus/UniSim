@@ -104,7 +104,7 @@ void printShaderInfoLog(GLuint shaderId)
     char shader_log[2048];
     glGetShaderInfoLog(shaderId, max_length, &actual_length, shader_log);
     PILS_INFO("shader info log for GL index ", shaderId, ":");
-    PILS_INFO(std::string(shader_log));
+    PILS_INFO("\n" + std::string(shader_log));
 }
 
 bool compileShader(GLuint shaderId, const std::string& name)
@@ -119,8 +119,8 @@ bool compileShader(GLuint shaderId, const std::string& name)
 
     if (GL_TRUE != params)
     {
-        PILS_FATAL("ERROR: GL shader index ", shaderId, " did not compile");
         printShaderInfoLog(shaderId);
+        PILS_FATAL("ERROR: GL shader index ", shaderId, " did not compile");
         return false; // or exit or something
     }
 
@@ -166,16 +166,11 @@ bool validateProgram(GLuint programId, const std::string& name)
     return true;
 }
 
-const char* defineLine(std::vector<std::string>& directives, int lineId)
-{
-    int sourceId = int(directives.size()) + 1;
-    directives.push_back("#line " + std::to_string(lineId) + " " + std::to_string(sourceId) + "\n");
-    return directives.back().c_str();
-}
-
 
 ShaderBuilder::ShaderBuilder()
 {
+    g_GlslExtensions = "";
+    g_GlslExtensions += "#extension GL_ARB_bindless_texture : require\n";
 }
 
 ShaderBuilder::~ShaderBuilder()
@@ -186,13 +181,11 @@ bool ShaderBuilder::generateShader(
     std::shared_ptr<Shader>& shader,
     ShaderType shaderType,
     const std::string& shaderName,
-    const std::vector<std::string>& srcs,
+    const std::vector<ShaderSourcePtr>& sources,
     const std::vector<std::string>& defines)
 {
-    std::vector<std::string> srcUris;
-
     std::vector<std::string> lineDirectives;
-    lineDirectives.reserve(1 + srcs.size());
+    lineDirectives.reserve(1 + sources.size());
 
     std::vector<const GLchar*> shaderSrc;
     shaderSrc.push_back(GLSL_VERSION__HEADER.c_str());
@@ -203,17 +196,27 @@ bool ShaderBuilder::generateShader(
     {
         for(const auto& define : defines)
             definitionBloc += "#define " + define + "\n";
-        srcUris.push_back("DEFINES");
-        shaderSrc.push_back(defineLine(lineDirectives, 1));
+        shaderSrc.push_back(defineLine(lineDirectives, 1, "DEFINES"));
         shaderSrc.push_back(definitionBloc.c_str());
     }
 
     const char* LINE_RETURN = "\n";
-    for(std::size_t s = 0; s < srcs.size(); ++s)
+    for(const auto& source : sources)
     {
-        const std::string& src = srcs[s];
-        srcUris.push_back("srcs " + std::to_string(s));
-        shaderSrc.push_back(defineLine(lineDirectives, 1));
+        if (!source)
+        {
+            PILS_ERROR("One of the shader source file provided is null. Aborting shader creation.");
+            return false;
+        }
+
+        if (source->source().empty())
+        {
+            PILS_WARN("One of the shader source is empty: ", source->uri());
+            continue;
+        }
+
+        const std::string& src = source->source();
+        shaderSrc.push_back(defineLine(lineDirectives, 1, source->uri()));
         shaderSrc.push_back(src.c_str());
         shaderSrc.push_back(LINE_RETURN);
     }
@@ -329,18 +332,23 @@ bool ShaderBuilder::generateComputeProgram(
     const ProgramInterfaceTemplate& piTemplate,
     ProgramPtr& program,
     const std::string& name,
-    const std::vector<std::shared_ptr<Shader>>& shaders)
+    const std::vector<ShaderSourcePtr>& sources,
+    const std::vector<std::string>& defines)
 {
+    std::shared_ptr<Shader> compute;
+    if(!generateShader(compute, ShaderType::Compute, name, sources, defines))
+        return false;
+
     GLuint programId = glCreateProgram();
 
-    for(const auto& shader : shaders)
-        glAttachShader(programId, shader->handle());
-
+    glAttachShader(programId, compute->handle());
     glLinkProgram(programId);
 
     if(!validateProgram(programId, name))
     {
         glDeleteProgram(programId);
+        compute.reset();
+
         return false;
     }
 
@@ -351,7 +359,7 @@ bool ShaderBuilder::generateComputeProgram(
             ProgramType::Compute,
             name,
             std::move(ProgramHandle(programId)),
-            shaders
+            {compute}
         )
     );
 

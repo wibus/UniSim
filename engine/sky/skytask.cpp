@@ -160,7 +160,6 @@ bool SkyTask::definePathTracerModules(
     {
         if(!addPathTracerModule(
                 modules,
-                context,
                 "Atmospheric Sky",
                 "shaders/atmosphericsky.glsl"))
             return false;
@@ -172,7 +171,6 @@ bool SkyTask::definePathTracerModules(
     {
         if(!addPathTracerModule(
                 modules,
-                context,
                 "Outerspace Sky",
                 "shaders/outerspacesky.glsl"))
             return false;

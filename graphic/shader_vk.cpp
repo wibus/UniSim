@@ -103,56 +103,137 @@ ProgramScope::~ProgramScope()
 }
 
 
-ShaderBuilder::ShaderBuilder()
+ShaderBuilder::ShaderBuilder() :
+    _compiler(new shaderc::Compiler()),
+    _options(new shaderc::CompileOptions())
 {
+    _options->SetOptimizationLevel(shaderc_optimization_level_performance);
+
+    g_GlslExtensions = "";
+    g_GlslExtensions += "#extension GL_ARB_bindless_texture : require\n";
+    g_GlslExtensions += "#extension GL_GOOGLE_cpp_style_line_directive : enable\n";
 }
 
 ShaderBuilder::~ShaderBuilder()
 {
 }
 
+ shaderc_shader_kind toShaderc(ShaderType type)
+ {
+    switch(type)
+    {
+    case ShaderType::Vertex : return shaderc_vertex_shader;
+    case ShaderType::Fragment : return shaderc_fragment_shader;
+    case ShaderType::Compute : return shaderc_compute_shader;
+    default:
+        PILS_FATAL("Unkown shader type: ", int(type));
+        return shaderc_compute_shader;
+    }
+ }
+
 bool ShaderBuilder::generateShader(
     std::shared_ptr<Shader>& shader,
     ShaderType shaderType,
     const std::string& shaderName,
-    const std::vector<std::string>& srcs,
+    const std::vector<ShaderSourcePtr>& sources,
     const std::vector<std::string>& defines)
 {
+    std::vector<std::string> lineDirectives;
+    lineDirectives.reserve(1 + sources.size());
+
+    std::string shaderSrc;
+    shaderSrc += GLSL_VERSION__HEADER;
+    shaderSrc += g_GlslExtensions;
+
+    std::string definitionBloc;
+    if(!defines.empty())
+    {
+        for(const auto& define : defines)
+            definitionBloc += "#define " + define + "\n";
+        shaderSrc += defineLine(lineDirectives, 1, "DEFINES");
+        shaderSrc += definitionBloc.c_str();
+    }
+
+    const char* LINE_RETURN = "\n";
+    for(const auto& source : sources)
+    {
+        if (!source)
+        {
+            PILS_ERROR("One of the shader source file provided is null. Aborting shader creation.");
+            return false;
+        }
+
+        if (source->source().empty())
+        {
+            PILS_WARN("One of the shader source is empty: ", source->uri());
+            continue;
+        }
+
+        shaderSrc += defineLine(lineDirectives, 1, source->uri());
+        shaderSrc += source->source();
+        shaderSrc += LINE_RETURN;
+    }
+
+    shaderc::SpvCompilationResult result = _compiler->CompileGlslToSpv(
+        shaderSrc,
+        toShaderc(shaderType),
+        shaderName.c_str(),
+        *_options);
+
+    shaderc_compilation_status status = result.GetCompilationStatus();
+
+    if (status != shaderc_compilation_status_success)
+    {
+        if (status == shaderc_compilation_status_compilation_error)
+            PILS_ERROR("Could not compile shader '", shaderName, "' \n", result.GetErrorMessage());
+        else if (result.GetCompilationStatus() == shaderc_compilation_status_internal_error)
+            PILS_FATAL("shaderc experienced an internal error while compiling shader: ", shaderName);
+        else
+            PILS_ERROR("Unexpected error while compiling shader '", shaderName, "'\n", result.GetErrorMessage());
+
+        return false;
+    }
+
+    PILS_DEBUG("Successfully compiled shader: ", shaderName);
+
+    // Create vulkan shader
     PILS_ASSERT(false, "Not implemented!");
+
     return true;
 }
 
 bool ShaderBuilder::generateGraphicProgram(
-    const GpuDevice& gpuDevice,
-    const ProgramInterfaceTemplate& piTemplate,
-    ProgramPtr& program,
-    const std::string& name,
-    const std::string& vertexFileName,
-    const std::string& fragmentFileName,
-    const std::vector<std::string>& defines)
+        const GpuDevice& gpuDevice,
+        const ProgramInterfaceTemplate& piTemplate,
+        ProgramPtr& program,
+        const std::string& name,
+        const std::string& vertexFileName,
+        const std::string& fragmentFileName,
+        const std::vector<std::string>& defines)
 {
     PILS_ASSERT(false, "Not implemented!");
     return true;
 }
 
 bool ShaderBuilder::generateComputeProgram(
-    const GpuDevice& gpuDevice,
-    const ProgramInterfaceTemplate& piTemplate,
-    ProgramPtr& program,
-    const std::string& name,
-    const std::string& computeFileName,
-    const std::vector<std::string>& defines)
+        const GpuDevice& gpuDevice,
+        const ProgramInterfaceTemplate& piTemplate,
+        ProgramPtr& program,
+        const std::string& name,
+        const std::string& computeFileName,
+        const std::vector<std::string>& defines)
 {
     PILS_ASSERT(false, "Not implemented!");
     return true;
 }
 
 bool ShaderBuilder::generateComputeProgram(
-    const GpuDevice& gpuDevice,
-    const ProgramInterfaceTemplate& piTemplate,
-    ProgramPtr& program,
-    const std::string& name,
-    const std::vector<std::shared_ptr<Shader>>& shaders)
+        const GpuDevice& gpuDevice,
+        const ProgramInterfaceTemplate& piTemplate,
+        ProgramPtr& program,
+        const std::string& name,
+        const std::vector<ShaderSourcePtr>& sources,
+        const std::vector<std::string>& defines)
 {
     PILS_ASSERT(false, "Not implemented!");
     return true;

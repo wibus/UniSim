@@ -1,24 +1,22 @@
 #include "pathtracerprovider.h"
 
-#include <algorithm>
-
 #include <PilsCore/Utils/Logger.h>
-
-#include "../resource/primitive.h"
 
 
 namespace unisim
 {
 
-std::vector<std::string> g_PathTracerCommonSrcs;
-
 
 // PATH TRACER MODULE //
-PathTracerModule::PathTracerModule(const std::string& name, const std::shared_ptr<Shader>& shader) :
+PathTracerModule::PathTracerModule(
+        const std::string& name,
+        const std::shared_ptr<ShaderSource>& source,
+        const std::vector<std::string>& defines) :
     _name(name),
-    _shader(shader)
+    _source(source),
+    _defines(defines)
 {
-    PILS_INFO("Creating path tracer module '", _name, "' from shader '", shader ? shader->name() : "null", "'");
+    PILS_INFO("Creating path tracer module '", _name, "' from shader '", source ? source->uri() : "null", "'");
 }
 
 PathTracerModule::~PathTracerModule()
@@ -61,31 +59,16 @@ void PathTracerProviderTask::bindPathTracerResources(
 
 bool PathTracerProviderTask::addPathTracerModule(
     std::vector<std::shared_ptr<PathTracerModule>>& modules,
-    const GraphicContext& context,
     const std::string& name,
     const std::string& computeFileName,
     const std::vector<std::string>& defines)
 {
-    std::vector<std::string> allDefines = defines;
+    std::shared_ptr<ShaderSource> source(new ShaderSource(computeFileName));
 
-    if(context.settings.unbiased)
-        allDefines.push_back("IS_UNBIASED");
-
-    for(int t = 0; t < Primitive::Type_Count; ++t)
-    {
-        std::string upperName = Primitive::Type_Names[t];
-        std::transform(upperName.begin(), upperName.end(), upperName.begin(), ::toupper);
-        allDefines.push_back("PRIMITIVE_TYPE_" + upperName + " " + std::to_string(t));
-    }
-
-    std::vector<std::string> allSrcs = g_PathTracerCommonSrcs;
-    allSrcs.push_back(context.shaders.loadSource(computeFileName));
-
-    std::shared_ptr<Shader> shader = 0;
-    if(!context.shaders.generateShader(shader, ShaderType::Compute, computeFileName, allSrcs, allDefines))
+    if (!source->load(computeFileName))
         return false;
 
-    modules.push_back(std::make_shared<PathTracerModule>(name, shader));
+    modules.push_back(std::make_shared<PathTracerModule>(name, source, defines));
 
     return true;
 }

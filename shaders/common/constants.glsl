@@ -1,5 +1,5 @@
 // Defines
-#define PI 3.14159265359
+#define C_PI 3.14159265359
 #define GOLDEN_RATIO 1.618033988749894
 #define DELTA (1 / 0.0)
 #define INFINITY (1 / 0.0)

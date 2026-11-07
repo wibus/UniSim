@@ -18,7 +18,7 @@ class Program;
 class GraphicContext;
 class GraphicSettings;
 
-extern std::vector<std::string> g_PathTracerCommonSrcs;
+extern std::vector<ShaderSourcePtr> g_PathTracerCommonSrcs;
 
 
 class PathTracerModule
@@ -26,16 +26,20 @@ class PathTracerModule
     PathTracerModule(const PathTracerModule&) = delete;
 
 public:
-    PathTracerModule(const std::string& name, const std::shared_ptr<Shader>& shader);
+    PathTracerModule(
+        const std::string& name,
+        const std::shared_ptr<ShaderSource>& source,
+        const std::vector<std::string>& defines = {});
     ~PathTracerModule();
 
-    std::shared_ptr<Shader> shader() const { return _shader; }
-
     std::string name() const { return _name; }
+    std::shared_ptr<ShaderSource> source() const { return _source; }
+    const std::vector<std::string>& defines() const { return _defines; }
 
 private:
     std::string _name;
-    ShaderPtr _shader;
+    std::shared_ptr<ShaderSource> _source;
+    std::vector<std::string> _defines;
 };
 
 using PathTracerModulePtr = std::shared_ptr<PathTracerModule>;
@@ -83,7 +87,6 @@ public:
 protected:
     bool addPathTracerModule(
         std::vector<std::shared_ptr<PathTracerModule>>& modules,
-        const GraphicContext& context,
         const std::string& name,
         const std::string& computeFileName,
         const std::vector<std::string>& defines = {});

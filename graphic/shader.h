@@ -5,12 +5,19 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <map>
 
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
 #include <GL/glew.h>
 #endif // UNISIM_GRAPHIC_BACKEND_GL
 
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
+namespace shaderc
+{
+class Compiler;
+class CompileOptions;
+}
+
 namespace pils
 {
 namespace gpu
@@ -18,6 +25,8 @@ namespace gpu
 enum class PipelineType;
 enum class ShaderStage;
 class PipelineLayout;
+class PipelineStage;
+class ShaderModule;
 }
 }
 #endif // UNISIM_GRAPHIC_BACKEND_VK
@@ -29,6 +38,25 @@ namespace unisim
 class ProgramInterfaceTemplate;
 
 enum class ShaderType {Vertex, Fragment, Compute};
+
+
+class ShaderSource
+{
+public:
+    ShaderSource(const std::string& uri);
+
+    bool load(const std::string& fileName);
+    void set(const std::string& source);
+
+    std::string uri() const { return _uri; }
+    const std::string& source() const { return _source; }
+
+private:
+    std::string _uri;
+    std::string _source;
+};
+
+typedef std::shared_ptr<ShaderSource> ShaderSourcePtr;
 
 
 class ShaderHandle
@@ -49,6 +77,10 @@ private:
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
     GLuint _shaderId;
 #endif // UNISIM_GRAPHIC_BACKEND_GL
+
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+    std::shared_ptr<pils::gpu::ShaderModule> _shaderModule;
+#endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
 class ProgramHandle
@@ -69,6 +101,10 @@ private:
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
     GLuint _programId;
 #endif // UNISIM_GRAPHIC_BACKEND_GL
+
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+    std::shared_ptr<pils::gpu::PipelineStage> _pipelineStage;
+#endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
 
@@ -162,30 +198,6 @@ public:
     ShaderBuilder();
     ~ShaderBuilder();
 
-    std::string loadSource(const std::string& fileName);
-
-    bool generateShader(
-        std::shared_ptr<Shader>& shader,
-        ShaderType shaderType,
-        const std::string& shaderName,
-        const std::vector<std::string>& srcs,
-        const std::vector<std::string>& defines);
-
-    bool generateVertexShader(
-        std::shared_ptr<Shader>& shader,
-        const std::string& fileName,
-        const std::vector<std::string>& defines);
-
-    bool generateFragmentShader(
-        std::shared_ptr<Shader>& shader,
-        const std::string& fileName,
-        const std::vector<std::string>& defines);
-
-    bool generateComputerShader(
-        std::shared_ptr<Shader>& shader,
-        const std::string& fileName,
-        const std::vector<std::string>& defines);
-
     bool generateGraphicProgram(
         const GpuDevice& gpuDevice,
         const ProgramInterfaceTemplate& piTemplate,
@@ -208,9 +220,41 @@ public:
         const ProgramInterfaceTemplate& piTemplate,
         ProgramPtr& program,
         const std::string& name,
-        const std::vector<std::shared_ptr<Shader>>& shaders);
+        const std::vector<ShaderSourcePtr>& sources,
+        const std::vector<std::string>& defines = {});
 
 private:
+    bool generateShader(
+        std::shared_ptr<Shader>& shader,
+        ShaderType shaderType,
+        const std::string& shaderName,
+        const std::vector<ShaderSourcePtr>& sources,
+        const std::vector<std::string>& defines);
+
+    bool generateVertexShader(
+        std::shared_ptr<Shader>& shader,
+        const std::string& fileName,
+        const std::vector<std::string>& defines);
+
+    bool generateFragmentShader(
+        std::shared_ptr<Shader>& shader,
+        const std::string& fileName,
+        const std::vector<std::string>& defines);
+
+    bool generateComputerShader(
+        std::shared_ptr<Shader>& shader,
+        const std::string& fileName,
+        const std::vector<std::string>& defines);
+
+    const char* defineLine(std::vector<std::string>& directives, int lineId, const std::string& srcName);
+
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+    typedef uint64_t ProgramHash;
+
+    std::unique_ptr<shaderc::Compiler> _compiler;
+    std::unique_ptr<shaderc::CompileOptions> _options;
+    std::map<ProgramHash, std::shared_ptr<pils::gpu::PipelineStage>> _pipelines;
+#endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
 }

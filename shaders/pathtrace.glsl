@@ -183,7 +183,7 @@ vec3 evaluateBSDF(HitInfo hitInfo, vec3 V, vec3 L, float solidAngle)
     float lightAreaPdf = 1 / solidAngle;
 
     float diffuseWeight = misHeuristic(1, lightAreaPdf, 1, cosineHemispherePdf(NdotL));
-    vec3 diffuse = hitInfo.diffuseAlbedo / PI * (1 - f) * diffuseWeight;
+    vec3 diffuse = hitInfo.diffuseAlbedo / C_PI * (1 - f) * diffuseWeight;
 
     vec3 specularAlbedo = f * ndf * ggxSmithG2AndDenom(hitInfo.specularA2, NdotV, NdotL);
     float specularPdf = ggxVisibleNormalsDistributionFunction(hitInfo.specularA2, NdotV, NdotH, HdotV) / (4 * HdotV);
@@ -221,12 +221,12 @@ LightSample sampleSphere(uint sphereId, uint materialId, vec3 position, vec4 noi
     float sinThetaMaxSqr = lRSqr / distanceSqr;
     float cosThetaMax = sqrt(max(0, 1 - sinThetaMaxSqr));
 
-    float solidAngle = 2 * PI * (1 - cosThetaMax);
+    float solidAngle = 2 * C_PI * (1 - cosThetaMax);
 
     // Importance sample cone
     float cosTheta = (1 - noise.b) + noise.b * cosThetaMax;
     float sinTheta = sqrt(max(0, 1 - cosTheta*cosTheta));
-    float phi = noise.a * 2 * PI;
+    float phi = noise.a * 2 * C_PI;
 
     float dc = sqrt(distanceSqr);
     float ds = dc * cosTheta - sqrt(max(0, lRSqr - dc * dc * sinTheta * sinTheta));
@@ -257,7 +257,7 @@ LightSample samplePlane(uint planeId, uint materialId, vec3 position, vec4 noise
     Material material = materials[materialId];
 
     float r = noise.b;
-    float theta = 2 * PI * noise.a;
+    float theta = 2 * C_PI * noise.a;
 
     vec2 Lxy = vec2(cos(theta), sin(theta)) * r;
     vec3 L = vec3(Lxy, sqrt(1 - dot(Lxy, Lxy)));
@@ -268,7 +268,7 @@ LightSample samplePlane(uint planeId, uint materialId, vec3 position, vec4 noise
     lightSample.direction = L;
     lightSample.distance = -position.z / L.z;
     lightSample.emission = material.emission.rgb;
-    lightSample.solidAngle = 2 * PI;
+    lightSample.solidAngle = 2 * C_PI;
 
     return lightSample;
 }
