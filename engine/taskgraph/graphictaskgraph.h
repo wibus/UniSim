@@ -17,10 +17,13 @@ class GraphicTaskGraph
 {
 public:
     GraphicTaskGraph();
+    ~GraphicTaskGraph();
 
     bool initialize(const View& view, const Scene& scene, const Camera& camera);
 
     bool reloadShaders(const View& view, const Scene& scene, const Camera& camera);
+
+    bool garbageCollect();
 
     void execute(const View& view, const Scene& scene, const Camera& camera);
 

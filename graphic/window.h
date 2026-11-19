@@ -95,6 +95,7 @@ public:
 
     bool shouldClose();
     void pollEvents();
+    bool closeFrame();
     bool newFrame();
     bool present();
     void close();
@@ -104,6 +105,7 @@ private:
     bool CreateGlfwSurface();
     void resetViewportNative();
     void resizeViewportNative();
+    bool closeFrameNative();
     bool newFrameNative();
     bool presentNative();
     void closeNative();

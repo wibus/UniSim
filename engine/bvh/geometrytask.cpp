@@ -199,15 +199,15 @@ bool GeometryTask::definePathTracerInterface(GraphicContext& context, ProgramInt
 {
     bool ok = true;
 
-    piTemplate.declareStorage({"Primitives"});
-    piTemplate.declareStorage({"Meshes"});
-    piTemplate.declareStorage({"Spheres"});
-    piTemplate.declareStorage({"Planes"});
-    piTemplate.declareStorage({"Instances"});
-    piTemplate.declareStorage({"BvhNodes"});
-    piTemplate.declareStorage({"Triangles"});
-    piTemplate.declareStorage({"VerticesPos"});
-    piTemplate.declareStorage({"VerticesData"});
+    piTemplate.declareStorage(1, {"Primitives"});
+    piTemplate.declareStorage(2, {"Meshes"});
+    piTemplate.declareStorage(3, {"Spheres"});
+    piTemplate.declareStorage(4, {"Planes"});
+    piTemplate.declareStorage(5, {"Instances"});
+    piTemplate.declareStorage(6, {"BvhNodes"});
+    piTemplate.declareStorage(7, {"Triangles"});
+    piTemplate.declareStorage(8, {"VerticesPos"});
+    piTemplate.declareStorage(9, {"VerticesData"});
 
     return ok;
 }

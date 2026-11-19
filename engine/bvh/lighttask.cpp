@@ -87,8 +87,8 @@ bool LightTask::definePathTracerInterface(
 {
     bool ok = true;
 
-    piTemplate.declareStorage({"Emitters"});
-    piTemplate.declareStorage({"DirectionalLights"});
+    piTemplate.declareStorage(10, {"Emitters"});
+    piTemplate.declareStorage(11, {"DirectionalLights"});
 
     return ok;
 }

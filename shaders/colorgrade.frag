@@ -1,6 +1,6 @@
-layout (binding = 0) uniform sampler2D Input;
+layout (set = 2, binding = 0) uniform sampler2D Input;
 
-out vec4 frag_colour;
+layout (location = 0) out vec4 frag_colour;
 
 
 float sRGB(float x)

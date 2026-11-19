@@ -125,7 +125,7 @@ bool MaterialTask::definePathTracerInterface(GraphicContext& context, ProgramInt
 {
     bool ok = true;
 
-    piTemplate.declareStorage({"Materials"});
+    piTemplate.declareStorage(12, {"Materials"});
 
     return ok;
 }

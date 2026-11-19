@@ -7,8 +7,6 @@ float asint(float i);
 
 float asuint(float u);
 
-float max3(float a, float b, float c);
-
 float max4(float a, float b, float c, float d);
 
 float maxV(vec2 v);
@@ -17,7 +15,9 @@ float maxV(vec3 v);
 
 float maxV(vec4 v);
 
+#ifdef API_OPENGL
 void swap(inout float a, inout float b);
+#endif // API_OPENGL
 
 float sqr(float v);
 
@@ -40,6 +40,10 @@ vec2 findUV(vec3 N);
 vec2 findUV(vec4 quat, vec3 N);
 
 void makeOrthBase(in vec3 N, out vec3 T, out vec3 B);
+
+#ifdef API_OPENGL
+int nonuniformEXT(int index);
+#endif // API_OPENGL
 
 vec4 sampleBlueNoise(uint depth);
 

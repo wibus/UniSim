@@ -19,11 +19,6 @@ float asuint(float u)
     return floatBitsToUint(u);
 }
 
-float max3(float a, float b, float c)
-{
-    return max(max(a, b), c);
-}
-
 float max4(float a, float b, float c, float d)
 {
     return max(max(a, b), max(c, d));
@@ -36,7 +31,7 @@ float maxV(vec2 v)
 
 float maxV(vec3 v)
 {
-    return max3(v.x, v.y, v.z);
+    return max(max(v.x, v.y), v.z);
 }
 
 float maxV(vec4 v)
@@ -44,12 +39,14 @@ float maxV(vec4 v)
     return max4(v.x, v.y, v.z, v.w);
 }
 
+#ifdef API_OPENGL
 void swap(inout float a, inout float b)
 {
     float t = a;
     a = b;
     b = t;
 }
+#endif // API_OPENGL
 
 float sqr(float v)
 {
@@ -117,6 +114,13 @@ void makeOrthBase(in vec3 N, out vec3 T, out vec3 B)
     B = normalize(cross(N, T));
 }
 
+#ifdef API_OPENGL
+int nonuniformEXT(int index)
+{
+    return index;
+}
+#endif // API_OPENGL
+
 vec4 sampleBlueNoise(uint depth)
 {
     uint cycle = frameIndex / 64;
@@ -127,7 +131,11 @@ vec4 sampleBlueNoise(uint depth)
     ivec2 blueNoiseXY = (ivec2(gl_GlobalInvocationID.xy) + haltonOffset) % 64;
 
     uint bluenNoiseIndex = (frameIndex + depth) % 64;
+#ifdef API_OPENGL
     vec4 blueNoise = imageLoad(bindlessTextures[blueNoiseTextures[bluenNoiseIndex]], blueNoiseXY);
+#else
+    vec4 blueNoise = texelFetch(bindlessTextures[nonuniformEXT(blueNoiseTextures[bluenNoiseIndex])], blueNoiseXY, 0);
+#endif
 
     vec4 goldenScramble = GOLDEN_RATIO * vec4(1, 2, 3, 4) * cycle;
     vec4 noise = fract(blueNoise + goldenScramble);

@@ -30,30 +30,30 @@ ProgramInterfaceTemplate::ProgramInterfaceTemplate(ProgramType programType, cons
 {
 }
 
-void ProgramInterfaceTemplate::declareBindless(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareBindless(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount)
 {
     _bindless.push_back({name, _nextBindlessStorageBinding++, descriptorCount});
 }
 
-void ProgramInterfaceTemplate::declareConstant(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareConstant(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount)
 {
     PILS_ASSERT(descriptorCount == 1, "OpenGL backend does not support constance buffer arrays");
     _constants.push_back({name, _nextConstantBinding++, descriptorCount});
 }
 
-void ProgramInterfaceTemplate::declareStorage(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareStorage(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount)
 {
     PILS_ASSERT(descriptorCount == 1, "OpenGL backend does not support storage buffer arrays");
     _storages.push_back({name, _nextBindlessStorageBinding++, descriptorCount});
 }
 
-void ProgramInterfaceTemplate::declareTexture(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareTexture(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount)
 {
     PILS_ASSERT(descriptorCount == 1, "OpenGL backend does not support texture arrays");
     _textures.push_back({name, _nextTextureBinding++, descriptorCount});
 }
 
-void ProgramInterfaceTemplate::declareImage(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareImage(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount)
 {
     PILS_ASSERT(descriptorCount == 1, "OpenGL backend does not support image arrays");
     _images.push_back({name, _nextImageBinding++, descriptorCount});
@@ -260,8 +260,8 @@ void ProgramInterface::setBindless(const std::string& name, const GpuBindlessTex
         return;
     }
 
-    PILS_ASSERT(resource.handle().handle != 0, "Writing invalid descriptor");
-    descriptors[arrayIndex] = resource.handle();
+    PILS_ASSERT(resource.roHandle().handle != 0, "Writing invalid descriptor");
+    descriptors[arrayIndex] = resource.roHandle();
 }
 
 void ProgramInterface::setConstant(const std::string& name, const GpuConstantResource& resource, uint32_t arrayIndex)
@@ -280,8 +280,8 @@ void ProgramInterface::setConstant(const std::string& name, const GpuConstantRes
         return;
     }
 
-    PILS_ASSERT(resource.handle().bufferId != 0, "Writing invalid descriptor");
-    descriptors[arrayIndex] = resource.handle();
+    PILS_ASSERT(resource.roHandle().bufferId != 0, "Writing invalid descriptor");
+    descriptors[arrayIndex] = resource.roHandle();
 }
 
 void ProgramInterface::setStorage(const std::string& name, const GpuStorageResource& resource, uint32_t arrayIndex)
@@ -300,8 +300,8 @@ void ProgramInterface::setStorage(const std::string& name, const GpuStorageResou
         return;
     }
 
-    PILS_ASSERT(resource.handle().bufferId != 0, "Writing invalid descriptor");
-    descriptors[arrayIndex] = resource.handle();
+    PILS_ASSERT(resource.rwHandle().bufferId != 0, "Writing invalid descriptor");
+    descriptors[arrayIndex] = resource.rwHandle();
 }
 
 void ProgramInterface::setTexture(const std::string& name, const GpuTextureResource& resource, uint32_t arrayIndex)
@@ -320,8 +320,8 @@ void ProgramInterface::setTexture(const std::string& name, const GpuTextureResou
         return;
     }
 
-    PILS_ASSERT(resource.handle().texId != 0, "Writing invalid descriptor");
-    descriptors[arrayIndex] = resource.handle();
+    PILS_ASSERT(resource.roHandle().texId != 0, "Writing invalid descriptor");
+    descriptors[arrayIndex] = resource.roHandle();
 }
 
 void ProgramInterface::setTexture(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex)
@@ -340,11 +340,8 @@ void ProgramInterface::setTexture(const std::string& name, const GpuImageResourc
         return;
     }
 
-    GpuTextureResourceHandle handle;
-    handle.texId = resource.handle().texId;
-    handle.dimension = resource.handle().dimension;
-    PILS_ASSERT(handle.texId != 0, "Writing invalid descriptor");
-    descriptors[arrayIndex] = handle;
+    PILS_ASSERT(resource.roHandle().texId != 0, "Writing invalid descriptor");
+    descriptors[arrayIndex] = resource.roHandle();
 }
 
 void ProgramInterface::setImage(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex)
@@ -363,11 +360,11 @@ void ProgramInterface::setImage(const std::string& name, const GpuImageResource&
         return;
     }
 
-    PILS_ASSERT(resource.handle().texId != 0, "Writing invalid descriptor");
-    descriptors[arrayIndex] = resource.handle();
+    PILS_ASSERT(resource.rwHandle().texId != 0, "Writing invalid descriptor");
+    descriptors[arrayIndex] = resource.rwHandle();
 }
 
-bool ProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const Program& program)
+bool ProgramInterface::compileAndSet(GpuDevice& gpuDevice, const Program& program)
 {
     bool ok = true;
 

@@ -56,7 +56,7 @@ GpuGeometryResourceHandle::GpuGeometryResourceHandle() :
 // TEXTURE //
 
 GpuTextureResource::GpuTextureResource(GpuResourceManager& manager, ResourceId id, Definition def) :
-    GpuResource(manager, id)
+    GpuResource(manager, id, ResourceState::ReadOnly)
 {
     _handle.reset(new GpuTextureResourceHandle());
     _handle->dimension = GL_TEXTURE_2D;
@@ -105,7 +105,7 @@ GpuTextureResource::GpuTextureResource(GpuResourceManager& manager, ResourceId i
 }
 
 GpuTextureResource::GpuTextureResource(GpuResourceManager& manager, GpuTextureResourceHandle&& handle) :
-    GpuResource(manager, Invalid_ResourceId),
+    GpuResource(manager, Invalid_ResourceId, ResourceState::ReadOnly),
     _handle(new GpuTextureResourceHandle(std::move(handle)))
 {
 }
@@ -118,50 +118,54 @@ GpuTextureResource::~GpuTextureResource()
 
 // IMAGE //
 GpuImageResource::GpuImageResource(GpuResourceManager& manager, ResourceId id, Definition def) :
-    GpuResource(manager, id)
+    GpuResource(manager, id, ResourceState::ReadWrite)
 {
-    _handle.reset(new GpuImageResourceHandle());
+    _imageHandle.reset(new GpuImageResourceHandle());
 
     switch(def.format)
     {
     case TextureFormat::R8G8B8A8_UNORM:
-        _handle->internalFormat = GL_RGBA8;
+        _imageHandle->internalFormat = GL_RGBA8;
         break;
     case TextureFormat::R32G32B32A32_FLOAT:
-        _handle->internalFormat = GL_RGBA32F;
+        _imageHandle->internalFormat = GL_RGBA32F;
         break;
     default:
         PILS_FATAL("Texture format not supported");
-        _handle->internalFormat = GL_RGBA8;
+        _imageHandle->internalFormat = GL_RGBA8;
     }
 
-    _handle->dimension = def.depth > 1 ? GL_TEXTURE_3D : GL_TEXTURE_2D;
+    _imageHandle->dimension = def.depth > 1 ? GL_TEXTURE_3D : GL_TEXTURE_2D;
 
-    glGenTextures(1, &_handle->texId);
-    glBindTexture(_handle->dimension, _handle->texId);
+    glGenTextures(1, &_imageHandle->texId);
+    glBindTexture(_imageHandle->dimension, _imageHandle->texId);
 
-    glTexParameteri(_handle->dimension, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(_handle->dimension, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    if (_handle->dimension == GL_TEXTURE_3D)
-        glTexParameteri(_handle->dimension, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(_imageHandle->dimension, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(_imageHandle->dimension, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(_imageHandle->dimension, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(_imageHandle->dimension, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (_imageHandle->dimension == GL_TEXTURE_3D)
+        glTexParameteri(_imageHandle->dimension, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-    if (_handle->dimension == GL_TEXTURE_2D)
-        glTexStorage2D(_handle->dimension, 1, _handle->internalFormat, def.width, def.height);
-    else if (_handle->dimension == GL_TEXTURE_3D)
-        glTexStorage3D(_handle->dimension, 1, _handle->internalFormat, def.width, def.height, def.depth);
+    if (_imageHandle->dimension == GL_TEXTURE_2D)
+        glTexStorage2D(_imageHandle->dimension, 1, _imageHandle->internalFormat, def.width, def.height);
+    else if (_imageHandle->dimension == GL_TEXTURE_3D)
+        glTexStorage3D(_imageHandle->dimension, 1, _imageHandle->internalFormat, def.width, def.height, def.depth);
     else
         PILS_FATAL("Unexpected texture dimension");
 
-    glBindTexture(_handle->dimension, 0);
+    glBindTexture(_imageHandle->dimension, 0);
+
+    _textureHandle.reset(new GpuTextureResourceHandle());
+    _textureHandle->texId = _imageHandle->texId;
+    _textureHandle->dimension = _imageHandle->dimension;
 }
 
 GpuImageResource::~GpuImageResource()
 {
-    glDeleteTextures(1, &_handle->texId);
+    glDeleteTextures(1, &_imageHandle->texId);
 }
 
 void GpuImageResource::update(const Definition& def)
@@ -169,32 +173,36 @@ void GpuImageResource::update(const Definition& def)
     switch(def.format)
     {
     case TextureFormat::R8G8B8A8_UNORM:
-        _handle->internalFormat = GL_RGBA8;
+        _imageHandle->internalFormat = GL_RGBA8;
         break;
     case TextureFormat::R32G32B32A32_FLOAT:
-        _handle->internalFormat = GL_RGBA32F;
+        _imageHandle->internalFormat = GL_RGBA32F;
         break;
     default:
         PILS_FATAL("Texture format not supported");
-        _handle->internalFormat = GL_RGBA8;
+        _imageHandle->internalFormat = GL_RGBA8;
     }
 
-    glBindTexture(_handle->dimension, _handle->texId);
+    glBindTexture(_imageHandle->dimension, _imageHandle->texId);
 
-    if (_handle->dimension == GL_TEXTURE_2D)
-        glTexStorage2D(_handle->dimension, 1, _handle->internalFormat, def.width, def.height);
-    else if (_handle->dimension == GL_TEXTURE_3D)
-        glTexStorage3D(_handle->dimension, 1, _handle->internalFormat, def.width, def.height, def.depth);
+    if (_imageHandle->dimension == GL_TEXTURE_2D)
+        glTexStorage2D(_imageHandle->dimension, 1, _imageHandle->internalFormat, def.width, def.height);
+    else if (_imageHandle->dimension == GL_TEXTURE_3D)
+        glTexStorage3D(_imageHandle->dimension, 1, _imageHandle->internalFormat, def.width, def.height, def.depth);
     else
         PILS_FATAL("Unexpected texture dimension");
 
-    glBindTexture(_handle->dimension, 0);
+    glBindTexture(_imageHandle->dimension, 0);
+
+    _textureHandle.reset(new GpuTextureResourceHandle());
+    _textureHandle->texId = _imageHandle->texId;
+    _textureHandle->dimension = _imageHandle->dimension;
 }
 
 
 // STORAGE //
 GpuStorageResource::GpuStorageResource(GpuResourceManager& manager, ResourceId id, Definition def) :
-    GpuResource(manager, id)
+    GpuResource(manager, id, ResourceState::ReadWrite)
 {
     _handle.reset(new GpuStorageResourceHandle());
 
@@ -217,7 +225,7 @@ void GpuStorageResource::update(const Definition& def)
 
 // CONSTANT //
 GpuConstantResource::GpuConstantResource(GpuResourceManager& manager, ResourceId id, Definition def) :
-    GpuResource(manager, id)
+    GpuResource(manager, id, ResourceState::ReadOnly)
 {
     _handle.reset(new GpuConstantResourceHandle());
 
@@ -239,7 +247,7 @@ void GpuConstantResource::update(const Definition& def)
 
 // VERTEX ARRAY //
 GpuGeometryResource::GpuGeometryResource(GpuResourceManager& manager, ResourceId id, Definition def) :
-    GpuResource(manager, id)
+    GpuResource(manager, id, ResourceState::ReadOnly)
 {
     _handle.reset(new GpuGeometryResourceHandle());
 
@@ -285,7 +293,7 @@ GpuBindlessTexture::GpuBindlessTexture(
     }
 
     _handle.reset(new GpuBindlessTextureResourceHandle());
-    _handle->handle = glGetImageHandleARB(textureResource.handle().texId, 0, GL_FALSE, 0, format);
+    _handle->handle = glGetImageHandleARB(textureResource.roHandle().texId, 0, GL_FALSE, 0, format);
     glMakeImageHandleResidentARB(_handle->handle, GL_READ_ONLY);
 }
 

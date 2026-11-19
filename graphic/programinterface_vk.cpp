@@ -20,7 +20,6 @@ namespace unisim
 ProgramInterfaceTemplate::ProgramInterfaceTemplate(ProgramType programType) :
     _programType(programType),
     _setIndex(0),
-    _nextBinding(0),
     _shaderStages(toShaderStage(programType)),
     _isSetLayoutDirty(true),
     _parent(nullptr)
@@ -30,46 +29,45 @@ ProgramInterfaceTemplate::ProgramInterfaceTemplate(ProgramType programType) :
 ProgramInterfaceTemplate::ProgramInterfaceTemplate(ProgramType programType, const ProgramInterfaceTemplate& parent) :
     _programType(programType),
     _setIndex(parent._setIndex+1),
-    _nextBinding(0),
     _shaderStages(toShaderStage(programType)),
     _isSetLayoutDirty(true),
     _parent(&parent)
 {
 }
 
-void ProgramInterfaceTemplate::declareBindless(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareBindless(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount)
 {
     _isSetLayoutDirty = true;
     _bindless.push_back({name, std::make_unique<pils::gpu::DescriptorBinding>(
-        _nextBinding++, descriptorCount, pils::gpu::DescriptorType::ImageSampler, _shaderStages, true)});
+        bindingIndex, descriptorCount, pils::gpu::DescriptorType::ImageSampler, _shaderStages, true)});
 }
 
-void ProgramInterfaceTemplate::declareConstant(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareConstant(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount)
 {
     _isSetLayoutDirty = true;
     _constants.push_back({name, std::make_unique<pils::gpu::DescriptorBinding>(
-        _nextBinding++, descriptorCount, pils::gpu::DescriptorType::Constant, _shaderStages)});
+        bindingIndex, descriptorCount, pils::gpu::DescriptorType::Constant, _shaderStages)});
 }
 
-void ProgramInterfaceTemplate::declareStorage(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareStorage(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount)
 {
     _isSetLayoutDirty = true;
     _storages.push_back({name, std::make_unique<pils::gpu::DescriptorBinding>(
-        _nextBinding++, descriptorCount, pils::gpu::DescriptorType::Storage, _shaderStages)});
+        bindingIndex, descriptorCount, pils::gpu::DescriptorType::Storage, _shaderStages)});
 }
 
-void ProgramInterfaceTemplate::declareTexture(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareTexture(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount)
 {
     _isSetLayoutDirty = true;
     _textures.push_back({name, std::make_unique<pils::gpu::DescriptorBinding>(
-        _nextBinding++, descriptorCount, pils::gpu::DescriptorType::ImageSampler, _shaderStages)});
+        bindingIndex, descriptorCount, pils::gpu::DescriptorType::ImageSampler, _shaderStages)});
 }
 
-void ProgramInterfaceTemplate::declareImage(const std::string& name, uint32_t descriptorCount)
+void ProgramInterfaceTemplate::declareImage(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount)
 {
     _isSetLayoutDirty = true;
     _images.push_back({name, std::make_unique<pils::gpu::DescriptorBinding>(
-        _nextBinding++, descriptorCount, pils::gpu::DescriptorType::Image, _shaderStages)});
+        bindingIndex, descriptorCount, pils::gpu::DescriptorType::Image, _shaderStages)});
 }
 
 std::shared_ptr<pils::gpu::DescriptorSetLayout> ProgramInterfaceTemplate::computeSetLayout(const GpuDevice& gpuDevice) const
@@ -125,7 +123,8 @@ std::shared_ptr<pils::gpu::PipelineLayout> ProgramInterfaceTemplate::computePipe
 
 ProgramInterface::ProgramInterface(const GpuDevice& gpuDevice, const ProgramInterfaceTemplate& piTemplate) :
     _programType(piTemplate.programType()),
-    _isDescriptorSetDirty(true)
+    _isDescriptorSetDirty(true),
+    _isAlive(new bool(true))
 {
     _setIndex = piTemplate.setIndex();
     _layout = piTemplate.computeSetLayout(gpuDevice);
@@ -168,7 +167,7 @@ ProgramInterface::ProgramInterface(const GpuDevice& gpuDevice, const ProgramInte
 
 ProgramInterface::~ProgramInterface()
 {
-    PILS_ASSERT(false, "Not implemented!");
+    *_isAlive = false;
 }
 
 void ProgramInterface::setBindless(const std::string& name, const GpuBindlessTexture& resource, uint32_t arrayIndex)
@@ -187,10 +186,12 @@ void ProgramInterface::setBindless(const std::string& name, const GpuBindlessTex
         return;
     }
 
-    if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
+    const auto& handle = resource.roHandle();
+
+    if (descriptors[arrayIndex].descriptor != handle.descriptor)
     {
         _dirtyBindlessDescriptors[name].insert(arrayIndex);
-        descriptors[arrayIndex] = resource.handle();
+        descriptors[arrayIndex] = handle;
     }
 }
 
@@ -210,10 +211,12 @@ void ProgramInterface::setConstant(const std::string& name, const GpuConstantRes
         return;
     }
 
-    if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
+    const auto& handle = resource.roHandle();
+
+    if (descriptors[arrayIndex].descriptor != handle.descriptor)
     {
         _isDescriptorSetDirty = true;
-        descriptors[arrayIndex] = resource.handle();
+        descriptors[arrayIndex] = handle;
     }
 }
 
@@ -233,10 +236,12 @@ void ProgramInterface::setStorage(const std::string& name, const GpuStorageResou
         return;
     }
 
-    if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
+    const auto& handle = resource.rwHandle();
+
+    if (descriptors[arrayIndex].descriptor != handle.descriptor)
     {
         _isDescriptorSetDirty = true;
-        descriptors[arrayIndex] = resource.handle();
+        descriptors[arrayIndex] = handle;
     }
 }
 
@@ -256,10 +261,12 @@ void ProgramInterface::setTexture(const std::string& name, const GpuTextureResou
         return;
     }
 
-    if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
+    const auto& roHandle = resource.roHandle();
+
+    if (descriptors[arrayIndex].descriptor != roHandle.descriptor)
     {
         _isDescriptorSetDirty = true;
-        descriptors[arrayIndex] = resource.handle();
+        descriptors[arrayIndex] = roHandle;
     }
 }
 
@@ -279,13 +286,12 @@ void ProgramInterface::setTexture(const std::string& name, const GpuImageResourc
         return;
     }
 
-    if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
+    const auto& roHandle = resource.roHandle();
+
+    if (descriptors[arrayIndex].descriptor != roHandle.descriptor)
     {
         _isDescriptorSetDirty = true;
-
-        GpuTextureResourceHandle handle;
-        handle.descriptor = resource.handle().descriptor;
-        descriptors[arrayIndex] = handle;
+        descriptors[arrayIndex] = roHandle;
     }
 }
 
@@ -305,41 +311,58 @@ void ProgramInterface::setImage(const std::string& name, const GpuImageResource&
         return;
     }
 
-    if (descriptors[arrayIndex].descriptor != resource.handle().descriptor)
+    const auto& rwHandle = resource.rwHandle();
+
+    if (descriptors[arrayIndex].descriptor != rwHandle.descriptor)
     {
         _isDescriptorSetDirty = true;
-        descriptors[arrayIndex] = resource.handle();
+        descriptors[arrayIndex] = rwHandle;
     }
 }
 
-bool ProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const Program& program)
+bool ProgramInterface::compileAndSet(GpuDevice &gpuDevice, const Program& program)
 {
     bool isCompatible = (uint32_t(program.type()) & uint32_t(_programType)) == uint32_t(program.type());
     PILS_ASSERT(isCompatible, "This program interface cannot be used with program ", program.name());
 
     bool ok = isCompatible;
 
+    // Create descriptor set
+
     if (ok && (_isDescriptorSetDirty || !_cachedDescriptorSet))
     {
         recycleDescriptorSet(gpuDevice);
 
         std::vector<pils::gpu::Descriptor> pilsDescriptors;
-        pilsDescriptors.reserve(32);
+        pilsDescriptors.reserve(
+            _bindlessData.size() +
+            _constantData.size() +
+            _storageData.size() +
+            _textureData.size() +
+            _imageData.size());
 
-        auto write = [&](auto descTypeData) -> void
+        auto write = [&](const auto& descTypeData) -> void
         {
-            for(const auto& data : descTypeData)
+            for(const auto& [name, data] : descTypeData)
             {
-                const auto& descriptors = data.second.descriptors;
-                pilsDescriptors.reserve(descriptors.size());
+                std::size_t start = pilsDescriptors.size();
 
-                for (const auto& desc : descriptors)
-                    pilsDescriptors.push_back(*desc.descriptor);
+                for (const auto& desc : data.descriptors)
+                {
+                    if (desc.descriptor)
+                    {
+                        pilsDescriptors.push_back(*desc.descriptor);
+                    }
+                    else if (pilsDescriptors.size() - start > 0)
+                    {
+                        _cachedDescriptorSet->write(*data.binding.binding, &pilsDescriptors[start], 0, pilsDescriptors.size() - start);
+                        start = pilsDescriptors.size();
+                    }
+                }
 
-                _cachedDescriptorSet->write(*data.second.binding.binding, pilsDescriptors.data(), 0, pilsDescriptors.size());
+                if (pilsDescriptors.size() - start > 0)
+                    _cachedDescriptorSet->write(*data.binding.binding, &pilsDescriptors[start], 0, pilsDescriptors.size() - start);
             }
-
-            pilsDescriptors.clear();
         };
 
         write(_bindlessData);
@@ -372,7 +395,39 @@ bool ProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const Program& 
         _dirtyBindlessDescriptors.clear();
     }
 
-    gpuDevice.commandList().bindDescriptorSet(
+    auto& cmdList = gpuDevice.commandList();
+
+    for (const auto& [name, data] : _textureData)
+    {
+        for (const auto& desc : data.descriptors)
+        {
+            if (*desc.state != ResourceState::ReadOnly)
+            {
+                cmdList.imageBarrier(*desc.image, vk::ImageLayout::eReadOnlyOptimal);
+                *desc.state = ResourceState::ReadOnly;
+            }
+        }
+    }
+
+    for (const auto& [name, data] : _imageData)
+    {
+        for (const auto& desc : data.descriptors)
+        {
+            cmdList.imageBarrier(*desc.image, vk::ImageLayout::eGeneral);
+            *desc.state = ResourceState::ReadWrite;
+        }
+    }
+
+    for (const auto& [name, data] : _storageData)
+    {
+        for (const auto& desc : data.descriptors)
+        {
+            cmdList.bufferBarrier(*desc.buffer, *desc.mapping);
+            *desc.state = ResourceState::ReadWrite;
+        }
+    }
+
+    cmdList.bindDescriptorSet(
         toPipelineType(program.type()),
         program.layout(),
         *_cachedDescriptorSet);
@@ -380,22 +435,28 @@ bool ProgramInterface::compileAndSet(const GpuDevice& gpuDevice, const Program& 
     return ok;
 }
 
-void ProgramInterface::recycleDescriptorSet(const GpuDevice& gpuDevice)
+void ProgramInterface::recycleDescriptorSet(GpuDevice& gpuDevice)
 {
-    const pils::gpu::Device& device = gpuDevice.context().device();
-
-    for (std::size_t i = 0; i < _recycledDesciptorSets.size()-1; ++i)
+    if (_cachedDescriptorSet)
     {
-        if (_recycledDesciptorSets[i].second->isSignaled())
+        gpuDevice.dispose([descriptorSet = _cachedDescriptorSet, isAlive = _isAlive, self = this]()
         {
-            std::swap(_cachedDescriptorSet, _recycledDesciptorSets[i].first);
-            _recycledDesciptorSets[i].second = gpuDevice.frameFence();
-        }
+            if (*isAlive)
+            {
+                self->_recycledDesciptorSets.push_back(descriptorSet);
+            }
+        });
     }
 
-    // No free recycled set found, create a new one
-    _recycledDesciptorSets.push_back({_cachedDescriptorSet, gpuDevice.frameFence()});
-    _cachedDescriptorSet.reset(new pils::gpu::DescriptorSet(device, gpuDevice.descriptorPool(), *_layout, _setIndex));
+    if (!_recycledDesciptorSets.empty())
+    {
+        _cachedDescriptorSet = _recycledDesciptorSets.back();
+        _recycledDesciptorSets.pop_back();
+    }
+    else
+    {
+        _cachedDescriptorSet.reset(new pils::gpu::DescriptorSet(gpuDevice.context().device(), gpuDevice.descriptorPool(), *_layout, _setIndex));
+    }
 }
 
 }

@@ -1,4 +1,4 @@
-layout (std140, binding = 0) uniform MoonLightParams
+layout (set=2, binding=0, std140) uniform MoonLightParams
 {
     mat4 transform;
     vec4 sunDirection;
@@ -6,9 +6,9 @@ layout (std140, binding = 0) uniform MoonLightParams
     vec4 sunLi;
 };
 
-uniform sampler2D MoonAlbedo;
+layout(set=2, binding=1) uniform sampler2D MoonAlbedo;
 
-uniform layout(binding = 0, rgba32f) image2D MoonLighting;
+layout(set=2, binding=2, rgba32f) uniform image2D MoonLighting;
 
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;

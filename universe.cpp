@@ -73,6 +73,8 @@ int Universe::launch()
         if(ok)
         {
             Profile(Window_NewFrame);
+            ok = ok && _mainWindow->closeFrame();
+            ok = ok && _graphic.garbageCollect();
             ok = ok && _mainWindow->newFrame();
         }
 
@@ -167,6 +169,8 @@ bool Universe::setup()
 {
     Profiler_Initialize();
 
+    PILS_INFO("Engine initialization begin");
+
     _mainWindow.reset(new Window(_graphic.device()));
 
     if (!_mainWindow->isValid())
@@ -197,6 +201,8 @@ bool Universe::setup()
 
     _dt = 0;
     _lastTime = std::chrono::high_resolution_clock::now();
+
+    PILS_INFO("Engine initialization end");
 
     return ok;
 }

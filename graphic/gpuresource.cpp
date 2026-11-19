@@ -14,9 +14,10 @@ std::vector<std::string> GpuResourceManager::_staticNames;
 DefineResource(FullScreenTriangle);
 
 
-GpuResource::GpuResource(GpuResourceManager& manager, ResourceId id) :
+GpuResource::GpuResource(GpuResourceManager& manager, ResourceId id, ResourceState initialState) :
     id(id),
-    _manager(manager)
+    _manager(manager),
+    _state(new ResourceState(initialState))
 {
 }
 
@@ -24,7 +25,7 @@ GpuResource::~GpuResource()
 {
 }
 
-GpuResourceManager::GpuResourceManager(const GpuDevice& gpuDevice) :
+GpuResourceManager::GpuResourceManager(GpuDevice& gpuDevice) :
     _gpuDevice(gpuDevice),
     _resourceCount(_staticResourceCount),
     _names(_staticNames),
@@ -61,7 +62,7 @@ void GpuResourceManager::initialize()
         _bindlessTextureFreeList[i] = BindlessTextureIndex(MAX_BINDLESS_TEXTURES - i - 1);
 
     _persistentPiTemplate.reset(new ProgramInterfaceTemplate(ProgramType::All));
-    _persistentPiTemplate->declareBindless({"BindlessTextures"}, MAX_BINDLESS_TEXTURES);
+    _persistentPiTemplate->declareBindless(0, {"BindlessTextures"}, MAX_BINDLESS_TEXTURES);
     _persistentPi.reset(new ProgramInterface(_gpuDevice, *_persistentPiTemplate));
 
     _framePiTemplate.reset(new ProgramInterfaceTemplate(ProgramType::All, *_persistentPiTemplate));
@@ -88,15 +89,6 @@ BindlessTextureIndex GpuResourceManager::registerBindlessTexture(const GpuTextur
     _isBindlessTextureDirty = true;
 
     return index;
-}
-
-void GpuResourceManager::unregisterBindlessTexture(BindlessTextureIndex index)
-{
-    PILS_ASSERT(_bindlessTextures[int32_t(index)].get() != nullptr, "Trying to unregister bindless texture that was never registered at index ", int(index));
-    _persistentPi->setBindless("BindlessTextures", GpuBindlessTexture(), int32_t(index));
-    _bindlessTextures[int32_t(index)].reset();
-    _bindlessTextureFreeList.push_back(index);
-    _isBindlessTextureDirty = true;
 }
 
 

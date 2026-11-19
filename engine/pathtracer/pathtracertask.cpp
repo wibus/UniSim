@@ -163,7 +163,7 @@ bool PathTracerTask::defineShaders(GraphicContext& context)
         return false;
 
     // Gather modules
-    ProgramInterfaceTemplate pathTracePiTemplate(context.resources.framePiTemplate());
+    ProgramInterfaceTemplate pathTracePiTemplate(ProgramType::Compute, context.resources.framePiTemplate());
 
     for (auto& task : _pathTracerProviders)
     {
@@ -231,8 +231,8 @@ bool PathTracerTask::definePathTracerInterface(GraphicContext& context, ProgramI
 {
     bool ok = true;
 
-    piTemplate.declareConstant({"PathTracerCommonParams"});
-    piTemplate.declareImage({"result"});
+    piTemplate.declareConstant(13, {"PathTracerCommonParams"});
+    piTemplate.declareImage(0, {"result"});
 
     return ok;
 }
@@ -318,13 +318,14 @@ void PathTracerTask::render(GraphicContext& context)
         if(!_pathTracerPi->compileAndSet(context.device, *_pathTracerProgram))
             return;
 
-        ProgramScope programScope(*_pathTracerProgram);
+        ProgramScope programScope(context.device, *_pathTracerProgram);
         context.device.dispatch((_viewport->width + 7) / 8, (_viewport->height + 3) / 4);
     }
 }
 
-void PathTracerTask::setPathTracerProviders(const std::vector<PathTracerProviderTaskPtr>& providers)
+void PathTracerTask::setPathTracerProviders(const std::vector<PathTracerProviderTask*>& providers)
 {
+    // warning: circular reference to itself
     _pathTracerProviders = providers;
 }
 

@@ -46,6 +46,19 @@ void View::setViewportNative() const
 
 }
 
+const pils::gpu::FrameBuffer& View::currentFrameBuffer() const
+{
+    PILS_ASSERT(_window.imageIndex() >= 0, "Swapchain image index is undefined");
+    PILS_ASSERT(_window.imageIndex() < _frameBuffers.size(), "No framebuffer defined for this image index");
+    return *_frameBuffers[_window.imageIndex()];
+}
+
+const pils::gpu::FrameBuffer& View::frameBufferPrototype() const
+{
+    PILS_ASSERT(!_frameBuffers.empty(), "Frame buffers have not been define yet");
+    return *_frameBuffers[0];
+}
+
 }
 
 #endif // UNISIM_GRAPHIC_BACKEND_VK

@@ -27,12 +27,22 @@ GraphicTaskGraph::GraphicTaskGraph()
     _device.reset(new GpuDevice());
 }
 
+GraphicTaskGraph::~GraphicTaskGraph()
+{
+    _pathTracerTask.reset();
+    _imGuiRenderer.reset();
+    _tasks.clear();
+    _resources.reset();
+    _shaders.reset();
+    _device.reset();
+}
+
 bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Camera& camera)
 {
     _device->setupInitialization();
 
     _resources.reset(new GpuResourceManager(*_device));
-    _shaders.reset(new ShaderBuilder());
+    _shaders.reset(new ShaderBuilder(*_device));
     _imGuiRenderer.reset(new ImGuiRenderer(view));
 
     createTaskGraph(scene);
@@ -53,6 +63,7 @@ bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Ca
         if(!ok)
         {
             PILS_ERROR("'", task->name(), "' resource definition failed\n");
+            _device->abortInitialization();
             return false;
         }
     }
@@ -64,6 +75,7 @@ bool GraphicTaskGraph::initialize(const View& view, const Scene& scene, const Ca
         if(!ok)
         {
             PILS_ERROR("'", task->name(), "' shader definition failed\n");
+            _device->abortInitialization();
             return false;
         }
     }
@@ -87,6 +99,14 @@ bool GraphicTaskGraph::reloadShaders(const View& view, const Scene& scene, const
             return false;
         }
     }
+
+    return true;
+}
+
+bool GraphicTaskGraph::garbageCollect()
+{
+    _resources->garbageCollect();
+    _device->garbageCollect();
 
     return true;
 }
@@ -131,12 +151,12 @@ void GraphicTaskGraph::createTaskGraph(const Scene& scene)
     addTask(GraphicTaskPtr(new Ui(*_imGuiRenderer)));
 
     // Path Tracer Providers
-    std::vector<PathTracerProviderTaskPtr> pathTracerProviders;
+    std::vector<PathTracerProviderTask*> pathTracerProviders;
     for(const auto& task : _tasks)
     {
         if (auto pathTracerProvider = std::dynamic_pointer_cast<PathTracerProviderTask>(task))
         {
-            pathTracerProviders.push_back(pathTracerProvider);
+            pathTracerProviders.push_back(pathTracerProvider.get());
         }
     }
     _pathTracerTask->setPathTracerProviders(pathTracerProviders);

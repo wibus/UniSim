@@ -7,7 +7,7 @@
 
 #include "window.h"
 
-
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
 namespace pils
 {
 namespace gpu
@@ -16,6 +16,7 @@ class RenderPass;
 class FrameBuffer;
 }
 }
+#endif // UNISIM_GRAPHIC_BACKEND_VK
 
 
 namespace unisim
@@ -68,8 +69,11 @@ public:
 
     void setViewport() const;
 
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
     const pils::gpu::RenderPass& renderPass() const {  return *_renderPass; }
-    const pils::gpu::FrameBuffer& frameBuffer() const;
+    const pils::gpu::FrameBuffer& currentFrameBuffer() const;
+    const pils::gpu::FrameBuffer& frameBufferPrototype() const;
+#endif // UNISIM_GRAPHIC_BACKEND_VK
 
 private:
     void resetViewportNative();
@@ -80,8 +84,10 @@ private:
     Viewport _viewport;
     std::set<ViewEventListener*> _eventListeners;
 
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
     std::unique_ptr<pils::gpu::RenderPass> _renderPass;
     std::vector<std::unique_ptr<pils::gpu::FrameBuffer>> _frameBuffers;
+#endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
 }

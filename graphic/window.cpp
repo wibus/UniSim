@@ -336,6 +336,11 @@ void Window::pollEvents()
     glfwPollEvents();
 }
 
+bool Window::closeFrame()
+{
+    return closeFrameNative();
+}
+
 bool Window::newFrame()
 {
     return newFrameNative();

@@ -28,7 +28,16 @@ void GpuDevice::setupInitialization()
 
 }
 
+void GpuDevice::abortInitialization()
+{
+}
+
 void GpuDevice::finalizeInitialization()
+{
+
+}
+
+void GpuDevice::garbageCollect()
 {
 
 }
@@ -49,7 +58,7 @@ void GpuDevice::dispatch(unsigned int workGroupCountX, unsigned int workGroupCou
 
 void GpuDevice::draw(const GpuGeometryResource& resource)
 {
-    glBindVertexArray(resource.handle().vao);
+    glBindVertexArray(resource.roHandle().vao);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 

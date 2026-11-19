@@ -117,7 +117,7 @@ illuminance mode to convert the radiance values computed by the
 
 const char kComputeTransmittanceShader[] =
     R"(
-    layout(binding = 0, rgba32f) uniform image2D transmittance_image;
+    layout(set=2, binding=0, rgba32f) uniform image2D transmittance_image;
 
     layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
     void main()
@@ -141,15 +141,15 @@ struct GpuDirectIrradianceParams
 
 const char kComputeDirectIrradianceShader[] =
     R"(
-    layout (binding = 0, std140) uniform DirectIrradianceParams
+    layout (set=2, binding=0, std140) uniform DirectIrradianceParams
     {
         int blend;
     };
 
-    uniform sampler2D transmittance_texture;
+    layout(set=2, binding=1) uniform sampler2D transmittance_texture;
 
-    layout(binding = 0, rgba32f) uniform image2D delta_irradiance_texture;
-    layout(binding = 1, rgba32f) uniform image2D irradiance_texture;
+    layout(set=2, binding=2, rgba32f) uniform image2D delta_irradiance_texture;
+    layout(set=2, binding=3, rgba32f) uniform image2D irradiance_texture;
 
     layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
     void main()
@@ -178,18 +178,18 @@ struct GpuSingleScatteringParams
 
 const char kComputeSingleScatteringShader[] =
     R"(
-    layout (binding = 0, std140) uniform SingleScatteringParams
+    layout (set=2, binding=0, std140) uniform SingleScatteringParams
     {
         mat4 luminance_from_radiance;
         int blend;
     };
 
-    uniform sampler2D transmittance_texture;
+    layout(set=2, binding=1) uniform sampler2D transmittance_texture;
 
-    layout(binding = 0, rgba32f) uniform image3D delta_rayleigh_scattering_texture;
-    layout(binding = 1, rgba32f) uniform image3D delta_mie_scattering_texture;
-    layout(binding = 2, rgba32f) uniform image3D scattering_texture;
-    layout(binding = 3, rgba32f) uniform image3D single_mie_scattering_texture;
+    layout(set=2, binding=2, rgba32f) uniform image3D delta_rayleigh_scattering_texture;
+    layout(set=2, binding=3, rgba32f) uniform image3D delta_mie_scattering_texture;
+    layout(set=2, binding=4, rgba32f) uniform image3D scattering_texture;
+    layout(set=2, binding=5, rgba32f) uniform image3D single_mie_scattering_texture;
 
     layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
     void main()
@@ -232,18 +232,18 @@ struct GpuScatteringDensityParams
 
 const char kComputeScatteringDensityShader[] =
     R"(
-    layout (binding = 0, std140) uniform ScatteringDensityParams
+    layout (set=2, binding=0, std140) uniform ScatteringDensityParams
     {
         int scattering_order;
     };
 
-    uniform sampler2D transmittance_texture;
-    uniform sampler3D single_rayleigh_scattering_texture;
-    uniform sampler3D single_mie_scattering_texture;
-    uniform sampler3D multiple_scattering_texture;
-    uniform sampler2D delta_irradiance_texture;
+    layout(set=2, binding=1) uniform sampler2D transmittance_texture;
+    layout(set=2, binding=2) uniform sampler3D single_rayleigh_scattering_texture;
+    layout(set=2, binding=3) uniform sampler3D single_mie_scattering_texture;
+    layout(set=2, binding=4) uniform sampler3D multiple_scattering_texture;
+    layout(set=2, binding=5) uniform sampler2D delta_irradiance_texture;
 
-    layout(binding = 0, rgba32f) uniform image3D delta_scattering_density_texture;
+    layout(set=2, binding=6, rgba32f) uniform image3D delta_scattering_density_texture;
 
     layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
     void main()
@@ -274,18 +274,18 @@ struct GpuIndirectIrradianceParams
 
 const char kComputeIndirectIrradianceShader[] =
     R"(
-    layout (binding = 0, std140) uniform IndirectIrradianceParams
+    layout (set=2, binding=0, std140) uniform IndirectIrradianceParams
     {
         mat4 luminance_from_radiance;
         int scattering_order;
     };
 
-    uniform sampler3D single_rayleigh_scattering_texture;
-    uniform sampler3D single_mie_scattering_texture;
-    uniform sampler3D multiple_scattering_texture;
+    layout(set=2, binding=1) uniform sampler3D single_rayleigh_scattering_texture;
+    layout(set=2, binding=2) uniform sampler3D single_mie_scattering_texture;
+    layout(set=2, binding=3) uniform sampler3D multiple_scattering_texture;
 
-    layout(binding = 0, rgba32f) uniform image2D delta_irradiance_texture;
-    layout(binding = 1, rgba32f) uniform image2D irradiance_texture;
+    layout(set=2, binding=4, rgba32f) uniform image2D delta_irradiance_texture;
+    layout(set=2, binding=5, rgba32f) uniform image2D irradiance_texture;
 
     layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
     void main()
@@ -317,16 +317,16 @@ struct GpuMultipleScatteringParams
 
 const char kComputeMultipleScatteringShader[] =
     R"(
-    layout (binding = 0, std140) uniform MultipleScatteringParams
+    layout (set=2, binding=0, std140) uniform MultipleScatteringParams
     {
         mat4 luminance_from_radiance;
     };
 
-    uniform sampler2D transmittance_texture;
-    uniform sampler3D scattering_density_texture;
+    layout(set=2, binding=1) uniform sampler2D transmittance_texture;
+    layout(set=2, binding=2) uniform sampler3D scattering_density_texture;
 
-    layout(binding = 0, rgba32f) uniform image3D delta_multiple_scattering_texture;
-    layout(binding = 1, rgba32f) uniform image3D scattering_texture;
+    layout(set=2, binding=3, rgba32f) uniform image3D delta_multiple_scattering_texture;
+    layout(set=2, binding=4, rgba32f) uniform image3D scattering_texture;
 
     layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
     void main()
@@ -363,10 +363,11 @@ shader).
 
 const char kAtmosphereShader[] =
     R"(
-    uniform sampler2D transmittance_texture;
-    uniform sampler3D scattering_texture;
-    uniform sampler3D single_mie_scattering_texture;
-    uniform sampler2D irradiance_texture;
+    layout (set=2, binding=18)  uniform sampler2D transmittance_texture;
+    layout (set=2, binding=19)  uniform sampler3D scattering_texture;
+    layout (set=2, binding=20)  uniform sampler2D irradiance_texture;
+    layout (set=2, binding=21)  uniform sampler3D single_mie_scattering_texture;
+
     #ifdef RADIANCE_API_ENABLED
     RadianceSpectrum GetSolarRadiance() {
       return ATMOSPHERE.solar_irradiance /
@@ -598,8 +599,8 @@ bool Model::defineShaders(GraphicContext& context)
         std::string header = glsl_header_factory_(pass.lambdas, false);
 
         {
-            ProgramInterfaceTemplate piTemplate(ProgramType::Compute);
-            piTemplate.declareImage("transmittance_image");
+            ProgramInterfaceTemplate piTemplate(ProgramType::Compute, context.resources.framePiTemplate());
+            piTemplate.declareImage(0, "transmittance_image");
 
             pass.transmittance.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.transmittance.program.reset();
@@ -610,11 +611,11 @@ bool Model::defineShaders(GraphicContext& context)
         }
 
         {
-            ProgramInterfaceTemplate piTemplate(ProgramType::Compute);
-            piTemplate.declareConstant("DirectIrradianceParams");
-            piTemplate.declareTexture("transmittance_texture");
-            piTemplate.declareImage("delta_irradiance_texture");
-            piTemplate.declareImage("irradiance_texture");
+            ProgramInterfaceTemplate piTemplate(ProgramType::Compute, context.resources.framePiTemplate());
+            piTemplate.declareConstant(0, "DirectIrradianceParams");
+            piTemplate.declareTexture(1, "transmittance_texture");
+            piTemplate.declareImage(2, "delta_irradiance_texture");
+            piTemplate.declareImage(3, "irradiance_texture");
 
             pass.direct_irradiance.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.direct_irradiance.program.reset();
@@ -625,13 +626,13 @@ bool Model::defineShaders(GraphicContext& context)
         }
 
         {
-            ProgramInterfaceTemplate piTemplate(ProgramType::Compute);
-            piTemplate.declareConstant("SingleScatteringParams");
-            piTemplate.declareTexture("transmittance_texture");
-            piTemplate.declareImage("delta_rayleigh_scattering_texture");
-            piTemplate.declareImage("delta_mie_scattering_texture");
-            piTemplate.declareImage("scattering_texture");
-            piTemplate.declareImage("single_mie_scattering_texture");
+            ProgramInterfaceTemplate piTemplate(ProgramType::Compute, context.resources.framePiTemplate());
+            piTemplate.declareConstant(0, "SingleScatteringParams");
+            piTemplate.declareTexture(1, "transmittance_texture");
+            piTemplate.declareImage(2, "delta_rayleigh_scattering_texture");
+            piTemplate.declareImage(3, "delta_mie_scattering_texture");
+            piTemplate.declareImage(4, "scattering_texture");
+            piTemplate.declareImage(5, "single_mie_scattering_texture");
 
             pass.single_scattering.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.single_scattering.program.reset();
@@ -642,14 +643,14 @@ bool Model::defineShaders(GraphicContext& context)
         }
 
         {
-            ProgramInterfaceTemplate piTemplate(ProgramType::Compute);
-            piTemplate.declareConstant("ScatteringDensityParams");
-            piTemplate.declareTexture("transmittance_texture");
-            piTemplate.declareTexture("single_rayleigh_scattering_texture");
-            piTemplate.declareTexture("single_mie_scattering_texture");
-            piTemplate.declareTexture("multiple_scattering_texture");
-            piTemplate.declareTexture("delta_irradiance_texture");
-            piTemplate.declareImage("delta_scattering_density_texture");
+            ProgramInterfaceTemplate piTemplate(ProgramType::Compute, context.resources.framePiTemplate());
+            piTemplate.declareConstant(0, "ScatteringDensityParams");
+            piTemplate.declareTexture(1, "transmittance_texture");
+            piTemplate.declareTexture(2, "single_rayleigh_scattering_texture");
+            piTemplate.declareTexture(3, "single_mie_scattering_texture");
+            piTemplate.declareTexture(4, "multiple_scattering_texture");
+            piTemplate.declareTexture(5, "delta_irradiance_texture");
+            piTemplate.declareImage(6, "delta_scattering_density_texture");
 
             pass.scattering_density.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.scattering_density.program.reset();
@@ -660,13 +661,13 @@ bool Model::defineShaders(GraphicContext& context)
         }
 
         {
-            ProgramInterfaceTemplate piTemplate(ProgramType::Compute);
-            piTemplate.declareConstant("IndirectIrradianceParams");
-            piTemplate.declareTexture("single_rayleigh_scattering_texture");
-            piTemplate.declareTexture("single_mie_scattering_texture");
-            piTemplate.declareTexture("multiple_scattering_texture");
-            piTemplate.declareImage("delta_irradiance_texture");
-            piTemplate.declareImage("irradiance_texture");
+            ProgramInterfaceTemplate piTemplate(ProgramType::Compute, context.resources.framePiTemplate());
+            piTemplate.declareConstant(0, "IndirectIrradianceParams");
+            piTemplate.declareTexture(1, "single_rayleigh_scattering_texture");
+            piTemplate.declareTexture(2, "single_mie_scattering_texture");
+            piTemplate.declareTexture(3, "multiple_scattering_texture");
+            piTemplate.declareImage(4, "delta_irradiance_texture");
+            piTemplate.declareImage(5, "irradiance_texture");
 
             pass.indirect_irradiance.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.indirect_irradiance.program.reset();
@@ -677,12 +678,12 @@ bool Model::defineShaders(GraphicContext& context)
         }
 
         {
-            ProgramInterfaceTemplate piTemplate(ProgramType::Compute);
-            piTemplate.declareConstant("MultipleScatteringParams");
-            piTemplate.declareTexture("transmittance_texture");
-            piTemplate.declareTexture("scattering_density_texture");
-            piTemplate.declareImage("delta_multiple_scattering_texture");
-            piTemplate.declareImage("scattering_texture");
+            ProgramInterfaceTemplate piTemplate(ProgramType::Compute, context.resources.framePiTemplate());
+            piTemplate.declareConstant(0, "MultipleScatteringParams");
+            piTemplate.declareTexture(1, "transmittance_texture");
+            piTemplate.declareTexture(2, "scattering_density_texture");
+            piTemplate.declareImage(3, "delta_multiple_scattering_texture");
+            piTemplate.declareImage(4, "scattering_texture");
 
             pass.multiple_scattering.interface.reset(new ProgramInterface(context.device, piTemplate));
             pass.multiple_scattering.program.reset();
@@ -695,8 +696,8 @@ bool Model::defineShaders(GraphicContext& context)
 
     if (final_compute_transmittance_)
     {
-        ProgramInterfaceTemplate piTemplate(ProgramType::Compute);
-        piTemplate.declareImage("transmittance_image");
+        ProgramInterfaceTemplate piTemplate(ProgramType::Compute, context.resources.framePiTemplate());
+        piTemplate.declareImage(0, "transmittance_image");
 
         final_compute_transmittance_->interface.reset(new ProgramInterface(context.device, piTemplate));
         final_compute_transmittance_->program.reset();
@@ -732,10 +733,10 @@ bool Model::definePathTracerInterface(
 {
     bool ok = true;
 
-    piTemplate.declareTexture({"transmittance_texture"});
-    piTemplate.declareTexture({"scattering_texture"});
-    //piTemplate.declareTexture({"irradiance_texture"});
-    piTemplate.declareTexture({"single_mie_scattering_texture"});
+    piTemplate.declareTexture(18, {"transmittance_texture"});
+    piTemplate.declareTexture(19, {"scattering_texture"});
+    //piTemplate.declareTexture(20, {"irradiance_texture"});
+    piTemplate.declareTexture(21, {"single_mie_scattering_texture"});
 
     return ok;
 }
@@ -1049,7 +1050,7 @@ void Model::Recompute(
         if (!pi.compileAndSet(context.device, *final_compute_transmittance_->program))
             return;
 
-        ProgramScope programScope(*final_compute_transmittance_->program);
+        ProgramScope programScope(context.device, *final_compute_transmittance_->program);
         context.device.dispatch(TRANSMITTANCE_TEXTURE_WIDTH, TRANSMITTANCE_TEXTURE_HEIGHT);
     }
 
@@ -1073,7 +1074,7 @@ void Model::Precompute(
         pass.luminance_from_radiance[2], pass.luminance_from_radiance[5], pass.luminance_from_radiance[8], 0,
         0, 0, 0, 0);
 
-    const GpuDevice& device = context.device;
+    GpuDevice& device = context.device;
     GpuResourceManager& resources = context.resources;
 
     {
@@ -1084,7 +1085,7 @@ void Model::Precompute(
         if (!pi.compileAndSet(device, *pass.transmittance.program))
             return;
 
-        ProgramScope programScope(*pass.transmittance.program);
+        ProgramScope programScope(device, *pass.transmittance.program);
         context.device.dispatch(TRANSMITTANCE_TEXTURE_WIDTH, TRANSMITTANCE_TEXTURE_HEIGHT);
     }
 
@@ -1112,7 +1113,7 @@ void Model::Precompute(
         if (!pi.compileAndSet(device, *pass.direct_irradiance.program))
             return;
 
-        ProgramScope programScope(*pass.direct_irradiance.program);
+        ProgramScope programScope(device, *pass.direct_irradiance.program);
         context.device.dispatch(IRRADIANCE_TEXTURE_WIDTH, IRRADIANCE_TEXTURE_WIDTH);
     }
 
@@ -1143,7 +1144,7 @@ void Model::Precompute(
         if (!pi.compileAndSet(device, *pass.single_scattering.program))
             return;
 
-        ProgramScope programScope(*pass.single_scattering.program);
+        ProgramScope programScope(device, *pass.single_scattering.program);
         context.device.dispatch(SCATTERING_TEXTURE_WIDTH, SCATTERING_TEXTURE_HEIGHT, SCATTERING_TEXTURE_DEPTH);
     }
 
@@ -1172,7 +1173,7 @@ void Model::Precompute(
             if (!pi.compileAndSet(device, *pass.scattering_density.program))
                 return;
 
-            ProgramScope programScope(*pass.scattering_density.program);
+            ProgramScope programScope(device, *pass.scattering_density.program);
             context.device.dispatch(SCATTERING_TEXTURE_WIDTH, SCATTERING_TEXTURE_HEIGHT, SCATTERING_TEXTURE_DEPTH);
         }
 
@@ -1197,7 +1198,7 @@ void Model::Precompute(
             if (!pi.compileAndSet(device, *pass.indirect_irradiance.program))
                 return;
 
-            ProgramScope programScope(*pass.indirect_irradiance.program);
+            ProgramScope programScope(device, *pass.indirect_irradiance.program);
             context.device.dispatch(IRRADIANCE_TEXTURE_WIDTH, IRRADIANCE_TEXTURE_HEIGHT);
         }
 
@@ -1222,7 +1223,7 @@ void Model::Precompute(
             if (!pi.compileAndSet(device, *pass.multiple_scattering.program))
                 return;
 
-            ProgramScope programScope(*pass.multiple_scattering.program);
+            ProgramScope programScope(device, *pass.multiple_scattering.program);
             context.device.dispatch(SCATTERING_TEXTURE_WIDTH, SCATTERING_TEXTURE_HEIGHT, SCATTERING_TEXTURE_DEPTH);
         }
     }

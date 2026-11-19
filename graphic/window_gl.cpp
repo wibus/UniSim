@@ -47,6 +47,11 @@ void Window::resizeViewportNative()
 
 }
 
+bool Window::closeFrameNative()
+{
+    return true;
+}
+
 bool Window::newFrameNative()
 {
     return true;

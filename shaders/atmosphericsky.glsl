@@ -1,10 +1,12 @@
-layout (std140) uniform StarsParams
+layout (set=2, binding=14, std140) uniform StarsParams
 {
     vec4 starsQuaternion;
     float starsExposure;
 };
 
-layout (std140) uniform AtmosphereParams
+layout (set=2, binding=15) uniform sampler2D Stars;
+
+layout (set=2, binding=16, std140) uniform AtmosphereParams
 {
     vec4 sunDirection;
     vec4 moonDirection;
@@ -13,8 +15,7 @@ layout (std140) uniform AtmosphereParams
     float groundHeightKM;
 };
 
-uniform sampler2D Stars;
-uniform sampler2D Moon;
+layout (set=2, binding=17) uniform sampler2D Moon;
 
 
 // Returns the luminance of the Sun, outside the atmosphere.
@@ -73,7 +74,7 @@ void SampleSkyLuminance(
         transmittance);
 
     vec2 starsUv = findUV(starsQuaternion, viewDir);
-    vec3 starsLuminance = texture2D(Stars, vec2(1 - starsUv.x, 1 - starsUv.y)).rgb;
+    vec3 starsLuminance = texture(Stars, vec2(1 - starsUv.x, 1 - starsUv.y)).rgb;
     skyLuminance += transmittance * starsLuminance * starsExposure;
 }
 

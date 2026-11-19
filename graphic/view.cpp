@@ -38,8 +38,10 @@ View::~View()
     _window.unregisterEventListener(this);
     PILS_ASSERT(_eventListeners.empty(), "View is being destroyed with active listeners");
 
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
     _frameBuffers.clear();
     _renderPass.reset();
+#endif // UNISIM_GRAPHIC_BACKEND_VK
 }
 
 void View::onWindowResizeBefore(const Window& window, int width, int height)
@@ -74,13 +76,6 @@ void View::unregisterEventListener(ViewEventListener* listener)
 void View::setViewport() const
 {
     setViewportNative();
-}
-
-const pils::gpu::FrameBuffer& View::frameBuffer() const
-{
-    PILS_ASSERT(_window.imageIndex() >= 0, "Swapchain image index is undefined");
-    PILS_ASSERT(_window.imageIndex() < _frameBuffers.size(), "No framebuffer defined for this image index");
-    return *_frameBuffers[_window.imageIndex()];
 }
 
 }

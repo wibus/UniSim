@@ -1,10 +1,10 @@
-layout (std140) uniform StarsParams
+layout (set=2, binding=14, std140) uniform StarsParams
 {
     vec4 starsQuaternion;
     float starsExposure;
 };
 
-uniform sampler2D Stars;
+layout (set=2, binding=15) uniform sampler2D Stars;
 
 
 void SampleSkyLuminance(
@@ -14,7 +14,7 @@ void SampleSkyLuminance(
         vec3 viewDir)
 {
     vec2 uv = findUV(starsQuaternion, viewDir);
-    vec3 color = texture2D(Stars, vec2(1 - uv.x, 1 - uv.y)).rgb;
+    vec3 color = texture(Stars, vec2(1 - uv.x, 1 - uv.y)).rgb;
 
     skyLuminance = color * starsExposure;
 

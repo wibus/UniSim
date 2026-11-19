@@ -119,6 +119,20 @@ bool shadowcast(in Ray ray, float tMax)
     return true;
 }
 
+#ifdef API_OPENGL
+vec4 fetchUV(layout(rgba8) readonly image2D img, vec2 uv)
+{
+    ivec2 imgSize = imageSize(img);
+    vec4 texel = imageLoad(img, ivec2((imgSize -1) * uv));
+    return texel;
+}
+#else
+vec4 fetchUV(sampler2D img, vec2 uv)
+{
+    return textureLod(img, uv, 0);
+}
+#endif // API_OPENGL
+
 HitInfo resolveHit(in Ray ray, in Intersection intersection)
 {
     Material material = materials[intersection.materialId];
@@ -135,20 +149,14 @@ HitInfo resolveHit(in Ray ray, in Intersection intersection)
     vec3 albedo = material.albedo.rgb;
     if(material.albedoTexture != -1)
     {
-        layout(rgba8) image2D img = bindlessTextures[material.albedoTexture];
-        ivec2 imgSize = imageSize(img);
-        vec3 texel = imageLoad(img, ivec2(imgSize * uv)).rgb;
-
+        vec3 texel = fetchUV(bindlessTextures[nonuniformEXT(material.albedoTexture)], uv).rgb;
         albedo = toLinear(texel);
     }
 
     vec3 specular = material.specular.rgb;
     if(material.specularTexture != -1)
     {
-        layout(rgba8) image2D img = bindlessTextures[material.specularTexture];
-        ivec2 imgSize = imageSize(img);
-        vec3 texel = imageLoad(img, ivec2(imgSize * uv)).rgb;
-
+        vec3 texel = fetchUV(bindlessTextures[nonuniformEXT(material.specularTexture)], uv).rgb;
         specular.r = toLinear(texel).r;
     }
 
@@ -465,7 +473,7 @@ Ray scatter(Ray rayIn, HitInfo hitInfo)
 }
 
 
-uniform layout(rgba32f) image2D result;
+layout(set=2, binding=0, rgba32f) uniform image2D result;
 
 layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 

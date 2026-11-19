@@ -16,12 +16,12 @@ PathTracerModule::PathTracerModule(
     _source(source),
     _defines(defines)
 {
-    PILS_INFO("Creating path tracer module '", _name, "' from shader '", source ? source->uri() : "null", "'");
+    PILS_DEBUG("Creating path tracer module '", _name, "' from shader '", source ? source->uri() : "null", "'");
 }
 
 PathTracerModule::~PathTracerModule()
 {
-    PILS_INFO("Destroying path tracer module '", _name, "'");
+    PILS_DEBUG("Destroying path tracer module '", _name, "'");
 }
 
 

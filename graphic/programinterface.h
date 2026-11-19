@@ -20,6 +20,9 @@ class DescriptorSetLayout;
 class PipelineLayout;
 class DescriptorSet;
 class Fence;
+class Image;
+class Buffer;
+class Mapping;
 }
 }
 #endif // UNISIM_GRAPHIC_BACKEND_VK
@@ -58,17 +61,19 @@ struct ProgramBinding
 
 class ProgramInterfaceTemplate
 {
+    ProgramInterfaceTemplate(const ProgramInterfaceTemplate& ) = delete;
+
 public:
     ProgramInterfaceTemplate(ProgramType programType);
     ProgramInterfaceTemplate(ProgramType programType, const ProgramInterfaceTemplate& parent);
 
     ProgramType programType() const { return _programType; }
 
-    void declareBindless(const std::string& name, uint32_t descriptorCount = 1);
-    void declareConstant(const std::string& name, uint32_t descriptorCount = 1);
-    void declareStorage(const std::string& name, uint32_t descriptorCount = 1);
-    void declareTexture(const std::string& name, uint32_t descriptorCount = 1);
-    void declareImage(const std::string& name, uint32_t descriptorCount = 1);
+    void declareBindless(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount = 1);
+    void declareConstant(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount = 1);
+    void declareStorage(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount = 1);
+    void declareTexture(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount = 1);
+    void declareImage(uint32_t bindingIndex, const std::string& name, uint32_t descriptorCount = 1);
 
     const std::vector<ProgramBinding>& bindless() const { return  _bindless;}
     const std::vector<ProgramBinding>& constants() const { return  _constants;}
@@ -99,7 +104,6 @@ private:
 
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
     uint32_t _setIndex;
-    uint32_t _nextBinding;
     pils::gpu::ShaderStage _shaderStages;
 
     const ProgramInterfaceTemplate* _parent;
@@ -122,7 +126,7 @@ public:
     void setTexture(const std::string& name, const GpuTextureResource& resource, uint32_t arrayIndex = 0);
     void setTexture(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex = 0);
     void setImage(const std::string& name, const GpuImageResource& resource, uint32_t arrayIndex = 0);
-    bool compileAndSet(const GpuDevice& gpuDevice, const Program& program);
+    bool compileAndSet(GpuDevice& gpuDevice, const Program& program);
 
 private:
     ProgramType _programType;
@@ -162,15 +166,14 @@ private:
     uint32_t _nextBinding;
     std::shared_ptr<pils::gpu::DescriptorSetLayout> _layout;
 
-    void recycleDescriptorSet(const GpuDevice& gpuDevice);
+    void recycleDescriptorSet(GpuDevice& gpuDevice);
 
     std::map<std::string, std::set<uint32_t>> _dirtyBindlessDescriptors;
 
     bool _isDescriptorSetDirty;
     std::shared_ptr<pils::gpu::DescriptorSet> _cachedDescriptorSet;
-    std::vector<std::pair<
-        std::shared_ptr<pils::gpu::DescriptorSet>,
-        std::shared_ptr<pils::gpu::Fence>>> _recycledDesciptorSets;
+    std::vector<std::shared_ptr<pils::gpu::DescriptorSet>> _recycledDesciptorSets;
+    std::shared_ptr<bool> _isAlive;
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 

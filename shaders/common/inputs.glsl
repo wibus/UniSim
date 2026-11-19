@@ -1,4 +1,16 @@
-layout (std140) uniform PathTracerCommonParams
+
+#if defined(API_OPENGL)
+layout (set=0, binding=0, std140) buffer BindlessTextures
+{
+    layout(rgba8) readonly image2D bindlessTextures[];
+};
+#elif defined(API_VULKAN)
+layout (set=0, binding=0) uniform sampler2D bindlessTextures[];
+#endif // defined(API_OPENGL)
+
+
+
+layout (set=2, binding=13, std140) uniform PathTracerCommonParams
 {
     mat4 rayMatrix;
     vec4 lensePosition;
@@ -13,67 +25,62 @@ layout (std140) uniform PathTracerCommonParams
     vec4 halton[64];
 };
 
-layout (std140) buffer BindlessTextures
-{
-    layout(rgba8) readonly image2D bindlessTextures[];
-};
-
-layout (std430) buffer Primitives
+layout (set=2, binding=1, std430) buffer Primitives
 {
     Primitive primitives[];
 };
 
-layout (std430) buffer Meshes
+layout (set=2, binding=2, std430) buffer Meshes
 {
     Mesh meshes[];
 };
 
-layout (std430) buffer Spheres
+layout (set=2, binding=3, std430) buffer Spheres
 {
     Sphere spheres[];
 };
 
-layout (std430) buffer Planes
+layout (set=2, binding=4, std430) buffer Planes
 {
     Plane planes[];
 };
 
-layout (std430) buffer Instances
+layout (set=2, binding=5, std430) buffer Instances
 {
     Instance instances[];
 };
 
-layout (std430) buffer BvhNodes
+layout (set=2, binding=6, std430) buffer BvhNodes
 {
     BvhNode bvhNodes[];
 };
 
-layout (std430) buffer Triangles
+layout (set=2, binding=7, std430) buffer Triangles
 {
     Triangle triangles[];
 };
 
-layout (std430) buffer VerticesPos
+layout (set=2, binding=8, std430) buffer VerticesPos
 {
     VertexPos verticesPos[];
 };
 
-layout (std430) buffer VerticesData
+layout (set=2, binding=9, std430) buffer VerticesData
 {
     VertexData verticesData[];
 };
 
-layout (std430) buffer Emitters
+layout (set=2, binding=10, std430) buffer Emitters
 {
     Emitter emitters[];
 };
 
-layout (std430) buffer DirectionalLights
+layout (set=2, binding=11, std430) buffer DirectionalLights
 {
     DirectionalLight directionalLights[];
 };
 
-layout (std430) buffer Materials
+layout (set=2, binding=12, std430) buffer Materials
 {
     Material materials[];
 };

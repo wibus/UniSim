@@ -64,15 +64,20 @@ void Window::resizeViewportNative()
     _swapchain->createSwapchain(_width, _height);
 }
 
-bool Window::newFrameNative()
+bool Window::closeFrameNative()
 {
     const pils::gpu::Device& device = _gpuDevice.context().device();
 
     device.waitForFence(*_frameFences[_swapchain->frameIndex()]);
 
-    _gpuDevice.setCommandList(_frameCommandLists[_swapchain->frameIndex()]);
-    _gpuDevice.setFrameFence(_frameFences[_swapchain->frameIndex()]);
+    return true;
+}
 
+bool Window::newFrameNative()
+{
+    const pils::gpu::Device& device = _gpuDevice.context().device();
+
+    // Warning: changes _swapchain->frameIndex()
     bool acquired = _swapchain->acquireImage();
 
     if (_swapchain->needsResize())
@@ -91,6 +96,8 @@ bool Window::newFrameNative()
     if(acquired && !_swapchain->needsResize())
     {
         device.resetFence(*_frameFences[_swapchain->frameIndex()]);
+        _gpuDevice.setFrameFence(_frameFences[_swapchain->frameIndex()]);
+        _gpuDevice.setCommandList(_frameCommandLists[_swapchain->frameIndex()]);
     }
     else
     {

@@ -35,6 +35,8 @@ class ShaderModule;
 namespace unisim
 {
 
+class View;
+class RenderStates;
 class ProgramInterfaceTemplate;
 
 enum class ShaderType {Vertex, Fragment, Compute};
@@ -73,13 +75,18 @@ public:
     operator GLuint() const { return _shaderId; }
 #endif // UNISIM_GRAPHIC_BACKEND_GL
 
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+    ShaderHandle(const std::shared_ptr<pils::gpu::ShaderModule>& module);
+    const std::shared_ptr<pils::gpu::ShaderModule>& shaderModule() const { return _module; };
+#endif // UNISIM_GRAPHIC_BACKEND_VK
+
 private:
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
     GLuint _shaderId;
 #endif // UNISIM_GRAPHIC_BACKEND_GL
 
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
-    std::shared_ptr<pils::gpu::ShaderModule> _shaderModule;
+    std::shared_ptr<pils::gpu::ShaderModule> _module;
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
@@ -97,13 +104,18 @@ public:
     operator GLuint() const { return _programId; }
 #endif // UNISIM_GRAPHIC_BACKEND_GL
 
+#ifdef UNISIM_GRAPHIC_BACKEND_VK
+    ProgramHandle(const std::shared_ptr<pils::gpu::PipelineStage>& pipeline);
+    const std::shared_ptr<pils::gpu::PipelineStage>& pipelineStage() const { return _pipeline; };
+#endif // UNISIM_GRAPHIC_BACKEND_VK
+
 private:
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
     GLuint _programId;
 #endif // UNISIM_GRAPHIC_BACKEND_GL
 
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
-    std::shared_ptr<pils::gpu::PipelineStage> _pipelineStage;
+    std::shared_ptr<pils::gpu::PipelineStage> _pipeline;
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
@@ -149,8 +161,6 @@ class Program
 
 public:
     Program(
-        const GpuDevice& gpuDevice,
-        const ProgramInterfaceTemplate& piTemplate,
         ProgramType type,
         const std::string& name,
         ProgramHandle&& programHandle,
@@ -165,7 +175,7 @@ public:
     const ProgramHandle& handle() const { return *_handle; }
 
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
-    const pils::gpu::PipelineLayout& layout() const { return *_layout; }
+    const pils::gpu::PipelineLayout& layout() const;
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 
 private:
@@ -173,10 +183,6 @@ private:
     std::string _name;
     std::unique_ptr<ProgramHandle> _handle;
     std::vector<std::shared_ptr<Shader>> _shaders;
-
-#ifdef UNISIM_GRAPHIC_BACKEND_VK
-    std::shared_ptr<pils::gpu::PipelineLayout> _layout;
-#endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
 using ProgramPtr = std::shared_ptr<Program>;
@@ -185,9 +191,10 @@ using ProgramPtr = std::shared_ptr<Program>;
 class ProgramScope
 {
 public:
-    ProgramScope(const Program& program);
+    ProgramScope(const GpuDevice& gpuDevice, const Program& program);
     ~ProgramScope();
 };
+
 
 extern const std::string GLSL_VERSION__HEADER;
 extern std::string g_GlslExtensions;
@@ -195,12 +202,13 @@ extern std::string g_GlslExtensions;
 class ShaderBuilder
 {
 public:
-    ShaderBuilder();
+    ShaderBuilder(const GpuDevice& device);
     ~ShaderBuilder();
 
     bool generateGraphicProgram(
         const GpuDevice& gpuDevice,
         const ProgramInterfaceTemplate& piTemplate,
+        const RenderStates& renderStates,
         ProgramPtr& program,
         const std::string& name,
         const std::string& vertexFileName,
@@ -248,12 +256,14 @@ private:
 
     const char* defineLine(std::vector<std::string>& directives, int lineId, const std::string& srcName);
 
+    const GpuDevice& _device;
+
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
     typedef uint64_t ProgramHash;
 
     std::unique_ptr<shaderc::Compiler> _compiler;
     std::unique_ptr<shaderc::CompileOptions> _options;
-    std::map<ProgramHash, std::shared_ptr<pils::gpu::PipelineStage>> _pipelines;
+    std::vector<ProgramPtr> _programs;
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 

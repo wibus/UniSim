@@ -19,13 +19,15 @@ GpuDevice::GpuDevice()
     _deviceContext.reset(new pils::gpu::Context());
 
     pils::gpu::DescriptorPoolSettings poolSettings;
-    poolSettings.enableBindless = false;
-    poolSettings.maxSetCount = 5;
+    poolSettings.enableBindless = true;
+    poolSettings.maxSetCount = 1000;
     poolSettings.typeToCount[vk::DescriptorType::eUniformBuffer] = 100;
     poolSettings.typeToCount[vk::DescriptorType::eStorageBuffer] = 100;
     poolSettings.typeToCount[vk::DescriptorType::eStorageImage] = 100;
     poolSettings.typeToCount[vk::DescriptorType::eCombinedImageSampler] = 1000;
     _descriptorPool.reset(new pils::gpu::DescriptorPool(_deviceContext->device(), poolSettings));
+
+    _garbageBins.resize(frameInFlightCount());
 }
 
 GpuDevice::~GpuDevice()
@@ -60,6 +62,13 @@ void GpuDevice::setFrameFence(const std::shared_ptr<pils::gpu::Fence>& fence)
 {
     PILS_ASSERT(_frameFence.get() == nullptr || fence.get() == nullptr, "Frame fence should not be overriden.");
     _frameFence = fence;
+
+    if (fence)
+    {
+        PILS_ASSERT(_garbageBins[_garbageBinIndex].fence.get() == nullptr, "Garbage bin ", _garbageBinIndex, " is not reset.");
+        PILS_ASSERT(_garbageBins[_garbageBinIndex].callbacks.empty(), "Garbage bin ", _garbageBinIndex, " is not reset.");
+        _garbageBins[_garbageBinIndex].fence = fence;
+    }
 }
 
 void GpuDevice::setupInitialization()
@@ -67,6 +76,13 @@ void GpuDevice::setupInitialization()
     setCommandList(std::make_shared<pils::gpu::CommandList>(_deviceContext->device()));
     setFrameFence(std::make_shared<pils::gpu::Fence>(_deviceContext->device()));
     _commandList->begin(true);
+}
+
+void GpuDevice::abortInitialization()
+{
+    _commandList->end();
+    setCommandList({});
+    setFrameFence({});
 }
 
 void GpuDevice::finalizeInitialization()
@@ -77,6 +93,25 @@ void GpuDevice::finalizeInitialization()
 
     setCommandList({});
     setFrameFence({});
+}
+
+void GpuDevice::garbageCollect()
+{
+    _garbageBinIndex = (_garbageBinIndex + 1) % _garbageBins.size();
+
+    if (!_garbageBins[_garbageBinIndex].fence)
+    {
+        PILS_ASSERT(_garbageBins[_garbageBinIndex].callbacks.empty(), "Garbage bin ", _garbageBinIndex, " has no fence but has resources to dispose.");
+        return;
+    }
+
+    PILS_ASSERT(_garbageBins[_garbageBinIndex].fence->isSignaled(), "Garbage bin ", _garbageBinIndex, " was ready to be collected, but its fence is not signaled. Its resources will be disposed nonetheless.");
+
+    for (const auto& callback : _garbageBins[_garbageBinIndex].callbacks)
+        callback();
+
+    _garbageBins[_garbageBinIndex].fence.reset();
+    _garbageBins[_garbageBinIndex].callbacks.clear();
 }
 
 void GpuDevice::begin()
@@ -92,17 +127,24 @@ void GpuDevice::end()
 
 void GpuDevice::dispatch(unsigned int workGroupCountX, unsigned int workGroupCountY, unsigned int workGroupCountZ)
 {
-    PILS_ASSERT(false, "Not implemented!");
+    _commandList->dispatch(workGroupCountX, workGroupCountY, workGroupCountZ);
 }
 
 void GpuDevice::draw(const GpuGeometryResource& resource)
 {
-    PILS_ASSERT(false, "Not implemented!");
+    _commandList->draw(resource.vertexCount());
 }
 
 void GpuDevice::clearSwapChain()
 {
-    PILS_ASSERT(false, "Not implemented!");
+    //PILS_ASSERT(false, "Not implemented!");
+}
+
+void GpuDevice::dispose(std::function<void(void)> disposeCallback)
+{
+    PILS_ASSERT(_garbageBinIndex < _garbageBins.size(), "Invalid active garbage bin index: ", _garbageBinIndex);
+    PILS_ASSERT(_garbageBins[_garbageBinIndex].fence.get() != nullptr, "Active garbage bin ", _garbageBinIndex, " is missing a fence.");
+    _garbageBins[_garbageBinIndex].callbacks.push_back(disposeCallback);
 }
 
 }

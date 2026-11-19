@@ -6,6 +6,7 @@
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
 #include <memory>
 #include <vector>
+#include <functional>
 
 namespace pils
 {
@@ -34,7 +35,10 @@ public:
     uint32_t frameInFlightCount() const;
 
     void setupInitialization();
+    void abortInitialization();
     void finalizeInitialization();
+
+    void garbageCollect();
 
     void begin();
     void end();
@@ -48,7 +52,8 @@ public:
     pils::gpu::Context& context() { return *_deviceContext; }
     const pils::gpu::Context& context() const { return *_deviceContext; }
 
-    const pils::gpu::DescriptorPool& descriptorPool() const { return *_descriptorPool; }
+    pils::gpu::DescriptorPool& descriptorPool() const { return *_descriptorPool; }
+    void dispose(std::function<void(void)> disposeCallback);
 
     pils::gpu::CommandList& commandList() const;
     void setCommandList(const std::shared_ptr<pils::gpu::CommandList>& commandList);
@@ -63,6 +68,15 @@ private:
     std::unique_ptr<pils::gpu::DescriptorPool> _descriptorPool;
     std::shared_ptr<pils::gpu::CommandList> _commandList;
     std::shared_ptr<pils::gpu::Fence> _frameFence;
+
+    struct GarbageBin
+    {
+        std::shared_ptr<pils::gpu::Fence> fence;
+        std::vector<std::function<void(void)>> callbacks;
+    };
+    std::vector<GarbageBin> _garbageBins;
+    uint32_t _garbageBinIndex;
+
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 

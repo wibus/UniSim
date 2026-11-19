@@ -34,12 +34,12 @@ Shader::Shader(const std::string& name, ShaderType shaderType, ShaderHandle&& ha
     _shaderType(shaderType),
     _handle(new ShaderHandle(std::move(handle)))
 {
-
+    PILS_DEBUG("Creating shader '", _name, "'");
 }
 
 Shader::~Shader()
 {
-
+    PILS_DEBUG("Destroying shader '", _name, "'");
 }
 
 
@@ -65,12 +65,11 @@ ProgramHandle::~ProgramHandle()
 }
 
 Program::Program(
-        const GpuDevice& gpuDevice,
-        const ProgramInterfaceTemplate& piTemplate,
         ProgramType type,
         const std::string& name,
         ProgramHandle&& programHandle,
         const std::vector<std::shared_ptr<Shader>>& shaders) :
+    _type(type),
     _name(name),
     _handle(new ProgramHandle(std::move(programHandle))),
     _shaders(shaders)
@@ -84,7 +83,7 @@ Program::~Program()
 
 }
 
-ProgramScope::ProgramScope(const Program& program)
+ProgramScope::ProgramScope(const GpuDevice& gpuDevice, const Program& program)
 {
     if(program.isValid())
         glUseProgram(program.handle());
@@ -167,10 +166,12 @@ bool validateProgram(GLuint programId, const std::string& name)
 }
 
 
-ShaderBuilder::ShaderBuilder()
+ShaderBuilder::ShaderBuilder(const GpuDevice& device) :
+    _device(device)
 {
-    g_GlslExtensions = "";
+    g_GlslExtensions = "#define API_OPENGL\n";
     g_GlslExtensions += "#extension GL_ARB_bindless_texture : require\n";
+    g_GlslExtensions += "#extension GL_KHR_vulkan_glsl : enable\n";
 }
 
 ShaderBuilder::~ShaderBuilder()
@@ -246,6 +247,7 @@ bool ShaderBuilder::generateShader(
 bool ShaderBuilder::generateGraphicProgram(
     const GpuDevice& gpuDevice,
     const ProgramInterfaceTemplate& piTemplate,
+    const RenderStates& renderStates,
     ProgramPtr& program,
     const std::string& name,
     const std::string& vertexFileName,
@@ -276,8 +278,6 @@ bool ShaderBuilder::generateGraphicProgram(
 
     program.reset(
         new Program(
-            gpuDevice,
-            piTemplate,
             ProgramType::Graphics,
             name,
             std::move(ProgramHandle(programId)),
@@ -315,8 +315,6 @@ bool ShaderBuilder::generateComputeProgram(
 
     program.reset(
         new Program(
-            gpuDevice,
-            piTemplate,
             ProgramType::Compute,
             name,
             std::move(ProgramHandle(programId)),
@@ -354,8 +352,6 @@ bool ShaderBuilder::generateComputeProgram(
 
     program.reset(
         new Program(
-            gpuDevice,
-            piTemplate,
             ProgramType::Compute,
             name,
             std::move(ProgramHandle(programId)),

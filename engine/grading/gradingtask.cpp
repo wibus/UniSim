@@ -3,6 +3,7 @@
 #include "../system/profiler.h"
 
 #include "../graphic/gpudevice.h"
+#include "../graphic/renderstates.h"
 
 
 namespace unisim
@@ -21,15 +22,18 @@ GradingTask::GradingTask() :
 
 bool GradingTask::defineShaders(GraphicContext& context)
 {
-    ProgramInterfaceTemplate colorGradingPiTemplate(context.resources.framePiTemplate());
-    colorGradingPiTemplate.declareTexture({"Input"});
+    ProgramInterfaceTemplate colorGradingPiTemplate(ProgramType::Graphics, context.resources.framePiTemplate());
+    colorGradingPiTemplate.declareTexture(0, {"Input"});
 
     _colorGradingPi.reset(new ProgramInterface(context.device, colorGradingPiTemplate));
+
+    RenderStates renderStates(context.view);
 
     _colorGradingProgram.reset();
     if(!context.shaders.generateGraphicProgram(
             context.device,
             colorGradingPiTemplate,
+            renderStates,
             _colorGradingProgram,
             "Color Grading",
             "shaders/fullscreen.vert",
@@ -52,9 +56,14 @@ void GradingTask::render(GraphicContext& context)
     if (!_colorGradingPi->compileAndSet(context.device, *_colorGradingProgram))
         return;
 
-    ProgramScope programScope(*_colorGradingProgram);
+    ProgramScope programScope(context.device, *_colorGradingProgram);
 
-    context.device.draw(resources.get<GpuGeometryResource>(ResourceName(FullScreenTriangle)));
+    const GpuGeometryResource& geometry = resources.get<GpuGeometryResource>(ResourceName(FullScreenTriangle));
+
+    RenderStates renderStates(context.view);
+    RenderPassScope renderPassScope(context.device, renderStates, geometry);
+
+    context.device.draw(geometry);
 }
 
 }

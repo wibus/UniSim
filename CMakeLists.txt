@@ -34,7 +34,8 @@ set(UNISIM_LIBRARIES
     ${GLEW_LIBRARIES}
     ${OTS_LIBRARIES}
     ${PILS_CORE_LIBRARIES}
-    PilsCore)
+    PilsCore
+    shaderc)
 message( STATUS "UniSim Libraries ${UNISIM_LIBRARIES}" )
 
 
@@ -85,22 +86,26 @@ set(GraphicFiles
     graphic/gpudevice.cpp
     graphic/gpudevice_gl.cpp
     graphic/gpudevice_vk.cpp
-    graphic/programinterface.h
-    graphic/programinterface.cpp
-    graphic/programinterface_gl.cpp
-    graphic/programinterface_vk.cpp
     graphic/gpuresource.h
     graphic/gpuresource.cpp
     graphic/gpuresource_gl.cpp
     graphic/gpuresource_vk.cpp
-    graphic/shader.h
-    graphic/shader.cpp
-    graphic/shader_gl.cpp
-    graphic/shader_vk.cpp
     graphic/imguirenderer.h
     graphic/imguirenderer.cpp
     graphic/imguirenderer_gl.cpp
     graphic/imguirenderer_vk.cpp
+    graphic/programinterface.h
+    graphic/programinterface.cpp
+    graphic/programinterface_gl.cpp
+    graphic/programinterface_vk.cpp
+    graphic/renderstates.h
+    graphic/renderstates.cpp
+    graphic/renderstates_gl.cpp
+    graphic/renderstates_vk.cpp
+    graphic/shader.h
+    graphic/shader.cpp
+    graphic/shader_gl.cpp
+    graphic/shader_vk.cpp
     graphic/view.h
     graphic/view.cpp
     graphic/view_gl.cpp

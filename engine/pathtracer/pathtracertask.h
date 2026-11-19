@@ -36,7 +36,7 @@ public:
     void update(GraphicContext& context) override;
     void render(GraphicContext& context) override;
     
-    void setPathTracerProviders(const std::vector<PathTracerProviderTaskPtr>& providers);
+    void setPathTracerProviders(const std::vector<PathTracerProviderTask*>& providers);
 
     static const unsigned int BLUE_NOISE_TEX_COUNT = 64;
     static const unsigned int HALTON_SAMPLE_COUNT = 64;
@@ -59,7 +59,7 @@ private:
     std::unique_ptr<Viewport> _viewport;
 
     std::shared_ptr<ProgramInterface> _pathTracerPi;
-    std::vector<std::shared_ptr<PathTracerProviderTask>> _pathTracerProviders;
+    std::vector<PathTracerProviderTask*> _pathTracerProviders;
     std::vector<std::shared_ptr<PathTracerModule>> _pathTracerModules;
 };
 

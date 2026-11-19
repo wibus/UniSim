@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <list>
 
 #include <GLM/glm.hpp>
 
@@ -31,6 +32,9 @@ class Texture;
 class ImageView;
 class Sampler;
 class Descriptor;
+class Mapping;
+class Buffer;
+class Fence;
 }
 }
 
@@ -44,15 +48,26 @@ class GpuDevice;
 class View;
 class GpuResourceManager;
 
+
 enum class BindlessTextureIndex : int32_t {};
 constexpr BindlessTextureIndex Invalid_BindlessTextureIndex = BindlessTextureIndex(~0x0);
 
 typedef unsigned int ResourceId;
 const ResourceId Invalid_ResourceId = ~0x0;
 
+
 #define ResourceName(name) ResourceId_##name
 #define DeclareResource(name) extern ResourceId ResourceName(name)
 #define DefineResource(name) ResourceId ResourceName(name) = GpuResourceManager::registerStaticResource(#name)
+
+
+enum class ResourceState
+{
+    Undefined,
+    ReadOnly,
+    ReadWrite
+};
+
 
 class GpuBindlessTextureResourceHandle
 {
@@ -62,10 +77,7 @@ public:
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
     GLuint64 handle;
 #elif UNISIM_GRAPHIC_BACKEND_VK
-    GpuBindlessTextureResourceHandle(
-        const pils::gpu::ImageView& textureView,
-        const pils::gpu::Sampler& sampler);
-
+    std::shared_ptr<ResourceState> state;
     std::shared_ptr<pils::gpu::Descriptor> descriptor;
 #endif
 };
@@ -79,10 +91,10 @@ public:
     GLuint texId;
     GLenum dimension;
 #elif UNISIM_GRAPHIC_BACKEND_VK
-    GpuTextureResourceHandle(
-        const pils::gpu::ImageView& textureView,
-        const pils::gpu::Sampler& sampler);
-
+    std::shared_ptr<ResourceState> state;
+    std::shared_ptr<pils::gpu::Image> image;
+    std::shared_ptr<pils::gpu::Sampler> sampler;
+    std::shared_ptr<pils::gpu::ImageView> imageView;
     std::shared_ptr<pils::gpu::Descriptor> descriptor;
 #endif
 };
@@ -97,10 +109,9 @@ public:
     GLenum internalFormat;
     GLenum dimension;
 #elif UNISIM_GRAPHIC_BACKEND_VK
-    GpuImageResourceHandle(
-        const pils::gpu::ImageView& imageView,
-        const pils::gpu::Sampler& sampler);
-
+    std::shared_ptr<ResourceState> state;
+    std::shared_ptr<pils::gpu::Image> image;
+    std::shared_ptr<pils::gpu::ImageView> imageView;
     std::shared_ptr<pils::gpu::Descriptor> descriptor;
 #endif
 };
@@ -111,14 +122,15 @@ public:
     GpuStorageResourceHandle();
 
 #ifdef UNISIM_GRAPHIC_BACKEND_GL
-
     GLuint bufferId;
 #elif UNISIM_GRAPHIC_BACKEND_VK
     GpuStorageResourceHandle(
-        const pils::gpu::StorageBuffer& buffer,
-        uint64_t offset,
-        uint64_t size);
+        pils::gpu::StorageBuffer* buffer,
+        const std::shared_ptr<pils::gpu::Mapping>& mapping);
 
+    std::shared_ptr<ResourceState> state;
+    pils::gpu::Buffer* buffer{nullptr};
+    std::shared_ptr<pils::gpu::Mapping> mapping;
     std::shared_ptr<pils::gpu::Descriptor> descriptor;
 #endif
 };
@@ -132,10 +144,12 @@ public:
     GLuint bufferId;
 #elif UNISIM_GRAPHIC_BACKEND_VK
     GpuConstantResourceHandle(
-        const pils::gpu::ConstantBuffer& buffer,
-        uint64_t offset,
-        uint64_t size);
+        pils::gpu::ConstantBuffer* buffer,
+        const std::shared_ptr<pils::gpu::Mapping>& mapping);
 
+    std::shared_ptr<ResourceState> state;
+    pils::gpu::Buffer* buffer{nullptr};
+    std::shared_ptr<pils::gpu::Mapping> mapping;
     std::shared_ptr<pils::gpu::Descriptor> descriptor;
 #endif
 };
@@ -150,10 +164,12 @@ public:
     GLuint vbo;
 #elif UNISIM_GRAPHIC_BACKEND_VK
     GpuGeometryResourceHandle(
-        const pils::gpu::VertexBuffer& buffer,
-        uint64_t offset,
-        uint64_t size);
+        pils::gpu::VertexBuffer* buffer,
+        const std::shared_ptr<pils::gpu::Mapping>& mapping);
 
+    std::shared_ptr<ResourceState> state;
+    pils::gpu::Buffer* buffer{nullptr};
+    std::shared_ptr<pils::gpu::Mapping> mapping;
     std::shared_ptr<pils::gpu::Descriptor> descriptor;
 #endif
 };
@@ -162,13 +178,14 @@ public:
 class GpuResource
 {
 public:
-    GpuResource(GpuResourceManager& manager, ResourceId id);
+    GpuResource(GpuResourceManager& manager, ResourceId id, ResourceState initialState);
     virtual ~GpuResource();
 
     ResourceId id;
 
 protected:
     GpuResourceManager& _manager;
+    std::shared_ptr<ResourceState> _state;
 };
 
 class GpuTextureResource : public GpuResource
@@ -184,16 +201,10 @@ public:
     ~GpuTextureResource();
 
     bool accessible() const { return _handle.get() != nullptr; }
-    const GpuTextureResourceHandle& handle() const { return *_handle; }
+    const GpuTextureResourceHandle& roHandle() const { return *_handle; }
 
 private:
-    std::unique_ptr<GpuTextureResourceHandle> _handle;
-
-#ifdef UNISIM_GRAPHIC_BACKEND_VK
-    std::unique_ptr<pils::gpu::Texture> _texture;
-    std::unique_ptr<pils::gpu::ImageView> _textureView;
-    std::unique_ptr<pils::gpu::Sampler> _sampler;
-#endif // UNISIM_GRAPHIC_BACKEND_VK
+    std::shared_ptr<GpuTextureResourceHandle> _handle;
 };
 
 
@@ -213,18 +224,15 @@ public:
 
     void update(const Definition& def);
 
-    bool accessible() const { return _handle.get() != nullptr; }
-    const GpuImageResourceHandle& handle() const { return *_handle; }
+    bool accessible() const { return _imageHandle.get() != nullptr && _textureHandle.get() != nullptr; }
+    const GpuImageResourceHandle& rwHandle() const { return *_imageHandle; }
+    const GpuTextureResourceHandle& roHandle() const { return *_textureHandle; }
 
 private:
-    std::unique_ptr<GpuImageResourceHandle> _handle;
+    void createHandles(const Definition& def);
 
-#ifdef UNISIM_GRAPHIC_BACKEND_VK
-    const pils::gpu::Device& _device;
-    std::unique_ptr<pils::gpu::Image> _image;
-    std::unique_ptr<pils::gpu::ImageView> _imageView;
-    std::unique_ptr<pils::gpu::Sampler> _sampler;
-#endif // UNISIM_GRAPHIC_BACKEND_VK
+    std::shared_ptr<GpuImageResourceHandle> _imageHandle;
+    std::shared_ptr<GpuTextureResourceHandle> _textureHandle;
 };
 
 class GpuStorageResource : public GpuResource
@@ -243,10 +251,12 @@ public:
     void update(const Definition& def);
 
     bool accessible() const { return _handle.get() != nullptr; }
-    const GpuStorageResourceHandle& handle() const { return *_handle; }
+    const GpuStorageResourceHandle& rwHandle() const { return *_handle; }
 
 private:
-    std::unique_ptr<GpuStorageResourceHandle> _handle;
+    void createHandle(const Definition& def);
+
+    std::shared_ptr<GpuStorageResourceHandle> _handle;
 };
 
 
@@ -266,10 +276,10 @@ public:
     void invalidate();
 
     bool accessible() const { return _handle.get() != nullptr; }
-    const GpuConstantResourceHandle& handle() const { return *_handle; }
+    const GpuConstantResourceHandle& roHandle() const { return *_handle; }
 
 private:
-    std::unique_ptr<GpuConstantResourceHandle> _handle;
+    std::shared_ptr<GpuConstantResourceHandle> _handle;
 };
 
 
@@ -286,10 +296,13 @@ public:
     ~GpuGeometryResource();
 
     bool accessible() const { return _handle.get() != nullptr; }
-    const GpuGeometryResourceHandle& handle() const { return *_handle; }
+    const GpuGeometryResourceHandle& roHandle() const { return *_handle; }
+
+    uint32_t vertexCount() const { return _vertexCount; }
 
 private:
-    std::unique_ptr<GpuGeometryResourceHandle> _handle;
+    std::shared_ptr<GpuGeometryResourceHandle> _handle;
+    uint32_t _vertexCount;
 };
 
 
@@ -303,23 +316,23 @@ public:
     ~GpuBindlessTexture();
 
     bool accessible() const { return _handle.get() != nullptr; }
-    const GpuBindlessTextureResourceHandle& handle() const { return *_handle; }
+    const GpuBindlessTextureResourceHandle& roHandle() const { return *_handle; }
 
 private:
-    std::unique_ptr<GpuBindlessTextureResourceHandle> _handle;
+    std::shared_ptr<GpuBindlessTextureResourceHandle> _handle;
 };
 
 
 class GpuResourceManager
 {
 public:
-    GpuResourceManager(const GpuDevice& gpuDevice);
+    GpuResourceManager(GpuDevice& gpuDevice);
     ~GpuResourceManager();
 
     static ResourceId registerStaticResource(const std::string& name);
     ResourceId registerDynamicResource(const std::string& name);
 
-    const GpuDevice& gpuDevice() const { return _gpuDevice; }
+    GpuDevice& gpuDevice() const { return _gpuDevice; }
 
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
     pils::gpu::BufferSet& bufferSet() { return *_bufferSet; }
@@ -350,7 +363,7 @@ public:
 private:
     void initializeNative();
 
-    const GpuDevice& _gpuDevice;
+    GpuDevice& _gpuDevice;
 
     static unsigned int _staticResourceCount;
     static std::vector<std::string> _staticNames;

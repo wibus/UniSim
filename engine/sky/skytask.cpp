@@ -129,10 +129,10 @@ bool SkyTask::defineShaders(GraphicContext& context)
 {
     if (_atmosphereRenderState)
     {
-        ProgramInterfaceTemplate piTemplate(ProgramType::Compute);
-        piTemplate.declareConstant({"MoonLightParams"});
-        piTemplate.declareTexture({"MoonAlbedo"});
-        piTemplate.declareImage({"MoonLighting"});
+        ProgramInterfaceTemplate piTemplate(ProgramType::Compute, context.resources.framePiTemplate());
+        piTemplate.declareConstant(0, {"MoonLightParams"});
+        piTemplate.declareTexture(1, {"MoonAlbedo"});
+        piTemplate.declareImage(2, {"MoonLighting"});
 
         _atmosphereRenderState->_moonLightPi.reset(new ProgramInterface(context.device, piTemplate));
 
@@ -185,13 +185,13 @@ bool SkyTask::definePathTracerInterface(
 {
     bool ok = true;
 
-    piTemplate.declareConstant({"StarsParams"});
-    piTemplate.declareTexture({"Stars"});
+    piTemplate.declareConstant(14, {"StarsParams"});
+    piTemplate.declareTexture(15, {"Stars"});
 
     if (_atmosphereRenderState)
     {
-        piTemplate.declareConstant({"AtmosphereParams"});
-        piTemplate.declareTexture({"Moon"});
+        piTemplate.declareConstant(16, {"AtmosphereParams"});
+        piTemplate.declareTexture(17, {"Moon"});
 
         ok = ok && _atmosphereRenderState->_model->definePathTracerInterface(context, piTemplate);
     }
@@ -316,7 +316,7 @@ void SkyTask::render(GraphicContext& context)
         if (!pi.compileAndSet(context.device, *_atmosphereRenderState->_moonLightProgram))
             return;
 
-        ProgramScope programScope(*_atmosphereRenderState->_moonLightProgram);
+        ProgramScope programScope(context.device, *_atmosphereRenderState->_moonLightProgram);
         context.device.dispatch(_atmosphereRenderState->_moonTexSize / 8,
                                 _atmosphereRenderState->_moonTexSize / 8);
 
