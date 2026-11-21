@@ -31,7 +31,7 @@ void ImGuiRenderer::ImGuiNewFrameNative() const
     ImGui_ImplOpenGL3_NewFrame();
 }
 
-void ImGuiRenderer::renderNative(GpuDevice& gpuDevice, const View& view) const
+void ImGuiRenderer::renderNative(GpuDevice& gpuDevice) const
 {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

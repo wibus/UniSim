@@ -34,12 +34,15 @@ class GpuGeometryResource;
 class RenderStates
 {
 public:
-    RenderStates(const View& view);
+    RenderStates(const GpuDevice& device);
 
+    void setView(const View& view, bool isFirstPass, bool isLastPass);
+    void setGeometry(const GpuGeometryResource* geometry);
 
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
-    const pils::gpu::RenderPass& renderPass() const {  return _renderPass; }
-    const pils::gpu::FrameBuffer& frameBuffer() const { return _frameBuffer; }
+    const pils::gpu::RenderPass& renderPass() const {  return *_renderPass; }
+    const pils::gpu::FrameBuffer& frameBuffer() const { return *_frameBuffer; }
+    const GpuGeometryResource* geometry() const { return _geometry; }
 
     const pils::gpu::VertexState& vertexState() const { return *_vertexState; }
     const pils::gpu::TopologyState& topologyState() const { return *_topologyState; }
@@ -52,8 +55,10 @@ public:
 
 private:
 #ifdef UNISIM_GRAPHIC_BACKEND_VK
-    const pils::gpu::RenderPass& _renderPass;
-    const pils::gpu::FrameBuffer& _frameBuffer;
+    const GpuDevice& _gpuDevice;
+    std::shared_ptr<pils::gpu::RenderPass> _renderPass;
+    const pils::gpu::FrameBuffer* _frameBuffer{nullptr};
+    const GpuGeometryResource* _geometry{nullptr};
 
     std::shared_ptr<pils::gpu::VertexState> _vertexState;
     std::shared_ptr<pils::gpu::TopologyState> _topologyState;
@@ -65,11 +70,13 @@ private:
 #endif // UNISIM_GRAPHIC_BACKEND_VK
 };
 
+typedef std::shared_ptr<RenderStates> RenderStatesPtr;
+
 
 class RenderPassScope
 {
 public:
-    RenderPassScope(const GpuDevice& gpuDevice, const RenderStates& renderStates, const GpuGeometryResource& geometry);
+    RenderPassScope(const GpuDevice& gpuDevice, const RenderStates& renderStates);
     ~RenderPassScope();
 
 private:

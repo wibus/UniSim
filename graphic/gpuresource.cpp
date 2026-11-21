@@ -71,9 +71,9 @@ void GpuResourceManager::initialize()
     initializeNative();
 
     std::vector<glm::vec3> fullScreenTriangleVerts;
-    fullScreenTriangleVerts.push_back({-1.0f, -1.0f,  0.0f});
-    fullScreenTriangleVerts.push_back({ 3.0f, -1.0f,  0.0f});
-    fullScreenTriangleVerts.push_back({-1.0f,  3.0f,  0.0f});
+    fullScreenTriangleVerts.push_back({-1.0f,  1.0f,  0.0f});
+    fullScreenTriangleVerts.push_back({ 3.0f,  1.0f,  0.0f});
+    fullScreenTriangleVerts.push_back({-1.0f, -3.0f,  0.0f});
     define<GpuGeometryResource>(ResourceName(FullScreenTriangle), {fullScreenTriangleVerts});
 }
 

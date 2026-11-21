@@ -177,8 +177,8 @@ GpuImageResource::~GpuImageResource()
 
 void GpuImageResource::update(const Definition& def)
 {
-    _manager.gpuDevice().dispose([handle = _imageHandle](){ });
-    _manager.gpuDevice().dispose([handle = _textureHandle](){ });
+    _manager.gpuDevice().dispose(_imageHandle);
+    _manager.gpuDevice().dispose(_textureHandle);
 
     createHandles(def);
 }
@@ -229,7 +229,7 @@ GpuStorageResource::~GpuStorageResource()
 
 void GpuStorageResource::update(const Definition& def)
 {
-    _manager.gpuDevice().dispose([handle = _handle](){ });
+    _manager.gpuDevice().dispose(_handle);
 
     createHandle(def);
 }

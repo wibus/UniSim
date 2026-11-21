@@ -1,5 +1,7 @@
 layout (set = 2, binding = 0) uniform sampler2D Input;
 
+layout(origin_upper_left) in vec4 gl_FragCoord;
+
 layout (location = 0) out vec4 frag_colour;
 
 

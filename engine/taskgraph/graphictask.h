@@ -3,7 +3,6 @@
 
 #include "../graphic/shader.h"
 #include "../graphic/gpuresource.h"
-#include "../graphic/programinterface.h"
 
 
 namespace unisim
@@ -15,6 +14,7 @@ class Camera;
 class GpuDevice;
 class PathTracerTask;
 class ImGuiRenderer;
+class RenderStates;
 
 
 struct GraphicSettings
@@ -62,9 +62,12 @@ class Ui : public GraphicTask
 public:
     Ui(const ImGuiRenderer& imGuiRenderer);
 
+    bool defineShaders(GraphicContext& context) override;
+
     void render(GraphicContext& context) override;
 
 private:
+    std::shared_ptr<RenderStates> _renderStates;
     const ImGuiRenderer& _imGuiRenderer;
 };
 

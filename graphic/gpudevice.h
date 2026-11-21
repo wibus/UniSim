@@ -54,6 +54,11 @@ public:
 
     pils::gpu::DescriptorPool& descriptorPool() const { return *_descriptorPool; }
     void dispose(std::function<void(void)> disposeCallback);
+    template<typename T>
+    void dispose(const std::shared_ptr<T> resource)
+    {
+        dispose([ptr = resource](){ });
+    }
 
     pils::gpu::CommandList& commandList() const;
     void setCommandList(const std::shared_ptr<pils::gpu::CommandList>& commandList);

@@ -3,6 +3,9 @@
 
 #include "../taskgraph/graphictask.h"
 
+#include "../graphic/programinterface.h"
+#include "../graphic/renderstates.h"
+
 
 namespace unisim
 {
@@ -17,6 +20,7 @@ public:
     void render(GraphicContext& context) override;
 
 private:
+    RenderStatesPtr _renderStates;
     ProgramPtr _colorGradingProgram;
     GpuProgramInterfacePtr _colorGradingPi;
 };

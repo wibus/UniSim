@@ -298,7 +298,7 @@ bool ShaderBuilder::generateGraphicProgram(
 
     if (!pipeline->isValid())
     {
-        PILS_ERROR("Created an invalid compute pipeline:", name);
+        PILS_ERROR("Created an invalid compute pipeline: ", name);
         return false;
     }
 
@@ -333,7 +333,7 @@ bool ShaderBuilder::generateComputeProgram(
 
     if (!pipeline->isValid())
     {
-        PILS_ERROR("Created an invalid compute pipeline:", name);
+        PILS_ERROR("Created an invalid compute pipeline: ", name);
         return false;
     }
 
@@ -369,7 +369,7 @@ bool ShaderBuilder::generateComputeProgram(
 
     if (!pipeline->isValid())
     {
-        PILS_ERROR("Created an invalid compute pipeline:", name);
+        PILS_ERROR("Created an invalid compute pipeline: ", name);
         return false;
     }
 

@@ -6,12 +6,22 @@
 namespace unisim
 {
 
-RenderStates::RenderStates(const View& view)
+RenderStates::RenderStates(const GpuDevice& device)
 {
+
 }
 
+void RenderStates::setView(const View& view, bool isFirstPass, bool isLastPass)
+{
 
-RenderPassScope::RenderPassScope(const GpuDevice& gpuDevice, const RenderStates& renderStates, const GpuGeometryResource& geometry)
+}
+
+void RenderStates::setGeometry(const GpuGeometryResource* geometry)
+{
+
+}
+
+RenderPassScope::RenderPassScope(const GpuDevice& gpuDevice, const RenderStates& renderStates)
 {
 
 }

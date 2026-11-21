@@ -27,13 +27,15 @@ bool GradingTask::defineShaders(GraphicContext& context)
 
     _colorGradingPi.reset(new ProgramInterface(context.device, colorGradingPiTemplate));
 
-    RenderStates renderStates(context.view);
+    _renderStates.reset(new RenderStates(context.device));
+    _renderStates->setView(context.view, true, false);
+    _renderStates->setGeometry(&context.resources.get<GpuGeometryResource>(ResourceName(FullScreenTriangle)));
 
     _colorGradingProgram.reset();
     if(!context.shaders.generateGraphicProgram(
             context.device,
             colorGradingPiTemplate,
-            renderStates,
+            *_renderStates,
             _colorGradingProgram,
             "Color Grading",
             "shaders/fullscreen.vert",
@@ -60,8 +62,10 @@ void GradingTask::render(GraphicContext& context)
 
     const GpuGeometryResource& geometry = resources.get<GpuGeometryResource>(ResourceName(FullScreenTriangle));
 
-    RenderStates renderStates(context.view);
-    RenderPassScope renderPassScope(context.device, renderStates, geometry);
+    _renderStates->setView(context.view, true, false);
+    _renderStates->setGeometry(&geometry);
+
+    RenderPassScope renderPassScope(context.device, *_renderStates);
 
     context.device.draw(geometry);
 }

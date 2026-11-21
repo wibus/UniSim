@@ -92,11 +92,9 @@ void ImGuiRenderer::ImGuiNewFrameNative() const
     ImGui_ImplVulkan_NewFrame();
 }
 
-void ImGuiRenderer::renderNative(GpuDevice& gpuDevice, const View& view) const
+void ImGuiRenderer::renderNative(GpuDevice& gpuDevice) const
 {
-    gpuDevice.commandList().beginRenderPass(view.renderPass(), view.currentFrameBuffer());
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), gpuDevice.commandList().vkCommandBuffer());
-    gpuDevice.commandList().endRenderPass();
 }
 
 }

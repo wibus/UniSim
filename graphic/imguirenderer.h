@@ -60,12 +60,12 @@ public:
 
     void ImGuiNewFrame() const;
 
-    void render(GpuDevice& gpuDevice, const View& view) const;
+    void render(GpuDevice& gpuDevice) const;
 
 private:
     void ImGuiInitNative();
     void ImGuiNewFrameNative() const;
-    void renderNative(GpuDevice& gpuDevice, const View& view) const;
+    void renderNative(GpuDevice& gpuDevice) const;
 
     const View& _view;
 

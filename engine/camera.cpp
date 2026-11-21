@@ -112,11 +112,15 @@ glm::dmat4 Camera::view() const
 
 glm::mat4 Camera::proj() const
 {
-    return glm::perspective(
+    glm::mat4 p = glm::perspective(
         _fov,
         _viewport.width / (float) _viewport.height,
         1.0f,
         2.0f);
+
+    p[1][1] *= -1;
+
+    return p;
 }
 
 glm::mat4 Camera::screen() const
